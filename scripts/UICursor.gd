@@ -16,6 +16,7 @@ var _draw_node: Node2D
 var _os_expected := Vector2.INF   # where we believe the system pointer is
 var relay_node: Node
 var _pad_vec := Vector2.ZERO
+var _has_focus := true
 
 
 func _ready() -> void:
@@ -113,13 +114,14 @@ func _process(_delta: float) -> void:
 		pos += _pad_vec * G.gamepad_speed * _delta
 		var vis0 := _visible_rect()
 		pos = pos.clamp(vis0.position, vis0.end)
-	if not touch_mode and DisplayServer.get_name() != "headless":
+	if not touch_mode and DisplayServer.get_name() != "headless" and _focused():
 		# keep the hidden system pointer under the drawn cursor, otherwise GUI
 		# clicks miss; at sensitivity 1.0 the warp is a no-op
 		if _os_expected == Vector2.INF or pos.distance_to(_os_expected) > 0.5:
 			_os_expected = pos
 			Input.warp_mouse(get_viewport().get_final_transform() * pos)
-	pos = pos.clamp(Vector2.ZERO, G.DESIGN)
+	var vis := _visible_rect()
+	pos = pos.clamp(vis.position, vis.end)
 	_trail.push_front(pos)
 	if _trail.size() > 7:
 		_trail.pop_back()
@@ -130,6 +132,33 @@ func _process(_delta: float) -> void:
 func jump_to(p: Vector2) -> void:
 	pos = p
 	_trail.clear()
+
+
+## True while the game window is the focused one. Warping the system pointer
+## while another window is on top (a file dialog, a screenshot prompt) drags
+## the mouse back into the game and makes the other window unusable, so the
+## cursor lets go the moment focus leaves.
+func _focused() -> bool:
+	if not _has_focus:
+		return false
+	if DisplayServer.has_method("window_is_focused"):
+		return DisplayServer.window_is_focused()
+	return true
+
+
+## Release the OS cursor when focus is lost and take it back on return.
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+			_has_focus = false
+			_os_expected = Vector2.INF
+			if DisplayServer.get_name() != "headless":
+				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_WM_WINDOW_FOCUS_IN:
+			_has_focus = true
+			_os_expected = Vector2.INF
+			if DisplayServer.get_name() != "headless":
+				Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 
 
 ## True while a text field has focus, so WASD types instead of steering.
@@ -151,8 +180,8 @@ class CursorDraw extends Node2D:
 		queue_redraw()
 
 	func _draw() -> void:
-		if cursor == null or not cursor.cursor_visible:
-			return
+		if cursor == null or not cursor.cursor_visible or not cursor._has_focus:
+			return   # another window is on top: leave the pointer to it
 		var cs: float = clampf(G.cursor_scale, 0.5, 2.5)
 		# trail
 		var n: int = cursor._trail.size()

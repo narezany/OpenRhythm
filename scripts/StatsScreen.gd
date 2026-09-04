@@ -10,27 +10,24 @@ var _body: VBoxContainer
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label("STATS", 44, G.C_TEXT, true)
-	title.position = Vector2(0, 26)
-	title.size = Vector2(G.DESIGN.x, 56)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
+	G.anchor_top_wide(title, 26, 56)
 
 	var summary := G.label(_summary_text(), 17, G.C_MUTED)
-	summary.position = Vector2(0, 82)
-	summary.size = Vector2(G.DESIGN.x, 24)
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(summary)
+	G.anchor_top_wide(summary, 82, 24)
 
 	var tabs := HBoxContainer.new()
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	tabs.add_theme_constant_override("separation", 10)
-	tabs.position = Vector2(0, 112)
-	tabs.size = Vector2(G.DESIGN.x, 44)
 	add_child(tabs)
+	G.anchor_top_wide(tabs, 112, 44)
 	for i in TABS.size():
 		var idx := i
 		var b := G.button(TABS[i], func(): _switch(idx), 20)
@@ -38,10 +35,9 @@ func _ready() -> void:
 		_tab_buttons.append(b)
 
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(150, 166)
-	scroll.size = Vector2(G.DESIGN.x - 300, G.DESIGN.y - 250)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
+	G.anchor_margins(scroll, 150, 166, 150, 84)
 	_body = VBoxContainer.new()
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_theme_constant_override("separation", 10)
@@ -50,9 +46,8 @@ func _ready() -> void:
 	var back := G.button("← Back", func():
 		G.play_sfx("click")
 		G.main.goto_menu(), 22)
-	back.position = Vector2(G.DESIGN.x / 2.0 - 100, G.DESIGN.y - 70)
-	back.custom_minimum_size = Vector2(200, 0)
 	add_child(back)
+	G.anchor_bottom_center(back, 18, Vector2(200, 46))
 
 	_switch(0)
 

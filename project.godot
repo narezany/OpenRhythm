@@ -31,7 +31,10 @@ pointing/emulate_mouse_from_touch=true
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="fill"
+; "expand" keeps the design scale and reveals extra canvas on the long axis.
+; "fill" would squash the picture on anything that is not 16:9 - phones are
+; 19.5:9 or 20:9, so that was visible on almost every device.
+window/stretch/aspect="expand"
 window/handheld/orientation=0
 
 [rendering]

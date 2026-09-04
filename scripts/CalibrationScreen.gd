@@ -21,62 +21,56 @@ var _offset_lbl: Label
 var _hint_lbl: Label
 var _viz: TapViz
 var _apply_btn: Button
+var _ring: BeatRing
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label("CALIBRATION", 46, G.C_TEXT, true)
-	title.position = Vector2(0, 44)
-	title.size = Vector2(G.DESIGN.x, 60)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
+	G.anchor_top_wide(title, 44, 60)
 
 	var sub := G.label("Space / click / tap on the beat. The game measures your delay itself.",
 		20, G.C_MUTED)
-	sub.position = Vector2(0, 104)
-	sub.size = Vector2(G.DESIGN.x, 30)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(sub)
+	G.anchor_top_wide(sub, 104, 30)
 
 	var ring := BeatRing.new()
 	ring.screen = self
-	ring.position = Vector2(G.DESIGN.x / 2.0, 300)
 	add_child(ring)
+	_ring = ring
 
 	_viz = TapViz.new()
 	_viz.screen = self
-	_viz.position = Vector2(G.DESIGN.x / 2.0 - 320, 420)
-	_viz.size = Vector2(640, 60)
 	_viz.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_viz)
+	G.anchor_top_wide(_viz, 420, 60, 0.0)
 
 	_taps_lbl = G.label("", 22, G.C_MUTED)
-	_taps_lbl.position = Vector2(0, 492)
-	_taps_lbl.size = Vector2(G.DESIGN.x, 28)
+	G.anchor_top_wide(_taps_lbl, 492, 28)
 	_taps_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_taps_lbl)
 
 	_offset_lbl = G.label("", 34, G.C_GOLD, true)
-	_offset_lbl.position = Vector2(0, 522)
-	_offset_lbl.size = Vector2(G.DESIGN.x, 46)
+	G.anchor_top_wide(_offset_lbl, 522, 46)
 	_offset_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_offset_lbl)
 
 	_hint_lbl = G.label("Keep tapping — at least 8 taps needed", 17, Color(1, 1, 1, 0.45))
-	_hint_lbl.position = Vector2(0, 568)
-	_hint_lbl.size = Vector2(G.DESIGN.x, 24)
+	G.anchor_top_wide(_hint_lbl, 568, 24)
 	_hint_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_hint_lbl)
 
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
-	row.position = Vector2(0, G.DESIGN.y - 96)
-	row.size = Vector2(G.DESIGN.x, 54)
 	add_child(row)
+	G.anchor_bottom_wide(row, 42, 54)
 	_apply_btn = G.button("Apply", _apply, 24)
 	_apply_btn.custom_minimum_size = Vector2(190, 0)
 	_apply_btn.disabled = true
@@ -96,6 +90,9 @@ func _now() -> float:
 
 
 func _process(delta: float) -> void:
+	if _ring != null:
+		# the ring lives in world space, so it is centred by hand
+		_ring.position = Vector2(G.canvas_size().x * 0.5, 300.0)
 	var t := _now()
 	var b := int(floor(t / PERIOD))
 	if b != _beat:

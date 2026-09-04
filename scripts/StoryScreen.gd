@@ -28,7 +28,7 @@ var _list_root: Control = null
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	# clicks advance the dialog from _unhandled_input, so the root must let
 	# them through; the buttons and cards keep their own input
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -40,20 +40,18 @@ func _ready() -> void:
 # ------------------------------------------------------------- phase 1: list
 func _build_list() -> void:
 	_list_root = Control.new()
-	_list_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(_list_root)
 	add_child(_list_root)
 
 	var title := G.label("STORY MODE", 42, G.C_TEXT, true)
-	title.position = Vector2(0, 28)
-	title.size = Vector2(G.DESIGN.x, 54)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_list_root.add_child(title)
+	G.anchor_top_wide(title, 28, 54)
 
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(290, 100)
-	scroll.size = Vector2(700, 520)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_list_root.add_child(scroll)
+	G.anchor_margins(scroll, 290, 100, 290, 100)
 
 	var vb := VBoxContainer.new()
 	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -71,9 +69,8 @@ func _build_list() -> void:
 	var back := G.button("← Back", func():
 		G.play_sfx("click")
 		G.main.goto_menu(), 22)
-	back.position = Vector2(24, G.DESIGN.y - 78)
-	back.custom_minimum_size = Vector2(180, 0)
 	_list_root.add_child(back)
+	G.anchor_corner(back, false, true, 24, 32, Vector2(180, 46))
 
 
 func _tutorial_done() -> bool:
@@ -121,19 +118,19 @@ func _build_novel() -> void:
 	if _list_root != null:
 		_list_root.visible = false
 	_novel_layer = Control.new()
-	_novel_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(_novel_layer)
 	_novel_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_novel_layer)
 
 	var dim := ColorRect.new()
 	dim.color = Color(0.03, 0.004, 0.01, 0.82)
-	dim.size = G.DESIGN
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_novel_layer.add_child(dim)
+	G.anchor_full(dim)
 
 	# Melly in the middle of the screen
 	_rig = MellyRig.new()
-	_rig.position = Vector2(G.DESIGN.x / 2.0 - 230.0, 60)
+	_rig.position = Vector2(G.canvas_size().x / 2.0 - 230.0, 60)
 	_rig.size = Vector2(460, 470)
 	if _rig is Control:
 		(_rig as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -143,10 +140,9 @@ func _build_novel() -> void:
 	var box := PanelContainer.new()
 	box.add_theme_stylebox_override("panel", G.panel_style(
 		Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.85)))
-	box.position = Vector2(90, 560)
-	box.size = Vector2(G.DESIGN.x - 180, 140)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_novel_layer.add_child(box)
+	G.anchor_bottom_wide(box, 20, 140, 90)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 2)
 	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -156,13 +152,14 @@ func _build_novel() -> void:
 	vb.add_child(_name_lbl)
 	_text_lbl = G.label("", 22, G.C_TEXT)
 	_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_text_lbl.custom_minimum_size = Vector2(G.DESIGN.x - 240, 74)
+	_text_lbl.custom_minimum_size = Vector2(0, 74)
+	_text_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_text_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vb.add_child(_text_lbl)
 	_hint_lbl = G.label("▼", 18, G.C_PRIMARY)
-	_hint_lbl.position = Vector2(G.DESIGN.x - 150, 668)
 	_hint_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_novel_layer.add_child(_hint_lbl)
+	G.anchor_corner(_hint_lbl, true, true, 130, 44, Vector2(40, 24))
 
 
 func _start_line() -> void:
@@ -216,16 +213,14 @@ func _finish_dialog() -> void:
 	# story 2: pick a difficulty, then both songs back to back
 	_hint_lbl.visible = false
 	var pick := G.label("Choose your difficulty:", 22, G.C_GOLD)
-	pick.position = Vector2(90, 510)
-	pick.size = Vector2(G.DESIGN.x - 180, 34)
 	pick.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_novel_layer.add_child(pick)
+	G.anchor_bottom_wide(pick, 176, 34, 90)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 30)
-	row.position = Vector2(90, 545)
-	row.size = Vector2(G.DESIGN.x - 180, 0)
 	_novel_layer.add_child(row)
+	G.anchor_bottom_wide(row, 130, 46, 90)
 	for cfg in [["NORMAL", 0], ["HYPER", 1]]:
 		var di: int = cfg[1]
 		row.add_child(G.button(str(cfg[0]), func():

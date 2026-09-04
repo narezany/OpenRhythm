@@ -18,21 +18,19 @@ const BODY := [
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label(TITLE, 44, G.C_PRIMARY, true)
-	title.position = Vector2(0, 54)
-	title.size = Vector2(G.DESIGN.x, 58)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
+	G.anchor_top_wide(title, 54, 58)
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", G.panel_style(
 		Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.7)))
-	panel.position = Vector2(180, 130)
-	panel.size = Vector2(G.DESIGN.x - 360, 400)
 	add_child(panel)
+	G.anchor_margins(panel, 180, 130, 180, 190)
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 2)
@@ -45,15 +43,14 @@ func _ready() -> void:
 			continue
 		var l := G.label(line, 19, G.C_TEXT)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(G.DESIGN.x - 420, 0)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		vb.add_child(l)
 
 	var links := HBoxContainer.new()
 	links.alignment = BoxContainer.ALIGNMENT_CENTER
 	links.add_theme_constant_override("separation", 16)
-	links.position = Vector2(0, G.DESIGN.y - 150)
-	links.size = Vector2(G.DESIGN.x, 46)
 	add_child(links)
+	G.anchor_bottom_wide(links, 104, 46)
 	var tg := G.button("Telegram forum", func():
 		OS.shell_open("https://t.me/openrhythmforum"), 18)
 	links.add_child(tg)
@@ -62,15 +59,8 @@ func _ready() -> void:
 	links.add_child(dc)
 
 	var ok := G.button("I understand", _accept, 26)
-	ok.position = Vector2(G.DESIGN.x / 2.0 - 140, G.DESIGN.y - 92)
-	ok.custom_minimum_size = Vector2(280, 0)
 	add_child(ok)
-
-	G.view_changed.connect(func():
-		var vis := G.visible_rect_design()
-		panel.position = Vector2(vis.get_center().x - panel.size.x / 2.0, vis.position.y + 130.0)
-		ok.position = Vector2(vis.get_center().x - 140.0, vis.end.y - 92.0)
-		links.position.y = vis.end.y - 150.0)
+	G.anchor_bottom_center(ok, 40, Vector2(280, 50))
 
 
 func _accept() -> void:

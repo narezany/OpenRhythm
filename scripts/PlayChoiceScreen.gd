@@ -7,12 +7,12 @@ const CARD := [Vector2(340, 200), Vector2(620, 200)]
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label("PLAY", 52, G.C_TEXT, true)
 	title.position = Vector2(0, 70)
-	title.size = Vector2(G.DESIGN.x, 70)
+	G.anchor_top_wide(title, title.position.y, 70)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
 
@@ -31,14 +31,14 @@ func _ready() -> void:
 		"finish the TUTORIAL first (Story Mode) to unlock Free Play" if locked else "",
 		18, G.C_MUTED)
 	lock_note.position = Vector2(0, 470)
-	lock_note.size = Vector2(G.DESIGN.x, 30)
+	G.anchor_top_wide(lock_note, lock_note.position.y, 30)
 	lock_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(lock_note)
 
 	var back := G.button("← Back", func():
 		G.play_sfx("click")
 		G.main.goto_menu())
-	back.position = Vector2(G.DESIGN.x / 2.0 - 110, G.DESIGN.y - 84)
+	G.anchor_bottom_center(back, 38, Vector2(220, 46))
 	back.custom_minimum_size = Vector2(220, 0)
 	add_child(back)
 

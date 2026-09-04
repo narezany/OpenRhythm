@@ -139,22 +139,100 @@ func stick_bottom(c: Control, margin := 0.0) -> void:
 	c.position.y = vis.end.y - c.size.y - margin
 
 
-## Visible window area in 1280x720 design coordinates. Pure arithmetic:
-## aspect="fill" centres the content, so a window wider or taller than 16:9 is
-## a symmetric crop on the shorter side. Deliberately does not use
-## get_final_transform - on Android it ignores rotation and stretching.
+## Visible canvas in design units. With stretch aspect "expand" the scale is
+## min(w/1280, h/720) and the canvas simply grows past the design size on the
+## long axis - nothing is cropped and nothing is squashed. So the origin is
+## always (0,0) and the size is at least DESIGN, larger on one axis.
 func visible_rect_design() -> Rect2:
-	var wa := view_w / maxf(view_h, 1.0)
-	var da := DESIGN.x / DESIGN.y
-	if absf(wa - da) < 0.01:
+	var sc := minf(view_w / DESIGN.x, view_h / DESIGN.y)
+	if sc <= 0.0001:
 		return Rect2(Vector2.ZERO, DESIGN)
-	if wa > da:
-		# window is wider than 16:9 - cropped vertically
-		var h := DESIGN.y * (da / wa)
-		return Rect2(0.0, (DESIGN.y - h) * 0.5, DESIGN.x, h)
-	# window is taller than 16:9 - cropped horizontally
-	var w := DESIGN.x * (wa / da)
-	return Rect2((DESIGN.x - w) * 0.5, 0.0, w, DESIGN.y)
+	return Rect2(0.0, 0.0, view_w / sc, view_h / sc)
+
+
+## Canvas size in design units. Anything meant to cover the screen must use
+## this, never DESIGN, or it leaves a gap on a phone.
+func canvas_size() -> Vector2:
+	return visible_rect_design().size
+
+
+# ---------------------------------------------------------------- anchoring
+## Anchor helpers. A control anchored this way follows the canvas on its own,
+## with no per-frame relayout, which is what keeps things from jumping around
+## when the window changes size.
+
+## Full-bleed: dims, background rects, post-process overlays.
+func anchor_full(c: Control) -> void:
+	c.anchor_left = 0.0
+	c.anchor_top = 0.0
+	c.anchor_right = 1.0
+	c.anchor_bottom = 1.0
+	c.offset_left = 0.0
+	c.offset_top = 0.0
+	c.offset_right = 0.0
+	c.offset_bottom = 0.0
+
+
+## Full canvas width at a fixed distance from the top - centred text stays
+## centred at any window size.
+func anchor_top_wide(c: Control, top: float, height: float, margin := 0.0) -> void:
+	c.anchor_left = 0.0
+	c.anchor_right = 1.0
+	c.anchor_top = 0.0
+	c.anchor_bottom = 0.0
+	c.offset_left = margin
+	c.offset_right = -margin
+	c.offset_top = top
+	c.offset_bottom = top + height
+
+
+## Full canvas width at a fixed distance from the bottom.
+func anchor_bottom_wide(c: Control, up: float, height: float, margin := 0.0) -> void:
+	c.anchor_left = 0.0
+	c.anchor_right = 1.0
+	c.anchor_top = 1.0
+	c.anchor_bottom = 1.0
+	c.offset_left = margin
+	c.offset_right = -margin
+	c.offset_top = -up - height
+	c.offset_bottom = -up
+
+
+## A fixed-size control centred horizontally and pinned to the bottom.
+func anchor_bottom_center(c: Control, up: float, size: Vector2) -> void:
+	c.anchor_left = 0.5
+	c.anchor_right = 0.5
+	c.anchor_top = 1.0
+	c.anchor_bottom = 1.0
+	c.offset_left = -size.x * 0.5
+	c.offset_right = size.x * 0.5
+	c.offset_top = -up - size.y
+	c.offset_bottom = -up
+
+
+## A control that follows the canvas with fixed margins on every side.
+func anchor_margins(c: Control, l: float, t: float, r: float, b: float) -> void:
+	c.anchor_left = 0.0
+	c.anchor_top = 0.0
+	c.anchor_right = 1.0
+	c.anchor_bottom = 1.0
+	c.offset_left = l
+	c.offset_top = t
+	c.offset_right = -r
+	c.offset_bottom = -b
+
+
+## Pin a fixed-size control to a corner or edge of the canvas.
+func anchor_corner(c: Control, right: bool, bottom: bool, mx: float, my: float,
+		size: Vector2) -> void:
+	c.anchor_left = 1.0 if right else 0.0
+	c.anchor_right = c.anchor_left
+	c.anchor_top = 1.0 if bottom else 0.0
+	c.anchor_bottom = c.anchor_top
+	c.offset_left = (-size.x - mx) if right else mx
+	c.offset_right = c.offset_left + size.x
+	c.offset_top = (-size.y - my) if bottom else my
+	c.offset_bottom = c.offset_top + size.y
 
 
 func is_mobile() -> bool:

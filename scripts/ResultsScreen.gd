@@ -7,7 +7,7 @@ var buttons: HBoxContainer
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var rank: String = str(data.get("rank", "D"))
@@ -116,8 +116,8 @@ func _ready() -> void:
 	# buttons
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 16)
-	hb.position = Vector2(90, G.DESIGN.y - 100)
 	add_child(hb)
+	G.anchor_corner(hb, false, true, 90, 46, Vector2(600, 54))
 	buttons = hb
 	# story mode: straight on to the next song
 	if data.has("story_next_id"):
@@ -159,12 +159,12 @@ func _ready() -> void:
 	# confetti for S and SS
 	if rank == "S" or rank == "SS":
 		var p := CPUParticles2D.new()
-		p.position = Vector2(G.DESIGN.x / 2.0, -20)
+		p.position = Vector2(G.canvas_size().x / 2.0, -20)
 		p.amount = 90
 		p.lifetime = 2.2
 		p.emitting = true
 		p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-		p.emission_rect_extents = Vector2(G.DESIGN.x / 2.0, 8)
+		p.emission_rect_extents = Vector2(G.canvas_size().x / 2.0, 8)
 		p.direction = Vector2(0, 1)
 		p.spread = 30.0
 		p.gravity = Vector2(0, 320)

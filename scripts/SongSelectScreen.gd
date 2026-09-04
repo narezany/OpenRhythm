@@ -24,7 +24,7 @@ var _started_game := false
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label("SELECT SONG" if mode == "play" else
@@ -39,18 +39,17 @@ func _ready() -> void:
 			G.main.goto_story()
 		else:
 			G.main.goto_menu())
-	back.position = Vector2(40, G.DESIGN.y - 84)
 	_add_sticky(back)
+	G.anchor_corner(back, false, true, 40, 38, Vector2(190, 46))
 
 	var hint := G.label("Esc — back", 17, Color(1, 1, 1, 0.35))
-	hint.position = Vector2(G.DESIGN.x - 150, G.DESIGN.y - 40)
 	_add_sticky(hint)
+	G.anchor_corner(hint, true, true, 24, 26, Vector2(126, 24))
 
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(140, 104)
-	scroll.size = Vector2(G.DESIGN.x - 280, G.DESIGN.y - 210)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
+	G.anchor_margins(scroll, 140, 104, 140, 106)
 
 	var vb := VBoxContainer.new()
 	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -79,21 +78,18 @@ func _ready() -> void:
 	if songs.is_empty():
 		var empty := G.label("No songs found. Put folders or .zip song packs into:",
 			22, G.C_MUTED)
-		empty.position = Vector2(0, 200)
-		empty.size = Vector2(G.DESIGN.x, 40)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		add_child(empty)
+		G.anchor_top_wide(empty, 200, 40)
 		var pathl := G.label(RhythmMap.user_songs_dir(), 18, G.C_PRIMARY)
-		pathl.position = Vector2(0, 244)
-		pathl.size = Vector2(G.DESIGN.x, 30)
 		pathl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		add_child(pathl)
+		G.anchor_top_wide(pathl, 244, 30)
 
 	if mode == "edit":
 		var nb := G.button("+  NEW MAP", _new_map_dialog, 24)
-		nb.position = Vector2(G.DESIGN.x / 2.0 - 130, G.DESIGN.y - 96)
-		nb.custom_minimum_size = Vector2(260, 0)
 		add_child(nb)
+		G.anchor_bottom_center(nb, 50, Vector2(260, 46))
 
 	_build_mods_layer()
 
@@ -200,12 +196,12 @@ func _build_mods_layer() -> void:
 
 	var dim := ColorRect.new()
 	dim.color = Color(0.02, 0.0, 0.0, 0.72)
-	dim.size = G.DESIGN
 	_mods_layer.add_child(dim)
+	G.anchor_full(dim)
 
 	var center := CenterContainer.new()
-	center.size = G.DESIGN
 	_mods_layer.add_child(center)
+	G.anchor_full(center)
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", G.panel_style())
@@ -243,6 +239,7 @@ func _build_mods_layer() -> void:
 		var d := G.label(str(md.desc), 16, G.C_MUTED)
 		d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(360, 0)
 		row.add_child(d)
 		vb.add_child(row)
 
@@ -292,12 +289,12 @@ func _new_map_dialog() -> void:
 
 		var dim := ColorRect.new()
 		dim.color = Color(0.02, 0.0, 0.0, 0.72)
-		dim.size = G.DESIGN
 		_new_layer.add_child(dim)
+		G.anchor_full(dim)
 
 		var center := CenterContainer.new()
-		center.size = G.DESIGN
 		_new_layer.add_child(center)
+		G.anchor_full(center)
 
 		var panel := PanelContainer.new()
 		panel.add_theme_stylebox_override("panel", G.panel_style())

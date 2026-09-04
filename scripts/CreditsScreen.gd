@@ -15,14 +15,13 @@ const LINES := [
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 4)
-	vb.position = Vector2(0, 60)
-	vb.size = Vector2(G.DESIGN.x, 520)
 	add_child(vb)
+	G.anchor_top_wide(vb, 60, 520)
 	for ln in LINES:
 		var kind: String = ln[2]
 		if kind == "gap":
@@ -42,9 +41,8 @@ func _ready() -> void:
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 18)
-	hb.position = Vector2(0, G.DESIGN.y - 160)
-	hb.size = Vector2(G.DESIGN.x, 60)
 	add_child(hb)
+	G.anchor_bottom_wide(hb, 100, 60)
 	var tg := G.button("Telegram forum", func():
 		OS.shell_open("https://t.me/openrhythmforum"))
 	tg.add_theme_color_override("font_color", Color("2aabee"))
@@ -57,9 +55,8 @@ func _ready() -> void:
 	var back := G.button("← Back", func():
 		G.play_sfx("click")
 		G.main.goto_menu())
-	back.position = Vector2(G.DESIGN.x / 2.0 - 110, G.DESIGN.y - 72)
-	back.custom_minimum_size = Vector2(220, 0)
 	add_child(back)
+	G.anchor_bottom_center(back, 26, Vector2(220, 46))
 
 
 func _unhandled_input(event: InputEvent) -> void:

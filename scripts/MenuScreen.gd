@@ -31,22 +31,20 @@ var _social_btns: Array = []
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 	add_child(BackdropRig.new())
 
 	# plain white wordmark instead of an emblem
 	logo = G.label("Open Rhythm", 64, Color(1, 1, 1, 0.97), true)
-	logo.position = Vector2(0, 52)
-	logo.size = Vector2(G.DESIGN.x, 90)
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(logo)
+	G.anchor_top_wide(logo, 52, 90)
 
 	tagline = G.label("", 18, G.C_MUTED)
-	tagline.position = Vector2(0, 218)
-	tagline.size = Vector2(G.DESIGN.x, 26)
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(tagline)
+	G.anchor_top_wide(tagline, 218, 26)
 
 	# lifetime score, top right
 	score_hdr = G.label("TOTAL SCORE", 13, G.C_MUTED)
@@ -119,10 +117,13 @@ func _relayout() -> void:
 	for slot in trio:
 		var c: MenuCard = slot.card
 		c.position.y = carousel_y
-	# lift the logo, tagline and dots a little on a narrow screen
-	var top_c := minf(52.0, maxf(24.0, vis.position.y * 0.5 + 8.0))
-	logo.position.y = top_c
-	tagline.position.y = carousel_y - 205.0
+	# cards centred horizontally too, not just vertically
+	var cx: float = vis.get_center().x
+	for slot in trio:
+		var c2: MenuCard = slot.card
+		c2.position.x = cx + float(slot.x) - c2.size.x / 2.0
+	G.anchor_top_wide(logo, minf(52.0, maxf(24.0, vis.size.y * 0.06)), 90)
+	G.anchor_top_wide(tagline, carousel_y - 205.0, 26)
 	# dots sit above the footer
 	for d in dots:
 		d.position.x = vis.get_center().x - (ITEMS.size() * 18) / 2.0 + dots.find(d) * 18

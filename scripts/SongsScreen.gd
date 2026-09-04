@@ -11,20 +11,18 @@ var _toast_tween: Tween
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label("SONGS", 46, G.C_TEXT, true)
-	title.position = Vector2(0, 24)
-	title.size = Vector2(G.DESIGN.x, 60)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
+	G.anchor_top_wide(title, 24, 60)
 
 	var path_row := HBoxContainer.new()
 	path_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	path_row.position = Vector2(0, 84)
-	path_row.size = Vector2(G.DESIGN.x, 26)
 	add_child(path_row)
+	G.anchor_top_wide(path_row, 84, 26)
 	var pl := G.label("%s  %s" % [tr("Library folder:"), RhythmMap.user_songs_dir()],
 		16, G.C_MUTED)
 	path_row.add_child(pl)
@@ -36,25 +34,22 @@ func _ready() -> void:
 
 	var hint := G.label("Drop song folders or .zip packs here, then press RESCAN. Or import an .sspm / Sound Space map.",
 		15, Color(1, 1, 1, 0.4))
-	hint.position = Vector2(0, 110)
-	hint.size = Vector2(G.DESIGN.x, 22)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(hint)
+	G.anchor_top_wide(hint, 110, 22)
 
 	if RhythmMap.storage_denied_flag:
 		var warn := G.label(
 			"Storage access denied — I can't see your custom songs, dude.\nAllow \"All files access\" for Open Rhythm in Android Settings → Apps → Open Rhythm → Permissions.",
 			16, G.C_GOLD)
-		warn.position = Vector2(0, 134)
-		warn.size = Vector2(G.DESIGN.x, 44)
 		warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		add_child(warn)
+		G.anchor_top_wide(warn, 134, 44)
 
 	scroll = ScrollContainer.new()
-	scroll.position = Vector2(160, 146)
-	scroll.size = Vector2(G.DESIGN.x - 320, G.DESIGN.y - 258)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
+	G.anchor_margins(scroll, 160, 146, 160, 112)
 
 	list_vb = VBoxContainer.new()
 	list_vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -62,18 +57,16 @@ func _ready() -> void:
 	scroll.add_child(list_vb)
 
 	toast = G.label("", 19, G.C_GOLD)
-	toast.position = Vector2(0, G.DESIGN.y - 130)
-	toast.size = Vector2(G.DESIGN.x, 26)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.modulate.a = 0.0
 	add_child(toast)
+	G.anchor_bottom_wide(toast, 104, 26)
 
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 16)
-	hb.position = Vector2(0, G.DESIGN.y - 92)
-	hb.size = Vector2(G.DESIGN.x, 50)
 	add_child(hb)
+	G.anchor_bottom_wide(hb, 42, 50)
 	hb.add_child(G.button("IMPORT MAP", _open_import, 24))
 	hb.add_child(G.button("RESCAN", _rebuild, 24))
 	hb.add_child(G.button("← Back", func(): G.main.goto_menu(), 24))

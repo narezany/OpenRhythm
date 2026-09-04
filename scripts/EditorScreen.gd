@@ -16,7 +16,7 @@ const SIZES := [0.8, 1.0, 1.25]
 const SNAPS := [1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0]
 const RATES := [0.5, 0.75, 1.0]
 const WAVE_RATE := 100.0        # waveform peaks per second
-const FIELD_SCALE := 0.78       # playfield shrink, the timeline takes the rest
+const FIELD_MIN := 0.42         # never shrink the playfield below this
 
 var song: Dictionary
 var diff_idx := 0
@@ -51,6 +51,7 @@ var snap_label: Label
 var size_btn: Button
 var rate_btn: Button
 var side_panel: PanelContainer
+var top_bar: HFlowContainer
 var audio_panel: PanelContainer
 var auto_dense: HSlider
 var _audio_path: LineEdit
@@ -65,10 +66,11 @@ var _longfired := false
 var _touch_gen := 0
 
 var playfield_center := Vector2(330, 250)
+var field_scale := 0.78
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	# the root must not swallow clicks: the playfield is driven from
 	# _unhandled_input, while the HUD children keep their own events
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -277,20 +279,20 @@ func _build() -> void:
 	# layer shares the same scale so hit tests and drawing stay aligned
 	ghost_layer = GhostLayer.new()
 	ghost_layer.position = playfield_center
-	ghost_layer.scale = Vector2.ONE * FIELD_SCALE
+	ghost_layer.scale = Vector2.ONE * field_scale
 	add_child(ghost_layer)
 	frame_view = FrameView.new()
 	frame_view.position = playfield_center
 	frame_view.grid_alpha = 0.18
-	frame_view.scale = Vector2.ONE * FIELD_SCALE
+	frame_view.scale = Vector2.ONE * field_scale
 	add_child(frame_view)
 	notes_root = Node2D.new()
 	notes_root.position = playfield_center
-	notes_root.scale = Vector2.ONE * FIELD_SCALE
+	notes_root.scale = Vector2.ONE * field_scale
 	add_child(notes_root)
 	shock = ShockLayer.new()
 	shock.position = playfield_center
-	shock.scale = Vector2.ONE * FIELD_SCALE
+	shock.scale = Vector2.ONE * field_scale
 	add_child(shock)
 
 	hud = CanvasLayer.new()
@@ -309,13 +311,9 @@ func _build() -> void:
 
 	timeline = EditorTimeline.new()
 	timeline.ed = self
-	timeline.position = Vector2(14, 396)
-	timeline.size = Vector2(G.DESIGN.x - 28, 306)
 	hud.add_child(timeline)
 
 	toast = G.label("", 19, G.C_GOLD)
-	toast.position = Vector2(0, 54)
-	toast.size = Vector2(G.DESIGN.x, 26)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.modulate.a = 0.0
 	hud.add_child(toast)
@@ -326,7 +324,7 @@ func _build() -> void:
 	if G.is_mobile():
 		var note := G.label("Touch editing works, but the desktop build is far comfier for serious mapping.",
 			14, Color(1, 1, 1, 0.4))
-		note.position = Vector2(14, 372)
+		note.position = Vector2(14, 50)
 		hud.add_child(note)
 
 	G.view_changed.connect(_relayout)
@@ -334,10 +332,14 @@ func _build() -> void:
 
 
 func _build_top_bar() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	row.position = Vector2(430, 8)
+	# a flow container so the transport wraps onto a second line on a narrow
+	# window instead of sliding off the right edge
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 8)
+	row.add_theme_constant_override("v_separation", 6)
+	row.alignment = FlowContainer.ALIGNMENT_END
 	hud.add_child(row)
+	top_bar = row
 
 	play_btn = G.button("▶  Play", _toggle_play, 18)
 	play_btn.custom_minimum_size = Vector2(120, 0)
@@ -355,17 +357,21 @@ func _build_top_bar() -> void:
 func _build_side_panel() -> void:
 	side_panel = PanelContainer.new()
 	side_panel.add_theme_stylebox_override("panel", G.panel_style())
-	side_panel.position = Vector2(640, 60)
-	side_panel.size = Vector2(620, 320)
 	hud.add_child(side_panel)
 
+	# the tools live in a scroll: whatever the window size, nothing is cut off
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	side_panel.add_child(scroll)
 	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vb.add_theme_constant_override("separation", 8)
-	side_panel.add_child(vb)
+	scroll.add_child(vb)
 
 	# --- snap ---
-	var snap_row := HBoxContainer.new()
-	snap_row.add_theme_constant_override("separation", 4)
+	var snap_row := HFlowContainer.new()
+	snap_row.add_theme_constant_override("h_separation", 4)
+	snap_row.add_theme_constant_override("v_separation", 4)
 	snap_row.add_child(_tag("Snap"))
 	for d in SNAPS:
 		var div: float = d
@@ -377,8 +383,9 @@ func _build_side_panel() -> void:
 	vb.add_child(snap_label)
 
 	# --- bpm / rate / size ---
-	var row2 := HBoxContainer.new()
-	row2.add_theme_constant_override("separation", 6)
+	var row2 := HFlowContainer.new()
+	row2.add_theme_constant_override("v_separation", 6)
+	row2.add_theme_constant_override("h_separation", 6)
 	row2.add_child(_tag("BPM"))
 	row2.add_child(G.button("−1", func(): _bpm_change(-1.0), 15))
 	bpm_label = G.label("%d" % roundi(bpm), 20, G.C_TEXT)
@@ -390,8 +397,9 @@ func _build_side_panel() -> void:
 	row2.add_child(G.button("+0.1", func(): _bpm_change(0.1), 15))
 	vb.add_child(row2)
 
-	var row3 := HBoxContainer.new()
-	row3.add_theme_constant_override("separation", 6)
+	var row3 := HFlowContainer.new()
+	row3.add_theme_constant_override("v_separation", 6)
+	row3.add_theme_constant_override("h_separation", 6)
 	size_btn = G.button("Size  x%.2f" % SIZES[size_i], _cycle_size, 15)
 	row3.add_child(size_btn)
 	rate_btn = G.button("Speed  %.2fx" % RATES[rate_i], _cycle_rate, 15)
@@ -400,8 +408,9 @@ func _build_side_panel() -> void:
 	row3.add_child(G.button("Select all", func(): timeline.select_all(), 15))
 	vb.add_child(row3)
 
-	var row4 := HBoxContainer.new()
-	row4.add_theme_constant_override("separation", 6)
+	var row4 := HFlowContainer.new()
+	row4.add_theme_constant_override("v_separation", 6)
+	row4.add_theme_constant_override("h_separation", 6)
 	row4.add_child(G.button("Copy", _copy, 15))
 	row4.add_child(G.button("Paste", _paste, 15))
 	row4.add_child(G.button("Duplicate", _duplicate, 15))
@@ -415,8 +424,9 @@ func _build_side_panel() -> void:
 
 	# --- auto generator ---
 	vb.add_child(_tag("Auto-generate from the audio"))
-	var row5 := HBoxContainer.new()
-	row5.add_theme_constant_override("separation", 8)
+	var row5 := HFlowContainer.new()
+	row5.add_theme_constant_override("v_separation", 6)
+	row5.add_theme_constant_override("h_separation", 8)
 	auto_dense = HSlider.new()
 	auto_dense.min_value = 20.0
 	auto_dense.max_value = 100.0
@@ -429,13 +439,15 @@ func _build_side_panel() -> void:
 	var ahint := G.label("Replaces the whole chart. Onset detection needs a .wav; other formats get an even beat grid.",
 		13, Color(1, 1, 1, 0.4))
 	ahint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ahint.custom_minimum_size = Vector2(580, 0)
+	ahint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ahint.custom_minimum_size = Vector2(200, 0)
 	vb.add_child(ahint)
 
 	var keys := G.label("Timeline: drag = select · Ctrl+click = add · drag the right edge = hold length · wheel = scroll · Ctrl+wheel = zoom · middle drag = pan",
 		13, Color(1, 1, 1, 0.35))
 	keys.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	keys.custom_minimum_size = Vector2(580, 0)
+	keys.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	keys.custom_minimum_size = Vector2(200, 0)
 	vb.add_child(keys)
 
 	_update_snap_label()
@@ -448,28 +460,41 @@ func _tag(text: String) -> Label:
 	return l
 
 
-## Keep the panel and the timeline inside the visible area on odd aspects.
+## Fit the three regions - transport, playfield + tools, timeline - into
+## whatever canvas we got. Everything is anchored, so this runs on a resize
+## rather than every frame.
 func _relayout() -> void:
-	var vis := G.visible_rect_design()
-	playfield_center = Vector2(vis.position.x + 250.0, vis.position.y + 232.0)
-	if frame_view != null:
-		frame_view.position = playfield_center
-		ghost_layer.position = playfield_center
-		notes_root.position = playfield_center
-		shock.position = playfield_center
-	if side_panel != null:
-		var pw: float = minf(620.0, maxf(360.0, vis.size.x - 540.0))
-		side_panel.size.x = pw
-		side_panel.position = Vector2(vis.end.x - pw - 14.0, vis.position.y + 60.0)
+	var canvas := G.canvas_size()
+	var tl_h: float = clampf(canvas.y * 0.42, 190.0, 360.0)
+	var work_top := 58.0
+	var work_h: float = maxf(canvas.y - tl_h - work_top - 24.0, 140.0)
+
 	if timeline != null:
-		timeline.position = Vector2(vis.position.x + 14.0, vis.position.y + 396.0)
-		timeline.size = Vector2(maxf(vis.size.x - 28.0, 300.0),
-			maxf(vis.size.y - 410.0, 160.0))
-	if info_label != null:
-		info_label.position = Vector2(vis.position.x + 14.0, vis.position.y + 30.0)
+		G.anchor_bottom_wide(timeline, 12.0, tl_h, 14.0)
+	if top_bar != null:
+		G.anchor_margins(top_bar, minf(canvas.x * 0.34, 430.0), 6.0, 14.0,
+			maxf(canvas.y - 52.0, 0.0))
 	if toast != null:
-		toast.position = Vector2(vis.position.x, vis.position.y + 54.0)
-		toast.size = Vector2(vis.size.x, 26)
+		G.anchor_top_wide(toast, 54.0, 26.0)
+	if info_label != null:
+		info_label.position = Vector2(14.0, 30.0)
+
+	# the tool panel takes the right half, the playfield what is left
+	var panel_w: float = clampf(canvas.x * 0.46, 320.0, 760.0)
+	if side_panel != null:
+		G.anchor_margins(side_panel, canvas.x - panel_w - 14.0, work_top,
+			14.0, tl_h + 24.0)
+	var left_w: float = maxf(canvas.x - panel_w - 42.0, 200.0)
+	playfield_center = Vector2(14.0 + left_w * 0.5, work_top + work_h * 0.5)
+	# 560 design units is the frame plus a margin; shrink to fit, never grow
+	field_scale = clampf(minf(left_w, work_h) / 560.0, FIELD_MIN, 1.0)
+	for n in [frame_view, ghost_layer, notes_root, shock]:
+		if n != null and is_instance_valid(n):
+			n.position = playfield_center
+			n.scale = Vector2.ONE * field_scale
+	if audio_panel != null and is_instance_valid(audio_panel):
+		G.anchor_margins(audio_panel, 14.0, work_top + work_h - 106.0,
+			canvas.x - left_w + 14.0, tl_h + 24.0)
 
 
 # ---------------------------------------------------------------- playfield
@@ -893,8 +918,6 @@ func _build_audio_row() -> void:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", G.panel_style(
 		Color(G.C_GOLD.r, G.C_GOLD.g, G.C_GOLD.b, 0.55)))
-	panel.position = Vector2(14, 286)
-	panel.size = Vector2(600, 100)
 	hud.add_child(panel)
 	audio_panel = panel
 
@@ -1072,7 +1095,7 @@ func _snap_beats() -> float:
 
 func _local_of(pos: Vector2) -> Vector2:
 	var world: Vector2 = get_viewport().get_canvas_transform().affine_inverse() * pos
-	return (world - playfield_center) / FIELD_SCALE
+	return (world - playfield_center) / field_scale
 
 
 func _playfield_mouse(mb: InputEventMouseButton) -> void:

@@ -65,6 +65,9 @@ var _is_tutorial := false
 var _replay: Replay = null
 var _play_rate := 1.0
 var _elapsed := 0.0
+## Centre of the playfield in canvas units. On anything that is not 16:9 the
+## canvas is bigger than the design, so this is not DESIGN / 2.
+var field_center := G.DESIGN / 2.0
 
 ## Tutorial hints: time in seconds -> text.
 const TUT_HINTS := [
@@ -143,34 +146,40 @@ func _build() -> void:
 		add_child(video)
 
 	cam = Camera2D.new()
-	cam.position = G.DESIGN / 2.0
 	add_child(cam)
 	cam.make_current()
 
-	var center := G.DESIGN / 2.0
 	ghost_layer = GhostLayer.new()
-	ghost_layer.position = center
 	add_child(ghost_layer)
 
 	frame_view = FrameView.new()
-	frame_view.position = center
 	add_child(frame_view)
 
 	notes_root = Node2D.new()
-	notes_root.position = center
 	add_child(notes_root)
 
 	shock = ShockLayer.new()
-	shock.position = center
 	add_child(shock)
 
 	texts = FloatTextLayer.new()
-	texts.position = center
 	add_child(texts)
+
+	_center_field()
+	G.view_changed.connect(_center_field)
 
 	_build_post()
 	_build_hud()
 	_build_pause()
+
+
+## Put the playfield in the middle of whatever canvas we actually got.
+func _center_field() -> void:
+	field_center = G.canvas_size() * 0.5
+	for n in [ghost_layer, frame_view, notes_root, shock, texts]:
+		if n != null and is_instance_valid(n):
+			n.position = field_center
+	if cam != null and is_instance_valid(cam):
+		cam.position = field_center
 
 
 func _build_post() -> void:
@@ -178,8 +187,8 @@ func _build_post() -> void:
 	layer.layer = 5
 	add_child(layer)
 	var rect := ColorRect.new()
-	rect.size = G.DESIGN
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	G.anchor_full(rect)
 	post_mat = ShaderMaterial.new()
 	post_mat.shader = load("res://shaders/post.gdshader")
 	rect.material = post_mat
@@ -200,16 +209,14 @@ func _build_hud() -> void:
 	hud.add_child(progress_bar)
 
 	hud_score = G.label("0000000", 44, G.C_TEXT)
-	hud_score.position = Vector2(640, 6)
-	hud_score.size = Vector2(630, 54)
 	hud_score.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hud.add_child(hud_score)
+	G.anchor_corner(hud_score, true, false, 10, 6, Vector2(630, 54))
 
 	hud_acc = G.label("100.00%", 24, G.C_MUTED)
-	hud_acc.position = Vector2(640, 58)
-	hud_acc.size = Vector2(630, 28)
 	hud_acc.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hud.add_child(hud_acc)
+	G.anchor_corner(hud_acc, true, false, 10, 58, Vector2(630, 28))
 
 	# accuracy bar - it tracks the running accuracy and never fails the run
 	acc_bg = ColorRect.new()
@@ -241,8 +248,8 @@ func _build_hud() -> void:
 		hud.add_child(ml)
 
 	var hint := G.label("ESC — pause", 17, Color(1, 1, 1, 0.35))
-	hint.position = Vector2(14, 690)
 	hud.add_child(hint)
+	G.anchor_corner(hint, false, true, 14, 12, Vector2(240, 22))
 
 	melly_host = CanvasLayer.new()
 	melly_host.layer = hud.layer + 1
@@ -272,8 +279,7 @@ func hud_title_hud(hud: CanvasLayer) -> void:
 	hud.add_child(sub)
 	if _is_tutorial:
 		var tut := G.label("", 26, Color(1.0, 0.96, 0.90))
-		tut.position = Vector2(140, 130)
-		tut.size = Vector2(G.DESIGN.x - 280, 120)
+		G.anchor_top_wide(tut, 130, 120, 140)
 		tut.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tut.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		tut.visible = false
@@ -290,12 +296,12 @@ func _build_pause() -> void:
 
 	var dim := ColorRect.new()
 	dim.color = Color(0.02, 0.0, 0.0, 0.68)
-	dim.size = G.DESIGN
 	pause_layer.add_child(dim)
+	G.anchor_full(dim)
 
 	var center := CenterContainer.new()
-	center.size = G.DESIGN
 	pause_layer.add_child(center)
+	G.anchor_full(center)
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", G.panel_style())
@@ -364,7 +370,7 @@ func _process(delta: float) -> void:
 		_spawn(notes[idx])
 
 	var inv := get_viewport().get_canvas_transform().affine_inverse()
-	var cursor_local: Vector2 = inv * UICursor.pos - G.DESIGN / 2.0
+	var cursor_local: Vector2 = inv * UICursor.pos - field_center
 
 	# CAGE: clamp cursor inside the frame
 	if "cage" in G.active_mods:
@@ -372,7 +378,7 @@ func _process(delta: float) -> void:
 		var clamped := cursor_local.limit_length(lim)
 		if clamped != cursor_local:
 			cursor_local = clamped
-			UICursor.pos = get_viewport().get_canvas_transform() * (clamped + G.DESIGN / 2.0)
+			UICursor.pos = get_viewport().get_canvas_transform() * (clamped + field_center)
 
 	if _replay != null:
 		_replay.capture(st, UICursor.pos)
@@ -604,7 +610,7 @@ func _play_hit_on_beat(dt: float) -> void:
 
 
 func _autoplay(delta: float) -> void:
-	var target := G.DESIGN / 2.0
+	var target := field_center
 	var best_dt := INF
 	for n in active:
 		if n.done:
@@ -612,7 +618,7 @@ func _autoplay(delta: float) -> void:
 		var dt := absf(Conductor.play_time() - n.t)
 		if dt < best_dt:
 			best_dt = dt
-			target = n.hit + G.DESIGN / 2.0
+			target = n.hit + field_center
 	var xform := get_viewport().get_canvas_transform()
 	var tpos: Vector2 = xform * target
 	var k := clampf(delta * 24.0, 0.0, 1.0)
@@ -642,7 +648,7 @@ func _update_fx(delta: float) -> void:
 	var tr := trauma * trauma
 	var mo := G.motion()
 	var inv := get_viewport().get_canvas_transform().affine_inverse()
-	var cur_local: Vector2 = inv * UICursor.pos - G.DESIGN / 2.0
+	var cur_local: Vector2 = inv * UICursor.pos - field_center
 	var parallax := cur_local * (PARALLAX / (G.FRAME_HALF * 2.2)) * mo
 	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * 12.0 * tr + parallax
 	cam.rotation = (randf_range(-1, 1) * 0.035 * tr \

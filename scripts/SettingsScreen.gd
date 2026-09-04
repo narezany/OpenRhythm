@@ -24,21 +24,19 @@ var _rebind_rows := {}
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	G.anchor_full(self)   # fill the canvas: children anchor against this
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label("SETTINGS", 46, G.C_TEXT, true)
-	title.position = Vector2(0, 34)
-	title.size = Vector2(G.DESIGN.x, 60)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
+	G.anchor_top_wide(title, 34, 60)
 
 	var tabs := HBoxContainer.new()
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	tabs.add_theme_constant_override("separation", 8)
-	tabs.position = Vector2(0, 100)
-	tabs.size = Vector2(G.DESIGN.x, 46)
 	add_child(tabs)
+	G.anchor_top_wide(tabs, 100, 46)
 	for i in TABS.size():
 		var idx := i
 		var b := G.button(TABS[i], func(): _switch(idx), 20)
@@ -47,9 +45,8 @@ func _ready() -> void:
 
 	_panel = PanelContainer.new()
 	_panel.add_theme_stylebox_override("panel", G.panel_style())
-	_panel.position = Vector2(150, 158)
-	_panel.size = Vector2(G.DESIGN.x - 300, 440)
 	add_child(_panel)
+	G.anchor_margins(_panel, 150, 158, 150, 82)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -62,15 +59,8 @@ func _ready() -> void:
 	var back := G.button("Back", func():
 		G.play_sfx("click")
 		G.main.goto_menu(), 24)
-	back.position = Vector2(G.DESIGN.x / 2.0 - 110, G.DESIGN.y - 66)
-	back.custom_minimum_size = Vector2(220, 0)
 	add_child(back)
-
-	G.view_changed.connect(func():
-		var vis := G.visible_rect_design()
-		_panel.position = Vector2(vis.get_center().x - _panel.size.x / 2.0, vis.position.y + 158.0)
-		tabs.position.y = vis.position.y + 100.0
-		back.position = Vector2(vis.get_center().x - 110.0, vis.end.y - 66.0))
+	G.anchor_bottom_center(back, 16, Vector2(220, 46))
 
 	_switch(0)
 
@@ -120,7 +110,7 @@ func _build_audio() -> void:
 	var hint := G.label("Positive values judge notes later, for when you hear the audio late. Let the game measure it for you:",
 		15, Color(1, 1, 1, 0.45))
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.custom_minimum_size = Vector2(G.DESIGN.x - 400, 0)
+	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_child(hint)
 	var cal := G.button("Calibrate", func():
 		G.play_sfx("click")
@@ -171,7 +161,7 @@ func _build_a11y() -> void:
 		G.save_all()))
 	var m := G.label("Damps camera shake, zoom punches and parallax.", 15, Color(1, 1, 1, 0.45))
 	m.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	m.custom_minimum_size = Vector2(G.DESIGN.x - 400, 0)
+	m.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_child(m)
 
 	_body.add_child(_check("Reduce flashes", G.reduce_flashes, func(on):
@@ -180,7 +170,7 @@ func _build_a11y() -> void:
 	var f := G.label("Damps full-screen flashes and strobing on the beat. Recommended if bright flashing bothers you.",
 		15, Color(1, 1, 1, 0.45))
 	f.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	f.custom_minimum_size = Vector2(G.DESIGN.x - 400, 0)
+	f.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_child(f)
 
 	_body.add_child(_sep())
@@ -199,7 +189,7 @@ func _build_controls() -> void:
 		var hint := G.label("Cursor moves with finger offset, stays where left. Game/editor only.",
 			15, G.C_MUTED)
 		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		hint.custom_minimum_size = Vector2(G.DESIGN.x - 400, 0)
+		hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_body.add_child(hint)
 	else:
 		_body.add_child(_slider("Cursor sensitivity", G.mouse_sens, 0.4, 2.0, 0.05,
