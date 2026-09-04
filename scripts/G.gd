@@ -33,9 +33,9 @@ var results: Dictionary = {}
 var selected_song: Dictionary = {}
 var selected_diff := 0
 var custom_test := {}       # {"song": Dictionary, "notes": Array, "name": String}
-var return_screen := ""     # "editor" — после игры вернуться в редактор
+var return_screen := ""     # "editor": go back to the editor after a run
 var editor_song: Dictionary = {}
-# story mode: плейлист песен подряд
+# story mode: songs played back to back
 var story_playlist: Array = []
 var story_idx := 0
 var story_diff := 0
@@ -83,16 +83,16 @@ var stat_best_combo := 0
 var stat_playtime := 0.0
 var unlocked := []               # achievement ids
 
-# --- modifiers ("target" | "fade" | "cage") ---
+# --- active modifier ids for this run, see MODS ---
 var active_mods: Array = []
 
 # --- settings: cursor sensitivity (touch), disabled song ids ---
 var mouse_sens := 1.0
-var relative_touch := false      # Android: курсор движется относительно пальца
-var touch_zone := false          # true, пока мы в игре/редакторе (для тач-режимов)
+var relative_touch := false      # Android: the finger moves the cursor relatively
+var touch_zone := false          # true while in the game or the editor
 var disabled_songs: Array = []
 
-# --- Melly: цвета частей тела (заготовленные пресеты в настройках) ---
+# --- Melly: per-body-part colours, chosen from presets in the settings ---
 var melly_colors := {
 	"torso": Color("8a3fd1"),
 	"head": Color("f2e8e4"),
@@ -101,14 +101,13 @@ var melly_colors := {
 	"leg_l": Color("1a1a1d"),
 	"leg_r": Color("1a1a1d"),
 }
-var melly = null   # MellyRig (если на экране)
+var melly = null   # the MellyRig currently on screen, if any
 
 
-# ---------------------------------------------------------------- адаптивная раскладка
-## Режим компоновки под реальный аспект окна (не сплющивание):
-## "wide" — 16:9, дизайн как есть; "narrow" — уже 16:9 (боковые панели наезжают
-## на центр: ужимаем края); "ultrawide" — шире 16:9 (лишнее пространство по бокам).
-## force_w/h — из Main._process при resizes.
+# ---------------------------------------------------------------- adaptive layout
+## Layout mode for the window's real aspect ratio - the design is never
+## squashed. "wide" is 16:9 as designed, "narrow" is taller than 16:9 so side
+## panels move inwards, "ultrawide" has spare room at the sides.
 var view_w := 1280.0
 var view_h := 720.0
 
@@ -128,32 +127,32 @@ func layout_mode() -> String:
 	return "ultrawide"
 
 
-## Прижать контрол к правому краю видимой области (fill может резать края).
+## Stick a control to the right edge of the visible area (fill can crop it).
 func stick_right(c: Control, margin := 0.0) -> void:
 	var vis := visible_rect_design()
 	c.position.x = vis.end.x - c.size.x - margin
 
 
-## Прижать контрол к низу видимой области.
+## Stick a control to the bottom of the visible area.
 func stick_bottom(c: Control, margin := 0.0) -> void:
 	var vis := visible_rect_design()
 	c.position.y = vis.end.y - c.size.y - margin
 
 
-## Видимая область окна в координатах дизайна 1280x720.
-## Чистая математика: aspect="fill" центрирует контент — окно шире/уже 16:9
-## означает симметричный обрез по меньшей стороне. Не полагается на
-## get_final_transform (на Android он не учитывает поворот/растяжение).
+## Visible window area in 1280x720 design coordinates. Pure arithmetic:
+## aspect="fill" centres the content, so a window wider or taller than 16:9 is
+## a symmetric crop on the shorter side. Deliberately does not use
+## get_final_transform - on Android it ignores rotation and stretching.
 func visible_rect_design() -> Rect2:
 	var wa := view_w / maxf(view_h, 1.0)
 	var da := DESIGN.x / DESIGN.y
 	if absf(wa - da) < 0.01:
 		return Rect2(Vector2.ZERO, DESIGN)
 	if wa > da:
-		# окно шире 16:9 — обрез по вертикали
+		# window is wider than 16:9 - cropped vertically
 		var h := DESIGN.y * (da / wa)
 		return Rect2(0.0, (DESIGN.y - h) * 0.5, DESIGN.x, h)
-	# окно уже 16:9 — обрез по горизонтали
+	# window is taller than 16:9 - cropped horizontally
 	var w := DESIGN.x * (wa / da)
 	return Rect2((DESIGN.x - w) * 0.5, 0.0, w, DESIGN.y)
 
@@ -509,7 +508,7 @@ func _schedule_shot() -> void:
 		var path := "user://shots/or_%s.png" % shot_mode
 		img.save_png(path)
 		print("SHOT_SAVED ", ProjectSettings.globalize_path(path))
-	# dev: серия кадров Melly для проверки анимации
+	# dev: a burst of frames for checking Melly's animation
 	if shot_mode == "game" and OS.get_environment("OR_MELLY_SEQ") != "":
 		for i in 4:
 			await get_tree().create_timer(0.5, true).timeout

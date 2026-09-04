@@ -1,5 +1,5 @@
 shader_type canvas_item;
-// Пост-обработка: хроматическая аберрация от тряски, виньетка, тёплые вспышки.
+// Post-processing: chromatic aberration driven by shake, vignette, warm flashes.
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
 uniform float shake = 0.0;

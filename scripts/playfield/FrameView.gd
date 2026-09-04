@@ -1,6 +1,6 @@
 class_name FrameView
 extends Node2D
-## Большая квадратная рамка — граница игры. Пульс от бита, подсветка сетки 3x3.
+## The big square frame that bounds play. Pulses on the beat and lights the 3x3 grid.
 
 var accent := Color("ff2b3a")
 var pulse := 0.0
@@ -17,7 +17,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var R := G.FRAME_HALF
 	draw_rect(Rect2(-R, -R, R * 2.0, R * 2.0), Color(0.030, 0.006, 0.010, 0.60))
-	# сетка 3x3 — контуры ячеек
+	# 3x3 grid: cell outlines
 	if grid_alpha > 0.0:
 		for gy in 3:
 			for gx in 3:

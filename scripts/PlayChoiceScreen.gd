@@ -1,7 +1,7 @@
 class_name PlayChoiceScreen
 extends Control
-## PLAY: две большие кнопки — Free Play и Story Mode.
-## Обе открыты только после прохождения туториала.
+## PLAY: two big buttons, Free Play and Story Mode.
+## Free Play unlocks once the tutorial has been cleared.
 
 const CARD := [Vector2(340, 200), Vector2(620, 200)]
 
@@ -18,11 +18,11 @@ func _ready() -> void:
 
 	var locked := not _tutorial_done()
 
-	# --- Free Play (после туториала) ---
+	# --- Free Play, unlocked after the tutorial ---
 	_card(Vector2(220, 210), "FREE PLAY",
 		"Every song in your library.\nMods, difficulties, records.",
 		func(): G.main.goto_select("play"), locked)
-	# --- Story Mode (открыт всегда: история 1 = туториал) ---
+	# --- Story Mode, always open: story 1 is the tutorial ---
 	_card(Vector2(640, 210), "STORY MODE",
 		"Two stories: learn with Melly,\nthen prove yourself on Night Drive.",
 		func(): G.main.goto_story(), false)

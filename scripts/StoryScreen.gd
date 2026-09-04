@@ -1,9 +1,9 @@
 class_name StoryScreen
 extends Control
 ## STORY MODE.
-## Фаза 1: список историй снизу вверх (листается).
-## Фаза 2: визуально-новелльный диалог — Melly по центру, окно с именем,
-## текст печатается плавно с бипом (как в Undertale), клик = дальше.
+## Phase 1: a scrollable list of stories.
+## Phase 2: a visual-novel dialog - Melly centred, a name box, text typed out
+## with a soft beep per couple of characters, click to advance.
 
 const DIALOG_TUTORIAL := [
 	"Hey! You want to learn how to play Open Rhythm?",
@@ -14,7 +14,7 @@ const DIALOG_DRIVE := [
 	"Yeah, you can't really enjoy a tutorial... let's do it for real!",
 ]
 
-var story := 1            # выбранная история (0 = ещё не выбрана)
+var story := 1            # chosen story; 0 means nothing picked yet
 var _rig = null
 var _novel_layer: Control = null
 var _name_lbl: Label
@@ -22,7 +22,7 @@ var _text_lbl: Label
 var _hint_lbl: Label
 var _lines: Array = []
 var _li := 0
-var _shown := 0.0         # сколько символов напечатано
+var _shown := 0.0         # how many characters have been typed out
 var _typing := false
 var _list_root: Control = null
 
@@ -37,7 +37,7 @@ func _ready() -> void:
 	Conductor.ensure_menu_music()
 
 
-# ------------------------------------------------------------- фаза 1: список
+# ------------------------------------------------------------- phase 1: list
 func _build_list() -> void:
 	_list_root = Control.new()
 	_list_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -60,7 +60,7 @@ func _build_list() -> void:
 	vb.add_theme_constant_override("separation", 18)
 	scroll.add_child(vb)
 
-	# история 1 сверху (читается первой), история 2 под ней
+	# story 1 on top, it is read first; story 2 below it
 	var locked := not _tutorial_done()
 	vb.add_child(_story_card("1 • FIRST STEPS",
 		"Learn the basics with Melly.\nTutorial song.",
@@ -108,7 +108,7 @@ func _story_card(title: String, sub: String, on_open: Callable, locked: bool) ->
 	return p
 
 
-# --------------------------------------------- фаза 2: диалог-новелла
+# --------------------------------------------- phase 2: novel dialog
 func _open_story(which: int) -> void:
 	story = which
 	_lines = DIALOG_TUTORIAL if which == 1 else DIALOG_DRIVE
@@ -131,7 +131,7 @@ func _build_novel() -> void:
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_novel_layer.add_child(dim)
 
-	# Melly по центру экрана
+	# Melly in the middle of the screen
 	_rig = MellyRig.new()
 	_rig.position = Vector2(G.DESIGN.x / 2.0 - 230.0, 60)
 	_rig.size = Vector2(460, 470)
@@ -139,7 +139,7 @@ func _build_novel() -> void:
 		(_rig as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_novel_layer.add_child(_rig)
 
-	# окно диалога как в визуальных новеллах
+	# a visual-novel style dialog box
 	var box := PanelContainer.new()
 	box.add_theme_stylebox_override("panel", G.panel_style(
 		Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.85)))
@@ -180,7 +180,7 @@ func _process(delta: float) -> void:
 		_shown = minf(_shown + delta * 38.0, float(full.length()))
 		var cur := int(_shown)
 		_text_lbl.text = full.substr(0, cur)
-		# бип на каждые 2 новых символа — тихий, высокий
+		# a quiet high beep every two new characters
 		if cur - prev >= 2 and cur % 2 == 0:
 			G.play_sfx("click", 2.4, -21.0)
 	else:
@@ -193,7 +193,7 @@ func _advance() -> void:
 		return
 	var full: String = str(_lines[_li])
 	if _typing:
-		_shown = float(full.length())   # мгновенно допечатать
+		_shown = float(full.length())   # finish the line instantly
 		_text_lbl.text = full
 		_typing = false
 		return
@@ -206,14 +206,14 @@ func _advance() -> void:
 
 
 func _finish_dialog() -> void:
-	# история 1 — туториал на Easy, сразу подряд: туториал → обе песни
+	# story 1: the tutorial on Easy, then both songs back to back
 	if story == 1:
 		G.story_playlist = ["tutorial", "hyper_drive", "neon_drift"]
 		G.story_idx = 0
 		G.story_diff = 0
 		_start_playlist_song()
 		return
-	# история 2: выбор сложности, потом обе песни подряд
+	# story 2: pick a difficulty, then both songs back to back
 	_hint_lbl.visible = false
 	var pick := G.label("Choose your difficulty:", 22, G.C_GOLD)
 	pick.position = Vector2(90, 510)
@@ -246,7 +246,7 @@ func _start_playlist_song() -> void:
 			G.selected_diff = clampi(G.story_diff, 0, diffs.size() - 1)
 			G.main.start_game()
 			return
-	# песни нет — прыгаем на следующую
+	# song is missing - skip to the next one
 	G.story_idx += 1
 	if G.story_idx < G.story_playlist.size():
 		_start_playlist_song()
@@ -261,7 +261,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.is_action_pressed("ui_accept"):
 			_advance()
 		elif event.is_action_pressed("ui_cancel"):
-			# Esc: допечатать → следующая → выход
+			# Esc: finish the line, then the next one, then leave
 			_advance() if _li < _lines.size() else G.main.goto_menu()
 		return
 	if event.is_action_pressed("ui_cancel"):

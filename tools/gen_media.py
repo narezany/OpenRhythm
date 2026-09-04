@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Open Rhythm — генератор музыки, карт и sfx.
-Синтезирует два трека (synthwave/edm), раскладывает карты (Normal/Hyper),
-пишет WAV + JSON в songs/<id>/ и sfx в assets/sfx/.
-Запуск:  python3 tools/gen_media.py  (из корня проекта OpenRhythm)
+"""Open Rhythm music, chart and sfx generator.
+Synthesises two tracks (synthwave / edm), lays out Normal and Hyper charts and
+writes WAV + JSON into songs/<id>/ plus the sfx into assets/sfx/.
+Run from the project root: python3 tools/gen_media.py
 """
 import json
 import math
@@ -21,7 +21,7 @@ def midi2f(m):
 
 
 def fft_filter(x, kind, fc):
-    """Простая FFT-фильтрация коротких сэмплов."""
+    """Simple FFT filtering for short samples."""
     n = len(x)
     if n < 8:
         return x.copy()
@@ -234,7 +234,7 @@ def track_neon_drift():
         # lead
         if sec == "dropA":
             for i, off in enumerate(arp_pat):
-                if i % 8 in (1, 6) and b % 2 == 1:  # чуть воздуха
+                if i % 8 in (1, 6) and b % 2 == 1:  # a little air
                     continue
                 s.lead(t0 + i * B / 4, B / 4 * 0.95, root + 24 + off, 0.9 if i % 4 == 0 else 0.72)
                 s.events.append(
@@ -344,9 +344,9 @@ def track_hyper_drive():
 
 
 # --------------------------------------------------------------------------
-# Карты
+# Charts
 # --------------------------------------------------------------------------
-LANE_ANGLE = 45.0  # deg per lane; lane*45, 0 = вверх, по часовой
+LANE_ANGLE = 45.0  # deg per lane; lane*45, 0 = up, clockwise
 
 
 def pitch_lane(midi, base):
@@ -393,7 +393,7 @@ def build_notes(events, dense):
 
 
 def open_hat_notes(s, dense):
-    pass  # хэты в карты не идут — плотность и так достаточная
+    pass  # hats stay out of the chart, it is dense enough already
 
 
 def write_song(song_dir, meta, song, diffs):
@@ -408,7 +408,7 @@ def write_song(song_dir, meta, song, diffs):
     with open(os.path.join(song_dir, "map.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     for d in data["difficulties"]:
-        print(f"  map: {meta['id']} / {d['name']}: {len(d['notes'])} нот")
+        print(f"  map: {meta['id']} / {d['name']}: {len(d['notes'])} notes")
 
 
 def write_sfx():
@@ -424,19 +424,19 @@ def write_sfx():
             w.setframerate(SR)
             w.writeframes(pcm.tobytes())
 
-    # hit — яркий тик
+    # hit: a bright tick
     t = np.arange(int(0.09 * SR)) / SR
     sig = np.sin(2 * np.pi * 1250 * t) * np.exp(-t / 0.018)
     sig += np.sin(2 * np.pi * 2500 * t) * np.exp(-t / 0.008) * 0.5
     sig += fft_filter(np.random.randn(len(t)), "hp", 4000) * np.exp(-t / 0.004) * 0.4
     save("hit.wav", sig, 0.6)
-    # miss — глухой удар
+    # miss: a dull thud
     t = np.arange(int(0.16 * SR)) / SR
     f = 120 * np.exp(-t * 8) + 55
     sig = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.07)
     sig += fft_filter(np.random.randn(len(t)), "lp", 350) * np.exp(-t / 0.05) * 0.8
     save("miss.wav", sig, 0.55)
-    # click — интерфейс
+    # click: the interface sound
     t = np.arange(int(0.05 * SR)) / SR
     sig = np.sin(2 * np.pi * 850 * t) * np.exp(-t / 0.012)
     save("click.wav", sig, 0.4)

@@ -1,8 +1,9 @@
 class_name MellyRig
 extends SubViewportContainer
-## Melly — GLB-модель (skinned R6-человечек, res://models/melly.glb) в SubViewport.
-## Анимации полностью процедурные: пружины с затуханием, синус-дыхание,
-## никакие части тела не пересекаются (углы ограничены). Покраска по костям на CPU.
+## Melly - the GLB model (a skinned blocky figure, res://models/melly.glb)
+## rendered in a SubViewport. Every animation is procedural: damped springs and
+## sine breathing, with joint limits so body parts never intersect. Colouring is
+## done on the CPU, per bone.
 
 const PARTS := ["torso", "head", "arm_l", "arm_r", "leg_l", "leg_r"]
 const PART_NAMES := {
@@ -11,9 +12,9 @@ const PART_NAMES := {
 }
 const BONE_PART := ["torso", "head", "arm_l", "arm_r", "leg_l", "leg_r"]
 
-# анатомические пределы (рад), чтобы части не проходили друг сквозь друга
-const ARM_UP_MAX := 2.85       # рука почти вертикально вверх, не выше
-const ARM_DOWN_MAX := 0.55     # чуть за спину
+# joint limits in radians, so limbs never pass through the body
+const ARM_UP_MAX := 2.85       # arm nearly straight up, no further
+const ARM_DOWN_MAX := 0.55     # slightly behind the back
 const LEG_FWD_MAX := 0.9
 const LEG_BACK_MAX := 0.45
 const HEAD_TILT_MAX := 0.38
@@ -32,7 +33,7 @@ var _face_mat: StandardMaterial3D
 var _base := []
 var _faces := {}               # mood -> Texture2D
 
-# --- пружинное состояние (value / velocity) ---
+# --- spring state (value / velocity) ---
 var body_y := 0.0
 var body_yv := 0.0
 var lean := 0.0
@@ -49,7 +50,7 @@ var leg_r := 0.0
 var leg_lv := 0.0
 var leg_rv := 0.0
 
-var _kick_cd := 0.0            # защита от перезапуска пружины каждый кадр
+var _kick_cd := 0.0            # stops the spring being re-kicked every frame
 
 
 func _init() -> void:
@@ -89,7 +90,7 @@ func _build_world() -> void:
 	_vp.add_child(cam)
 	cam.current = true
 	cam.fov = 44.0
-	# отъезд камеры: поднятые руки и прыжок гарантированно в кадре
+	# pull the camera back so raised arms and a jump always stay in frame
 	cam.look_at_from_position(Vector3(0.3, 2.7, 10.4), Vector3(0.0, 2.55, 0.0))
 
 	var sun := DirectionalLight3D.new()
@@ -127,7 +128,7 @@ func _load_model() -> void:
 	var inst := ps.instantiate()
 	_model.add_child(inst)
 
-	# скинned-меш: пересобираем поверхности с vertex-цветами по костям
+	# skinned mesh: rebuild the surfaces with per-bone vertex colours
 	var mis := inst.find_children("*", "MeshInstance3D", true, false)
 	if not mis.is_empty():
 		_mi = mis[0] as MeshInstance3D
@@ -138,7 +139,7 @@ func _load_model() -> void:
 				am.surface_get_arrays(1) if am.get_surface_count() > 1 else null]
 			_face_mat = am.surface_get_material(1) if am.get_surface_count() > 1 else null
 			apply_colors()
-		# кости через Skeleton3D (в GLB-импорте он родич меша, не ребёнок)
+		# bones come from Skeleton3D; the GLB import makes it a sibling
 		var skels := inst.find_children("*", "Skeleton3D", true, false)
 		if not skels.is_empty():
 			_skel = skels[0] as Skeleton3D
@@ -146,12 +147,12 @@ func _load_model() -> void:
 			for i in _skel.get_bone_count():
 				_rest.append(_skel.get_bone_rest(i))
 
-	# анимации из модели не играем — всё процедурно
+	# the model's own animations are never played - everything is procedural
 	var ap := inst.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if ap != null:
 		ap.playback_active = false
 
-	# каомоджи-лица: подменяем материал лица, текстуру меняем по настроению
+	# kaomoji faces: swap the face material's texture to match the mood
 	_faces = {
 		"idle": load("res://models/face_idle.png"),
 		"happy": load("res://models/face_happy.png"),
@@ -161,8 +162,8 @@ func _load_model() -> void:
 	if _face_mat != null:
 		_face_mat = _face_mat.duplicate() as StandardMaterial3D
 		_face_mat.albedo_texture = _faces["idle"]
-		# лица с открытой улыбкой имеют прозрачный вырез — цвет головы
-		# должен просвечивать, иначе вырез станет чёрным
+		# open-mouth faces have a transparent cut-out; the head colour has to
+		# show through it or the cut-out renders black
 		_face_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 		_face_mat.alpha_scissor_threshold = 0.5
 		_face_mat.cull_mode = BaseMaterial3D.CULL_BACK
@@ -170,7 +171,7 @@ func _load_model() -> void:
 			_mi.set_surface_override_material(1, _face_mat)
 
 
-## Пересборка меша: body-поверхность красим по доминантной кости, лицо как есть.
+## Rebuild the mesh: the body surface is tinted by its dominant bone, the face is left alone.
 func apply_colors() -> void:
 	if _mi == null or _base.is_empty() or _base[0] == null:
 		return
@@ -234,10 +235,10 @@ func react_miss() -> void:
 
 
 func react_win() -> void:
-	set_mood("very", 0.0)   # бесконечно — до ухода с экрана
+	set_mood("very", 0.0)   # held until she leaves the screen
 
 
-## Импульс пружинам при смене настроения (живой отклик, не переключение клипа).
+## Kick the springs when the mood changes - a reaction, not a clip switch.
 func _kick(m: String) -> void:
 	match m:
 		"happy":
@@ -270,7 +271,7 @@ var head_pv := 0.0
 var head_rv := 0.0
 
 
-## ---------------------------------------------------------------- физика
+## ---------------------------------------------------------------- physics
 func _spring(v: float, vel: float, target: float, stiff: float, damp: float, dt: float) -> Array:
 	vel += (target - v) * stiff * dt
 	vel *= 1.0 - minf(damp * dt, 0.9)
@@ -280,7 +281,7 @@ func _spring(v: float, vel: float, target: float, stiff: float, damp: float, dt:
 
 func _sim(dt: float) -> void:
 	var ft := _t
-	# цели по настроению
+	# targets per mood
 	var t_lean := 0.0
 	var t_arms := 0.12
 	var t_headp := 0.0
@@ -304,17 +305,17 @@ func _sim(dt: float) -> void:
 			bounce = 0.018
 			t_arms = 0.12
 
-	# дыхание / покачивание (всегда живой, даже в idle)
+	# breathing and sway - she is never completely still
 	var breath := sin(ft * 2.1) * 0.5 + 0.5
 	var hop := absf(sin(ft * (3.4 + bounce * 9.0))) * bounce
 
-	# пружина корпуса: цель = подскок + дыхание
+	# torso spring: target is the bounce plus the breathing
 	var by := _spring(body_y, body_yv, hop + breath * 0.012, 90.0, 7.0, dt)
 	body_y = by[0]; body_yv = by[1]
 	var ln := _spring(lean, lean_v, t_lean, 42.0, 6.0, dt)
 	lean = clampf(ln[0], -TORSO_LEAN_MAX, TORSO_LEAN_MAX); lean_v = ln[1]
 
-	# руки: цель = базовая + махи; happy/very — попеременное вэйв-движение
+	# arms: base pose plus swing; happy and very alternate into a wave
 	var arm_phase := sin(ft * (5.0 + wave * 7.0))
 	var arm_phase2 := sin(ft * (5.0 + wave * 7.0) + PI * 0.8)
 	var tl := t_arms + arm_phase * wave * 0.5 + sin(ft * 1.3) * 0.03
@@ -326,7 +327,7 @@ func _sim(dt: float) -> void:
 	var ar := _spring(arm_r, arm_rv, tr, 55.0, 6.5, dt)
 	arm_r = ar[0]; arm_rv = ar[1]
 
-	# ноги: в прыжке поджимаются, в шаге слегка семенят
+	# legs: tucked in a jump, small steps otherwise
 	var lp := sin(ft * (3.4 + bounce * 9.0)) * (bounce * 2.2 + 0.0)
 	var rp := sin(ft * (3.4 + bounce * 9.0) + PI) * (bounce * 2.2 + 0.0)
 	var tl2 := clampf(lp - hop * 0.8, -LEG_BACK_MAX, LEG_FWD_MAX)
@@ -336,7 +337,7 @@ func _sim(dt: float) -> void:
 	var lr := _spring(leg_r, leg_rv, tr2, 70.0, 7.5, dt)
 	leg_r = lr[0]; leg_rv = lr[1]
 
-	# голова: наклон вниз в грусти, живой кив и ролл всегда
+	# head: droops when sad, always nodding and rolling a little
 	var tp := t_headp + breath * 0.02 + sin(ft * 0.9) * 0.02
 	var hp := _spring(head_pitch, head_pv, clampf(tp, -HEAD_TILT_MAX, HEAD_TILT_MAX), 40.0, 6.0, dt)
 	head_pitch = hp[0]; head_pv = hp[1]
@@ -344,21 +345,21 @@ func _sim(dt: float) -> void:
 	var hr := _spring(head_roll, head_rv, clampf(t_roll, -HEAD_TILT_MAX, HEAD_TILT_MAX), 40.0, 6.0, dt)
 	head_roll = hr[0]; head_rv = hr[1]
 
-	# лёгкое вращение корпуса влево-вправо (живость)
+	# a gentle left-right torso rotation to keep her alive
 	sway = sin(ft * 0.6) * 0.10 + (sin(ft * 9.0) * 0.04 if mood == "very" else 0.0)
 
 
 func _apply_pose() -> void:
 	if _skel == null or _rest.size() < 6:
 		return
-	# кость 0 = Torso (root): позиция + наклон + поворот
+	# bone 0 = Torso (root): position, tilt and rotation
 	var t := Transform3D(Basis.from_euler(Vector3(lean, sway, 0.0)), _rest[0].origin + Vector3(0, body_y, 0))
 	_skel.set_bone_pose(0, t)
 	# 1 = Head
 	_skel.set_bone_pose(1, Transform3D(Basis.from_euler(Vector3(head_pitch, 0.0, head_roll)), _rest[1].origin))
-	# 2/3 = ArmL/ArmR: вращение вокруг Z (вверх/вниз в плоскости тела)
+	# 2/3 = ArmL/ArmR: rotate around Z, up and down in the body plane
 	_skel.set_bone_pose(2, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, arm_l)), _rest[2].origin))
 	_skel.set_bone_pose(3, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -arm_r)), _rest[3].origin))
-	# 4/5 = LegL/LegR: вращение вокруг X (вперёд/назад)
+	# 4/5 = LegL/LegR: rotate around X, forwards and backwards
 	_skel.set_bone_pose(4, Transform3D(Basis.from_euler(Vector3(leg_l, 0.0, 0.0)), _rest[4].origin))
 	_skel.set_bone_pose(5, Transform3D(Basis.from_euler(Vector3(leg_r, 0.0, 0.0)), _rest[5].origin))

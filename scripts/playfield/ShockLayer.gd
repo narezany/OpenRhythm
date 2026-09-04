@@ -1,6 +1,6 @@
 class_name ShockLayer
 extends Node2D
-## Кольца-шоквейвы и партикльные бёрсты.
+## Shockwave rings and particle bursts.
 
 var rings: Array = []   # {pos, color, age, max_r}
 

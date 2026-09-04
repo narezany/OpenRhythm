@@ -119,11 +119,11 @@ func _relayout() -> void:
 	for slot in trio:
 		var c: MenuCard = slot.card
 		c.position.y = carousel_y
-	# логотип/тэглайн/точки чуть выше, если узкий экран
+	# lift the logo, tagline and dots a little on a narrow screen
 	var top_c := minf(52.0, maxf(24.0, vis.position.y * 0.5 + 8.0))
 	logo.position.y = top_c
 	tagline.position.y = carousel_y - 205.0
-	# точки над футером
+	# dots sit above the footer
 	for d in dots:
 		d.position.x = vis.get_center().x - (ITEMS.size() * 18) / 2.0 + dots.find(d) * 18
 
@@ -147,7 +147,7 @@ func _step(dir: int) -> void:
 	_busy = true
 	G.play_sfx("click", 1.2, -10.0)
 	cur = wrapi(cur + dir, 0, ITEMS.size())
-	# фаза 1: уезжаем по направлению и гасим
+	# phase 1: slide out in the travel direction and fade
 	var tw := create_tween().set_parallel(true)
 	for slot in trio:
 		var card: MenuCard = slot.card
@@ -155,7 +155,7 @@ func _step(dir: int) -> void:
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tw.tween_property(card, "modulate:a", 0.0, 0.10)
 	tw.chain().tween_callback(func():
-		# фаза 2: новый набор въезжает с противоположной стороны
+		# phase 2: the new trio slides in from the opposite side
 		_refill()
 		var cx: float = G.visible_rect_design().get_center().x
 		var tw2 := create_tween().set_parallel(true)
@@ -243,7 +243,7 @@ func _gui_input(event: InputEvent) -> void:
 			_press = Vector2.INF
 
 
-## Фоновые вращающиеся полупрозрачные рамки — пульс под бит.
+## Rotating translucent frames in the background, pulsing on the beat.
 class BackdropRig extends Node2D:
 	var t := 0.0
 
@@ -268,7 +268,7 @@ class BackdropRig extends Node2D:
 
 
 
-## Карточка-пункт карусели. Центральная кликается как действие, боковые — как шаг.
+## One carousel card. The centre card activates, the side ones step the carousel.
 class MenuCard extends Control:
 	var title := ""
 	var sub := ""

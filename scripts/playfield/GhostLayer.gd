@@ -1,7 +1,7 @@
 class_name GhostLayer
 extends Node2D
-## Красные цели на сетке: показывает, куда прилетит нота и куда целиться.
-## progress < 0 — заранее подсвеченная будущая цель (гайд).
+## Red targets on the grid showing where a note will land and where to aim.
+## progress < 0 marks a guide: a future target highlighted early.
 
 var items: Array = []   # dict: hit, half, progress, color, done, hover, node
 
@@ -18,7 +18,7 @@ func _draw() -> void:
 		var a: float
 		var pr: float = n.progress
 		if pr < 0.0:
-			# будущая цель — слабый пульсирующий контур
+			# a future target is a faint pulsing outline
 			a = 0.09 + 0.07 * (0.5 + 0.5 * sin(tms * 5.0))
 		else:
 			a = clampf(pr * 1.8, 0.0, 1.0)
@@ -33,7 +33,7 @@ func _draw() -> void:
 			draw_colored_polygon(G.rounded_points(Rect2(-half, -half, half * 2, half * 2), 8.0),
 				Color(col.r, col.g, col.b, 0.10))
 		draw_set_transform_matrix(Transform2D())
-		# линия от ноты к цели
+		# line from the note to its target
 		if pr > 0.0 and pr < 1.0:
 			var from: Vector2 = n.hit
 			var nn = n.get("node")

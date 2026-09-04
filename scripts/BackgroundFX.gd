@@ -1,7 +1,7 @@
 class_name BackgroundFX
 extends Node2D
-## Анимированный фон (шейдер) + летающая пыль. Используется во всех сценах.
-## Тема — тяжёлый чёрный с кроваво-красным: hue колеблется у нуля (красный).
+## Animated shader background plus drifting dust, used on every screen.
+## The palette is heavy black and blood red: the hue stays near zero.
 
 var mat: ShaderMaterial
 var hue := 0.985

@@ -41,7 +41,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
 		if _os_expected == Vector2.INF:
-			# первое событие: первичная синхронизация, без сенсы
+			# first event: initial sync, sensitivity not applied
 			_os_expected = mm.position
 			pos = mm.position
 			return

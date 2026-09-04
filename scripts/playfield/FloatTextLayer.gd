@@ -1,6 +1,6 @@
 class_name FloatTextLayer
 extends Node2D
-## Всплывающие надписи судейства (PERFECT/GREAT/...) в мировых координатах.
+## Floating judgement labels (PERFECT/GREAT/...) in world coordinates.
 
 var items: Array = []   # {pos, text, color, age, tilt}
 

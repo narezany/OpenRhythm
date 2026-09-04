@@ -1,6 +1,6 @@
 shader_type canvas_item;
-// Фон: чёрно-кровавая тема — градиент, красные искры, перспективная сетка-пол,
-// пульс от бита. hue остаётся в красно-оранжевом диапазоне (~0.98–1.02).
+// Background: the black and blood theme - gradient, red sparks, a perspective
+// floor grid and a beat pulse. Hue stays in the red-orange band (~0.98-1.02).
 
 uniform float i_time = 0.0;
 uniform float beat = 0.0;
@@ -25,7 +25,7 @@ void fragment() {
 	vec3 col = mix(vec3(0.020, 0.004, 0.007), vec3(0.085, 0.010, 0.020), uv.y);
 	col = mix(col, vec3(0.006, 0.002, 0.004), smoothstep(0.2, 0.0, uv.y));
 
-	// красные искры (верхняя половина)
+	// red sparks in the upper half
 	vec2 sp = vec2(uv.x * (res.x / res.y), uv.y) * 42.0;
 	vec2 cell = floor(sp);
 	vec2 fr = fract(sp) - 0.5;
@@ -34,11 +34,11 @@ void fragment() {
 		* (0.35 + 0.65 * (0.5 + 0.5 * sin(i_time * 2.0 + h * 40.0)));
 	col += vec3(1.0, 0.45, 0.35) * star * 0.40 * step(uv.y, 0.55);
 
-	// свечение горизонта
+	// horizon glow
 	float hor = exp(-abs(p.y - horizon) * 7.0);
 	col += hsv(hue, 0.90, 1.0) * hor * (0.20 + beat * 0.25);
 
-	// сетка-пол
+	// floor grid
 	if (p.y > horizon) {
 		float depth = 1.0 / (p.y - horizon);
 		vec2 g = vec2(p.x * depth, depth * 0.55 - i_time * (1.2 + beat * 5.0));
@@ -50,7 +50,7 @@ void fragment() {
 		col += hsv(fract(hue + 0.015), 0.85, 1.0) * grid * fade * (0.18 + beat * 0.50);
 	}
 
-	// пульс из центра + общая вспышка
+	// pulse from the centre plus the global flash
 	col += vec3(1.0, 0.25, 0.18) * beat * 0.10 * exp(-length(p) * 1.6);
 	col += flash * vec3(1.0, 0.85, 0.80) * 0.55;
 

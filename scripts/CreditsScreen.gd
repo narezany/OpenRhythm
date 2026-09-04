@@ -1,6 +1,6 @@
 class_name CreditsScreen
 extends Control
-## CREDITS: кто сделал игру, ссылки, благодарности.
+## Credits: who made the game, links and thanks.
 
 const LINES := [
 	["Open Rhythm", 44, "title"],
