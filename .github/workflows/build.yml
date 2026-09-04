@@ -1,0 +1,101 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7-stable"
+
+jobs:
+  # Cheap guard: release signing credentials must never reach the repository.
+  secrets-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No keystore credentials in export_presets.cfg
+        run: |
+          if grep -Eq '^keystore/release(_user|_password)?="..*"' export_presets.cfg; then
+            echo "::error file=export_presets.cfg::Keystore path or password committed. \
+          Clear the keystore/release* fields and use GODOT_ANDROID_KEYSTORE_RELEASE_* instead."
+            exit 1
+          fi
+      - name: No keystore files committed
+        run: |
+          if git ls-files | grep -Eq '\.(keystore|jks)$'; then
+            echo "::error::A keystore file is tracked by git. Remove it and rotate the key."
+            exit 1
+          fi
+
+  export:
+    needs: secrets-check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: "Linux"
+            out: "build/OpenRhythm.x86_64"
+            artifact: "openrhythm-linux"
+          - preset: "Windows Desktop"
+            out: "build/windows/OpenRhythm.exe"
+            artifact: "openrhythm-windows"
+          - preset: "Web"
+            out: "build/web/index.html"
+            artifact: "openrhythm-web"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot and export templates
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}"
+          curl -fL -o godot.zip "${base}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          curl -fL -o templates.tpz "${base}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          # templates live in ~/.local/share/godot/export_templates/<4.7.stable>
+          unzip -q templates.tpz
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-/.}"
+          mkdir -p "$(dirname "$dest")"
+          mv templates "$dest"
+
+      - name: Import resources
+        run: godot --headless --path . --import || true
+
+      - name: Core tests
+        if: matrix.preset == 'Linux'
+        run: godot --headless --path . res://tools/CoreTest.tscn
+
+      - name: Export ${{ matrix.preset }}
+        run: |
+          mkdir -p "$(dirname '${{ matrix.out }}')"
+          godot --headless --path . --export-release "${{ matrix.preset }}" "${{ matrix.out }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: build/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: export
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Zip each platform
+        run: |
+          cd dist
+          for d in */; do (cd "$d" && zip -qr "../${d%/}.zip" .); done
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true

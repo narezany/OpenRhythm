@@ -1,0 +1,328 @@
+class_name MenuScreen
+extends Control
+## Main menu: rotating frames pulsing on the beat behind a three-card carousel;
+## the centre card is the one in focus.
+
+const ITEMS := [
+	{"id": "play", "title": "PLAY", "sub": "free play\nor story mode"},
+	{"id": "edit", "title": "MAP EDITOR", "sub": "create maps\nfor any track"},
+	{"id": "songs", "title": "SONGS", "sub": "manage library\ndelete / disable"},
+	{"id": "stats", "title": "STATS", "sub": "records\nachievements"},
+	{"id": "settings", "title": "SETTINGS", "sub": "audio\ncursor"},
+	{"id": "credits", "title": "CREDITS", "sub": "who made this\nand why"},
+	{"id": "quit", "title": "QUIT", "sub": "see you soon"},
+]
+const CARD_GAP := 460.0
+
+var cur := 0
+var trio: Array = []          # [{card, base_x, scale, alpha}]
+var dots: Array = []
+var _busy := false
+var _press := Vector2.INF
+var _dragging := false
+var logo: Label
+var tagline: Label
+var score_hdr: Label
+var score_val: Label
+var footer: Label
+var back_btn: Button
+var carousel_y := 300.0
+var _social_btns: Array = []
+
+
+func _ready() -> void:
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(BackgroundFX.new(true))
+	add_child(BackdropRig.new())
+
+	# plain white wordmark instead of an emblem
+	logo = G.label("Open Rhythm", 64, Color(1, 1, 1, 0.97), true)
+	logo.position = Vector2(0, 52)
+	logo.size = Vector2(G.DESIGN.x, 90)
+	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(logo)
+
+	tagline = G.label("", 18, G.C_MUTED)
+	tagline.position = Vector2(0, 218)
+	tagline.size = Vector2(G.DESIGN.x, 26)
+	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(tagline)
+
+	# lifetime score, top right
+	score_hdr = G.label("TOTAL SCORE", 13, G.C_MUTED)
+	score_hdr.position = Vector2(G.DESIGN.x - 240, 18)
+	score_hdr.size = Vector2(220, 18)
+	score_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(score_hdr)
+	score_val = G.label(G.fmt_score(G.total_score), 30, G.C_GOLD, true)
+	score_val.position = Vector2(G.DESIGN.x - 240, 36)
+	score_val.size = Vector2(220, 40)
+	score_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(score_val)
+
+	for cfg in [
+		{"x": -CARD_GAP, "sc": 0.72, "a": 0.42},
+		{"x": 0.0, "sc": 1.0, "a": 1.0},
+		{"x": CARD_GAP, "sc": 0.72, "a": 0.42},
+	]:
+		var c := MenuCard.new()
+		c.size = Vector2(500, 250)
+		c.position = Vector2(G.DESIGN.x / 2.0 + float(cfg.x) - c.size.x / 2.0, 300)
+		c.scale = Vector2.ONE * float(cfg.sc)
+		c.modulate.a = float(cfg.a)
+		c.pivot_offset = c.size / 2.0
+		c.menu = self
+		c.slot_x = float(cfg.x)
+		add_child(c)
+		trio.append({"card": c, "x": float(cfg.x), "sc": float(cfg.sc), "a": float(cfg.a)})
+
+	for i in ITEMS.size():
+		var d := ColorRect.new()
+		d.size = Vector2(10, 10)
+		d.position = Vector2(G.DESIGN.x / 2.0 - (ITEMS.size() * 18) / 2.0 + i * 18, 606)
+		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(d)
+		dots.append(d)
+
+	footer = G.label(G.VERSION, 15, Color(1, 1, 1, 0.4))
+	footer.position = Vector2(16, G.DESIGN.y - 32)
+	footer.size = Vector2(200, 24)
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	add_child(footer)
+
+	# social links: small icons bottom right
+	_add_social("res://assets/icons/discord.svg", "Discord",
+		"https://discord.gg/rc79e2sfqC", 0)
+	_add_social("res://assets/icons/telegram.svg", "Telegram forum",
+		"https://t.me/openrhythmforum", 1)
+
+	# adaptive anchors: headers to the edges, footer to the visible bottom
+	G.view_changed.connect(_relayout)
+	_relayout()
+	_refill()
+	Conductor.ensure_menu_music()
+
+
+func _relayout() -> void:
+	var vis := G.visible_rect_design()
+	G.stick_right(score_hdr, 24)
+	G.stick_right(score_val, 24)
+	G.stick_bottom(footer, 10)
+	footer.position.x = vis.position.x + 16.0
+	for i in _social_btns.size():
+		var b: Button = _social_btns[i]
+		b.position = Vector2(vis.end.x - 52.0 - i * 56.0, vis.end.y - 62.0)
+	for d in dots:
+		G.stick_bottom(d, 92)
+	# cards centred vertically inside the visible area
+	carousel_y = vis.get_center().y - 125.0
+	for slot in trio:
+		var c: MenuCard = slot.card
+		c.position.y = carousel_y
+	# логотип/тэглайн/точки чуть выше, если узкий экран
+	var top_c := minf(52.0, maxf(24.0, vis.position.y * 0.5 + 8.0))
+	logo.position.y = top_c
+	tagline.position.y = carousel_y - 205.0
+	# точки над футером
+	for d in dots:
+		d.position.x = vis.get_center().x - (ITEMS.size() * 18) / 2.0 + dots.find(d) * 18
+
+
+func _refill() -> void:
+	var n := ITEMS.size()
+	for i in trio.size():
+		var slot: Dictionary = trio[i]
+		var card: MenuCard = slot.card
+		var idx := wrapi(cur + (i - 1), 0, n)
+		var center: bool = i == 1
+		card.setup(str(ITEMS[idx].title), str(ITEMS[idx].sub), _activate, center)
+	for i in dots.size():
+		var d: ColorRect = dots[i]
+		d.color = G.C_PRIMARY if i == cur else Color(1, 1, 1, 0.18)
+
+
+func _step(dir: int) -> void:
+	if _busy or ITEMS.size() < 2:
+		return
+	_busy = true
+	G.play_sfx("click", 1.2, -10.0)
+	cur = wrapi(cur + dir, 0, ITEMS.size())
+	# фаза 1: уезжаем по направлению и гасим
+	var tw := create_tween().set_parallel(true)
+	for slot in trio:
+		var card: MenuCard = slot.card
+		tw.tween_property(card, "position:x", card.position.x - dir * 110.0, 0.10) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(card, "modulate:a", 0.0, 0.10)
+	tw.chain().tween_callback(func():
+		# фаза 2: новый набор въезжает с противоположной стороны
+		_refill()
+		var cx: float = G.visible_rect_design().get_center().x
+		var tw2 := create_tween().set_parallel(true)
+		for slot in trio:
+			var card: MenuCard = slot.card
+			card.position.x = cx + float(slot.x) - card.size.x / 2.0 + dir * 110.0
+			card.scale = Vector2.ONE * float(slot.sc)
+			tw2.tween_property(card, "position:x",
+				cx + float(slot.x) - card.size.x / 2.0, 0.14) \
+				.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			tw2.tween_property(card, "modulate:a", float(slot.a), 0.14)
+		tw2.chain().tween_callback(func(): _busy = false))
+
+
+func _activate() -> void:
+	var it: Dictionary = ITEMS[cur]
+	G.play_sfx("click")
+	match str(it.id):
+		"play":
+			G.main.goto_play_menu()
+		"edit":
+			G.main.goto_select("edit")
+		"songs":
+			G.main.goto_songs()
+		"stats":
+			G.main.goto_stats()
+		"settings":
+			G.main.goto_settings()
+		"credits":
+			G.main.goto_credits()
+		"quit":
+			get_tree().quit()
+
+
+## Small social icon in the bottom-right corner.
+func _add_social(svg: String, name_: String, url: String, idx: int) -> void:
+	var b := Button.new()
+	b.tooltip_text = name_
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(46, 46)
+	var tex: Texture2D = null
+	if ResourceLoader.exists(svg):
+		tex = load(svg)
+	var tr := TextureRect.new()
+	tr.texture = tex
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.custom_minimum_size = Vector2(34, 34)
+	tr.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(tr)
+	b.pressed.connect(func():
+		G.play_sfx("click")
+		OS.shell_open(url))
+	b.position = Vector2(G.DESIGN.x - 46 - idx * 56, G.DESIGN.y - 60)
+	add_child(b)
+	_social_btns.append(b)
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
+			_step(-1)
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
+			_step(1)
+	elif event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_LEFT:
+				_step(-1)
+			KEY_RIGHT:
+				_step(1)
+	elif event is InputEventScreenTouch:
+		var st := event as InputEventScreenTouch
+		if st.pressed:
+			_press = st.position
+			_dragging = true
+		else:
+			if _dragging and _press != Vector2.INF:
+				var dx := st.position.x - _press.x
+				if absf(dx) > 70.0:
+					_step(-1 if dx > 0 else 1)
+			_dragging = false
+			_press = Vector2.INF
+
+
+## Фоновые вращающиеся полупрозрачные рамки — пульс под бит.
+class BackdropRig extends Node2D:
+	var t := 0.0
+
+	func _process(delta: float) -> void:
+		t += delta
+		position = G.DESIGN / 2.0
+		queue_redraw()
+
+	func _draw() -> void:
+		var pulse := pow(1.0 - Conductor.phase(), 3.0) * 0.03 if Conductor.playing else 0.0
+		rotation = t * 0.10
+		scale = Vector2.ONE * (1.0 + pulse)
+		var pts1 := G.rounded_points(Rect2(-360, -360, 720, 720), 54.0)
+		pts1.append(pts1[0])
+		draw_polyline(pts1, Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.22), 4.0, true)
+		var pts2 := G.rounded_points(Rect2(-455, -455, 910, 910), 70.0)
+		pts2.append(pts2[0])
+		draw_polyline(pts2, Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.10), 2.5, true)
+		for k in 4:
+			var a := TAU * float(k) / 4.0 + PI / 4.0
+			draw_circle(Vector2(cos(a), sin(a)) * 360.0, 4.0, Color(1, 1, 1, 0.30))
+
+
+
+## Карточка-пункт карусели. Центральная кликается как действие, боковые — как шаг.
+class MenuCard extends Control:
+	var title := ""
+	var sub := ""
+	var cb: Callable
+	var is_center := false
+	var menu: Node
+	var slot_x := 0.0
+	var hover := 0.0
+
+	func setup(t: String, s: String, c: Callable, center: bool) -> void:
+		title = t
+		sub = s
+		cb = c
+		is_center = center
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		queue_redraw()
+
+	func _ready() -> void:
+		mouse_entered.connect(func(): hover = 1.0)
+		mouse_exited.connect(func(): hover = 0.0)
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed \
+				and event.button_index == MOUSE_BUTTON_LEFT:
+			if is_center:
+				if cb.is_valid():
+					cb.call()
+			elif menu != null:
+				menu._step(1 if slot_x > 0.0 else -1)
+
+	func _process(delta: float) -> void:
+		hover = maxf(0.0, hover - delta * 4.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var r := Rect2(Vector2.ZERO, size)
+		var lift := hover * (10.0 if is_center else 4.0)
+		var rr := r.grow(lift)
+		G.draw_rounded_rect(self, rr, 26.0, Color(0.055, 0.010, 0.020, 0.82 + hover * 0.12))
+		G.draw_rounded_outline(self, rr, 26.0,
+			Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b,
+				(0.5 + hover * 0.45) if is_center else 0.18 + hover * 0.2), 3.5 if is_center else 2.0)
+		var fs := 58 + int(hover * 5) if is_center else 40
+		var tw := G.font_logo.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(G.font_logo, Vector2(r.size.x / 2.0 - tw / 2.0, r.size.y * 0.44),
+			title, HORIZONTAL_ALIGNMENT_LEFT, tw, fs,
+			Color(G.C_TEXT.r, G.C_TEXT.g, G.C_TEXT.b, 0.95))
+		var lines := sub.split("\n")
+		var yy := r.size.y * 0.62
+		for ln in lines:
+			var sw := G.font_body.get_string_size(ln, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
+			draw_string(G.font_body, Vector2(r.size.x / 2.0 - sw / 2.0, yy), ln,
+				HORIZONTAL_ALIGNMENT_LEFT, sw, 20 if is_center else 15,
+				Color(G.C_MUTED.r, G.C_MUTED.g, G.C_MUTED.b, 0.85))
+			yy += 25.0 if is_center else 19.0
+		draw_rect(Rect2(r.size.x * 0.5 - 40.0 - lift * 2.4, r.size.y - 22.0,
+			(80.0 + lift * 4.8), 4.0), Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.9))
