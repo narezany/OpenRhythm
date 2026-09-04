@@ -1,20 +1,55 @@
 class_name StoryScreen
 extends Control
-## STORY MODE.
+## Story mode.
 ## Phase 1: a scrollable list of stories.
 ## Phase 2: a visual-novel dialog - Melly centred, a name box, text typed out
 ## with a soft beep per couple of characters, click to advance.
+##
+## Each story is a playlist played back to back. A story unlocks when the one
+## before it has been cleared.
 
-const DIALOG_TUTORIAL := [
-	"Hey! You want to learn how to play Open Rhythm?",
-	"Then watch closely — I'll show you everything myself!",
-]
-const DIALOG_DRIVE := [
-	"Well, how's your first impression of the game?",
-	"Yeah, you can't really enjoy a tutorial... let's do it for real!",
+const STORIES := [
+	{
+		"key": "first_steps",
+		"title": "1 • FIRST STEPS",
+		"sub": "Learn the basics with Melly.\nTutorial song.",
+		"songs": ["tutorial", "hyper_drive", "neon_drift"],
+		"pick_diff": false,
+		"needs": "",
+		"dialog": [
+			"Hey! You want to learn how to play Open Rhythm?",
+			"Then watch closely — I'll show you everything myself!",
+		],
+	},
+	{
+		"key": "night_drive",
+		"title": "2 • NIGHT DRIVE",
+		"sub": "Hyper Drive, Neon Drift, Midnight Pulse.\nChoose your difficulty.",
+		"songs": ["hyper_drive", "neon_drift", "midnight_pulse"],
+		"pick_diff": true,
+		"needs": "tutorial",
+		"dialog": [
+			"Well, how's your first impression of the game?",
+			"Yeah, you can't really enjoy a tutorial... let's do it for real!",
+			"Three tracks, no stopping. The last one is my favourite.",
+		],
+	},
+	{
+		"key": "overdrive",
+		"title": "3 • OVERDRIVE",
+		"sub": "Bass Rush, Crimson Step, Afterburner.\nThe heavy set.",
+		"songs": ["bass_rush", "crimson_step", "afterburner"],
+		"pick_diff": true,
+		"needs": "midnight_pulse",
+		"dialog": [
+			"So you survived the night drive. Cute.",
+			"This one hits harder. Faster drums, wobblier bass, no mercy.",
+			"Hands on the cursor. Try to keep up with me.",
+		],
+	},
 ]
 
-var story := 1            # chosen story; 0 means nothing picked yet
+var story := 0            # index into STORIES, -1 while nothing is picked
 var _rig = null
 var _novel_layer: Control = null
 var _name_lbl: Label
@@ -41,6 +76,7 @@ func _ready() -> void:
 func _build_list() -> void:
 	_list_root = Control.new()
 	G.anchor_full(_list_root)
+	_list_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_list_root)
 
 	var title := G.label("STORY MODE", 42, G.C_TEXT, true)
@@ -58,14 +94,13 @@ func _build_list() -> void:
 	vb.add_theme_constant_override("separation", 18)
 	scroll.add_child(vb)
 
-	# story 1 on top, it is read first; story 2 below it
-	var locked := not _tutorial_done()
-	vb.add_child(_story_card("1 • FIRST STEPS",
-		"Learn the basics with Melly.\nTutorial song.",
-		func(): _open_story(1), false))
-	vb.add_child(_story_card("2 • NIGHT DRIVE",
-		"Hyper Drive + Neon Drift.\nChoose your difficulty.",
-		func(): _open_story(2), locked))
+	for i in STORIES.size():
+		var idx := i
+		var st: Dictionary = STORIES[i]
+		var locked := not _unlocked(st)
+		vb.add_child(_story_card(str(st.title), str(st.sub),
+			func(): _open_story(idx), locked))
+
 	var back := G.button("← Back", func():
 		G.play_sfx("click")
 		G.main.goto_menu(), 22)
@@ -73,15 +108,24 @@ func _build_list() -> void:
 	G.anchor_corner(back, false, true, 24, 32, Vector2(180, 46))
 
 
-func _tutorial_done() -> bool:
-	return not G.get_best("tutorial", "Easy").is_empty()
+## A story opens once the song its predecessor ends on has been cleared.
+func _unlocked(st: Dictionary) -> bool:
+	var needs := str(st.get("needs", ""))
+	return needs == "" or _song_cleared(needs)
+
+
+func _song_cleared(song_id: String) -> bool:
+	if not G.best.has(song_id):
+		return false
+	var entry = G.best[song_id]
+	return entry is Dictionary and not entry.is_empty()
 
 
 func _story_card(title: String, sub: String, on_open: Callable, locked: bool) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", G.panel_style(
 		Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.22 if locked else 0.75)))
-	p.custom_minimum_size = Vector2(660, 170)
+	p.custom_minimum_size = Vector2(660, 160)
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 20)
 	p.add_child(hb)
@@ -101,6 +145,7 @@ func _story_card(title: String, sub: String, on_open: Callable, locked: bool) ->
 		G.play_sfx("click")
 		on_open.call())
 	b.custom_minimum_size = Vector2(150, 0)
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hb.add_child(b)
 	return p
 
@@ -108,7 +153,7 @@ func _story_card(title: String, sub: String, on_open: Callable, locked: bool) ->
 # --------------------------------------------- phase 2: novel dialog
 func _open_story(which: int) -> void:
 	story = which
-	_lines = DIALOG_TUTORIAL if which == 1 else DIALOG_DRIVE
+	_lines = STORIES[which].dialog
 	_li = 0
 	_build_novel()
 	_start_line()
@@ -203,14 +248,13 @@ func _advance() -> void:
 
 
 func _finish_dialog() -> void:
-	# story 1: the tutorial on Easy, then both songs back to back
-	if story == 1:
-		G.story_playlist = ["tutorial", "hyper_drive", "neon_drift"]
+	var st: Dictionary = STORIES[story]
+	if not st.get("pick_diff", false):
+		G.story_playlist = (st.songs as Array).duplicate()
 		G.story_idx = 0
 		G.story_diff = 0
 		_start_playlist_song()
 		return
-	# story 2: pick a difficulty, then both songs back to back
 	_hint_lbl.visible = false
 	var pick := G.label("Choose your difficulty:", 22, G.C_GOLD)
 	pick.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -221,11 +265,11 @@ func _finish_dialog() -> void:
 	row.add_theme_constant_override("separation", 30)
 	_novel_layer.add_child(row)
 	G.anchor_bottom_wide(row, 130, 46, 90)
-	for cfg in [["NORMAL", 0], ["HYPER", 1]]:
+	for cfg in [["EASY", 0], ["NORMAL", 1], ["HYPER", 2]]:
 		var di: int = cfg[1]
 		row.add_child(G.button(str(cfg[0]), func():
 			G.play_sfx("click", 1.3)
-			G.story_playlist = ["hyper_drive", "neon_drift"]
+			G.story_playlist = (st.songs as Array).duplicate()
 			G.story_idx = 0
 			G.story_diff = di
 			_start_playlist_song()))
@@ -245,6 +289,8 @@ func _start_playlist_song() -> void:
 	G.story_idx += 1
 	if G.story_idx < G.story_playlist.size():
 		_start_playlist_song()
+	else:
+		G.main.goto_story()
 
 
 func _unhandled_input(event: InputEvent) -> void:

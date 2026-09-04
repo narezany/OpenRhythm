@@ -99,9 +99,17 @@ func _ready() -> void:
 			var a := Achievements.def_of(str(id))
 			if a.is_empty():
 				continue
-			var al := G.label("★ %s — %s" % [str(a.name), str(a.desc)], 17, G.C_GOLD)
+			var arow := HBoxContainer.new()
+			arow.add_theme_constant_override("separation", 10)
+			var ic := AchievementIcon.new(str(a.icon), 34.0)
+			ic.tint = G.C_GOLD
+			arow.add_child(ic)
+			var al := G.label("%s — %s" % [str(a.name), str(a.desc)], 17, G.C_GOLD)
 			al.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			vb.add_child(al)
+			al.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			al.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			arow.add_child(al)
+			vb.add_child(arow)
 
 	if data.get("new_best", false):
 		var nb := G.label("★ NEW RECORD ★", 24, Color("ffd700"))
@@ -142,6 +150,8 @@ func _ready() -> void:
 		var save_btn := G.button("Save replay", func(): pass)
 		save_btn.pressed.connect(func():
 			var path: String = G.replay.save()
+			if path != "":
+				Achievements.unlock("replay_saved")
 			G.play_sfx("click", 1.3)
 			save_btn.text = tr("Replay saved") if path != "" else tr("Save replay")
 			save_btn.disabled = path != "")

@@ -326,6 +326,7 @@ func _swatch(hex: String, part: String) -> Button:
 	b.pressed.connect(func():
 		G.melly_colors[part] = c
 		G.save_all()
+		Achievements.unlock("melly_paint")
 		G.play_sfx("click", 1.3, -6.0)
 		if _rig != null:
 			_rig.apply_colors()

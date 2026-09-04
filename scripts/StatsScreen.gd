@@ -120,9 +120,11 @@ func _build_achievements() -> void:
 		var hb := HBoxContainer.new()
 		hb.add_theme_constant_override("separation", 16)
 		panel.add_child(hb)
-		var mark := G.label("★" if got else "·", 30, G.C_GOLD if got else G.C_MUTED)
-		mark.custom_minimum_size = Vector2(40, 0)
-		hb.add_child(mark)
+		var ic := AchievementIcon.new(str(a.icon), 46.0)
+		ic.tint = G.C_GOLD
+		ic.locked = not got
+		ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hb.add_child(ic)
 		var vb := VBoxContainer.new()
 		vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		vb.add_theme_constant_override("separation", 0)

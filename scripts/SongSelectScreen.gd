@@ -28,7 +28,7 @@ func _ready() -> void:
 	add_child(BackgroundFX.new(true))
 
 	var title := G.label("SELECT SONG" if mode == "play" else
-		("NIGHT DRIVE" if mode == "story" else "EDITOR — SELECT SONG"),
+		("STORY MODE" if mode == "story" else "EDITOR — SELECT SONG"),
 		40, G.C_TEXT, true)
 	title.position = Vector2(40, 26)
 	_add_sticky(title)
@@ -58,7 +58,8 @@ func _ready() -> void:
 
 	var songs := RhythmMap.load_songs()
 	for song in songs:
-		if mode == "story" and not (str(song.get("id", "")) in ["hyper_drive", "neon_drift"]):
+		# story mode lists exactly the current story's playlist
+		if mode == "story" and not (str(song.get("id", "")) in G.story_playlist):
 			continue
 		if RhythmMap.is_playable(song):
 			vb.add_child(_card(song))

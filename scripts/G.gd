@@ -474,9 +474,12 @@ func flashes() -> float:
 
 
 func set_locale(code: String) -> void:
+	var changed := code != locale
 	locale = code
 	Loc.apply(code)
 	save_all()
+	if changed:
+		Achievements.unlock("polyglot")
 
 
 func note_hit_stat(combo: int) -> void:
