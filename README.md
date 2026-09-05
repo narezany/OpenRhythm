@@ -212,6 +212,10 @@ the songs folder and the game unpacks it on the next scan:
 python3 tools/pack_song.py local_songs/my_song
 ```
 
+Keep those folders in `local_songs/` with an empty `.gdignore` beside them, or
+the engine will import and pack them anyway - that one file is the difference
+between a 37 MB download and a 96 MB one.
+
 That keeps someone else's recording out of the build, and out of every clone of
 this repo, while still being one file to hand a friend. The game shows a notice
 on first launch pointing players at the original releases.
