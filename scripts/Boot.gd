@@ -35,8 +35,7 @@ func _ready() -> void:
 	if _enter_vr(xr):
 		return
 	if OS.has_feature("android"):
-		print("[OR] OpenXR is there but not started; waiting up to %.0fs"
-			% XR_RETRY_SECONDS)
+		G.dev_log("OpenXR is there but not started; waiting up to %.0fs" % XR_RETRY_SECONDS)
 		_waiting = true
 		return
 	_go_flat("no runtime running")
@@ -69,17 +68,23 @@ func _interface() -> XRInterface:
 func _enter_vr(xr: XRInterface) -> bool:
 	if not xr.is_initialized() and not xr.initialize():
 		return false
-	get_viewport().use_xr = true
+	var vp := get_viewport()
+	vp.use_xr = true
+	# Multisampling through the XR path is the first thing to drop when a
+	# headset shows nothing: it costs a little edge quality and rules out a
+	# whole class of driver trouble.
+	vp.msaa_3d = Viewport.MSAA_DISABLED
+	G.dev_log("viewport handed over: use_xr=%s size=%v" % [vp.use_xr, vp.get_visible_rect().size])
 	# the runtime paces frames now; leaving vsync on fights it for the wait
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
 	UICursor.cursor_visible = false
 	G.vr_active = true
-	print("[OR] %s runtime up after %.1fs, starting in VR" % [xr.get_name(), _waited])
+	G.dev_log("%s runtime up after %.1fs, starting in VR" % [xr.get_name(), _waited])
 	add_child(VR_STAGE.new())
 	return true
 
 
 func _go_flat(why: String) -> void:
-	print("[OR] starting flat: %s" % why)
+	G.dev_log("starting flat: %s" % why)
 	add_child(load("res://scenes/Main.tscn").instantiate())

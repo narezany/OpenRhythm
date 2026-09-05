@@ -64,14 +64,22 @@ var _cursor_design := G.DESIGN * 0.5
 
 func _ready() -> void:
 	name = "VRStage"
+	# Each stage says it finished. A log that stops halfway says exactly which
+	# piece of building the room is the one that fell over, which is otherwise
+	# unknowable from inside a headset showing nothing.
+	G.dev_log("stage: building")
 	_build_world()
+	G.dev_log("stage: world")
 	_build_rig()
+	G.dev_log("stage: rig")
 	_build_screen()
+	G.dev_log("stage: screen")
 	_build_field()
+	G.dev_log("stage: field")
 	_build_pointer()
 	# One line in the device log saying the room was built and by whom. A
 	# headset that shows nothing gives no other clue as to how far this got.
-	print("[OR] VR stage up: camera=%s origin=%s hands=%d, interface=%s" % [
+	G.dev_log("stage up: camera=%s origin=%s hands=%d interface=%s" % [
 		camera.current, origin.current, hands.size(),
 		XRServer.primary_interface.get_name() if XRServer.primary_interface else "none"])
 
@@ -208,7 +216,7 @@ func _process(delta: float) -> void:
 		# screen gives no other way to tell which of the two never happened.
 		_frames += 1
 		if _frames == 120:
-			print("[OR] VR rendering: 120 frames out, head at %v" % camera.global_position)
+			G.dev_log("rendering: 120 frames out, head at %v" % camera.global_position)
 	_layout_field()
 	_track_screen()
 	var saber := G.vr_style == "saber" and _gs != null

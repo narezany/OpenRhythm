@@ -128,6 +128,47 @@ var view_h := 720.0
 signal view_changed
 
 
+## A short log of how this launch went, written where the player can reach it.
+##
+## On a headset there is no console and no way to run adb without a cable that
+## works, so a game that comes up showing nothing tells you nothing. This puts
+## the same lines next to the songs folder - one file per launch, overwritten
+## each time - so the answer is a file manager away.
+var _dev_log: FileAccess = null
+## Lines from before the file could be opened. Storage permission is asked for
+## after the game has already started, and the lines from those first moments
+## are the ones worth having, so they wait here rather than being lost.
+var _dev_pending: Array[String] = []
+
+
+func dev_log(line: String) -> void:
+	print("[OR] ", line)
+	if not OS.has_feature("android") and not OS.is_debug_build():
+		return
+	var stamped := "%6d ms  %s" % [Time.get_ticks_msec(), line]
+	if _dev_log == null:
+		var dir := RhythmMap.user_songs_dir().get_base_dir()
+		DirAccess.make_dir_recursive_absolute(dir)
+		_dev_log = FileAccess.open(dir + "/last_run.log", FileAccess.WRITE)
+		if _dev_log == null:
+			_dev_pending.append(stamped)
+			return
+		_dev_log.store_line("Open Rhythm %s - %s" % [VERSION, Time.get_datetime_string_from_system()])
+		var tags: Array = []
+		for f in ["android", "quest", "pico", "linux", "windows", "web", "editor"]:
+			if OS.has_feature(f):
+				tags.append(f)
+		_dev_log.store_line("build: %s | renderer %s | %s" % [
+			", ".join(tags),
+			ProjectSettings.get_setting("rendering/renderer/rendering_method", "?"),
+			OS.get_model_name()])
+		for held in _dev_pending:
+			_dev_log.store_line(held)
+		_dev_pending.clear()
+	_dev_log.store_line(stamped)
+	_dev_log.flush()
+
+
 func aspect_ratio() -> float:
 	return view_w / maxf(view_h, 1.0)
 
