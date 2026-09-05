@@ -51,6 +51,7 @@ The exact path is printed on the **Songs** screen, with a *Copy path* button.
 | `length` | Song length in seconds; used for the progress bar before the audio loads. |
 | `audio` | File name inside the folder. Empty means "no audio yet". |
 | `difficulties` | Ordered list. Each has a `name` and a `notes` array. |
+| `hue` | Optional background colour, `0..1` around the colour wheel. Songs without a video use it so each one looks like itself. |
 | `hints` | Optional teaching text: `[{"t": 12.0, "text": "..."}]`. Shown for five seconds each; the tutorial uses them. |
 
 ## Notes
@@ -127,6 +128,14 @@ python3 tools/rechart.py --all      # everything except the OST and the tutorial
 It snaps the notes to the beat grid first, working out the grid phase from the
 notes themselves so a track whose first beat is not at zero does not get
 dragged onto the wrong beat.
+
+## Versus
+
+A versus match needs both players to hold the *same* chart. Identity is a
+SHA-256 of the notes - time, cell, size, hold length and the click flag -
+together with the song id, the difficulty name and the BPM. The audio file name
+and any video are deliberately left out: neither changes what you play, so a
+map with a different audio filename still matches.
 
 ## Importing from other games
 

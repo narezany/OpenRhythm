@@ -38,8 +38,30 @@ func _run_case(sz: Vector2i) -> void:
 		["StatsScreen", StatsScreen], ["CalibrationScreen", CalibrationScreen],
 		["DisclaimerScreen", DisclaimerScreen], ["CreditsScreen", CreditsScreen],
 		["StoryScreen", StoryScreen], ["PlayChoiceScreen", PlayChoiceScreen],
+		["VersusScreen", VersusScreen],
 	]:
 		await _check(str(entry[0]), entry[1].new(), canvas)
+	# the modifier panel is hidden until a difficulty is picked, and a hidden
+	# branch is never laid out - open it explicitly or it is never checked
+	var sel := SongSelectScreen.new()
+	sel.mode = "play"
+	add_child(sel)
+	await get_tree().process_frame
+	sel._fill_mods(true)
+	sel._mods_layer.visible = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var bad: Array = []
+	_walk(sel, canvas, bad)
+	if bad.is_empty():
+		print("  ok   modifier panel")
+	else:
+		fails += bad.size()
+		print("  BAD  modifier panel")
+		for b in bad:
+			print("         %s" % b)
+	sel.queue_free()
+	await get_tree().process_frame
 	var songs := RhythmMap.load_songs()
 	if not songs.is_empty():
 		var e := EditorScreen.new()

@@ -19,6 +19,7 @@ config/quit_on_go_back=false
 G="*res://scripts/G.gd"
 Loc="*res://scripts/Loc.gd"
 Conductor="*res://scripts/Conductor.gd"
+Net="*res://scripts/core/Net.gd"
 UICursor="*res://scripts/UICursor.gd"
 
 [input_devices]

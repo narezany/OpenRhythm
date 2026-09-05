@@ -373,11 +373,13 @@ static func write_map(song: Dictionary) -> String:
 ## A res:// song lives inside the exported binary and cannot be written to, so
 ## editing one has to fork it: the audio, the video and the metadata are copied
 ## into a fresh folder and the editor carries on there.
-static func fork_song(song: Dictionary) -> Dictionary:
+static func fork_song(song: Dictionary, title := "") -> Dictionary:
 	var src := str(song.get("dir", ""))
 	if src == "":
 		return {}
-	var copy := create_new_song(str(song.get("title", "Song")) + " (edit)")
+	if title.strip_edges() == "":
+		title = str(song.get("title", "Song")) + " (edit)"
+	var copy := create_new_song(title)
 	var dst := str(copy["dir"])
 	for key in ["audio", "video"]:
 		var name := str(song.get(key, ""))
@@ -395,12 +397,13 @@ static func fork_song(song: Dictionary) -> Dictionary:
 			f.store_buffer(bytes)
 			f.close()
 			copy[key] = name
-	copy["title"] = str(song.get("title", "Song"))
+	copy["title"] = title
 	copy["artist"] = str(song.get("artist", ""))
 	copy["bpm"] = float(song.get("bpm", 120.0))
 	copy["preview_start"] = float(song.get("preview_start", 0.0))
 	copy["length"] = float(song.get("length", 60.0))
 	copy["forked_from"] = str(song.get("id", ""))
+	copy["hue"] = float(song.get("hue", 0.985))
 	var diffs: Array = []
 	for d in song.get("difficulties", []):
 		diffs.append({"name": str(d.get("name", CUSTOM_NAME)),

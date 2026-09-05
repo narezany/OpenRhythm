@@ -9,11 +9,16 @@ var mode := "play"
 var _pick_song: Dictionary = {}
 var _pick_diff := 0
 var _mods_layer: CanvasLayer
+var _mod_scroll: ScrollContainer
 var _mod_rows: VBoxContainer
 var _mod_checks: Dictionary = {}
 
 var _new_layer: CanvasLayer
 var _title_input: LineEdit
+var _new_title: Label
+var _new_help: Label
+var _fork_song: Dictionary = {}
+var _fork_diff := 0
 
 var _audio_dialog: FileDialog
 
@@ -188,7 +193,15 @@ func _difficulty_picked(song: Dictionary, i: int) -> void:
 		_mods_layer.visible = true
 	else:
 		Conductor.stop_music()
-		G.main.open_editor(song, i)
+		if RhythmMap.is_user_song(song):
+			G.main.open_editor(song, i)
+		else:
+			# a built-in song has to be copied before it can be edited, so ask
+			# what to call the copy now - otherwise the library ends up with two
+			# entries under the same name
+			_fork_song = song
+			_fork_diff = i
+			_new_map_dialog(true)
 
 
 # ---------------------------------------------------------------- modifiers
@@ -213,7 +226,6 @@ func _build_mods_layer() -> void:
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 10)
-	vb.custom_minimum_size = Vector2(640, 0)
 	panel.add_child(vb)
 
 	var t := G.label("MODIFIERS", 34, G.C_TEXT, true)
@@ -223,9 +235,18 @@ func _build_mods_layer() -> void:
 	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(st)
 
+	# there are nine modifiers with descriptions: on a short window the panel
+	# would run off both ends, so the list scrolls inside a capped box
+	_mod_scroll = ScrollContainer.new()
+	_mod_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_mod_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.add_child(_mod_scroll)
 	_mod_rows = VBoxContainer.new()
+	_mod_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_mod_rows.add_theme_constant_override("separation", 10)
-	vb.add_child(_mod_rows)
+	_mod_scroll.add_child(_mod_rows)
+	_fit_mods()
+	G.view_changed.connect(_fit_mods)
 
 	vb.add_child(HSpacer.new(6))
 
@@ -237,6 +258,16 @@ func _build_mods_layer() -> void:
 	start.custom_minimum_size = Vector2(200, 0)
 	hb.add_child(start)
 	hb.add_child(G.button("Cancel", func(): _mods_layer.visible = false, 22))
+
+
+## Keep the modifier list inside the canvas: the panel around it is centred and
+## sized to its content, so the scroll box is what has to be capped.
+func _fit_mods() -> void:
+	if _mod_scroll == null:
+		return
+	var canvas := G.canvas_size()
+	_mod_scroll.custom_minimum_size = Vector2(minf(640.0, canvas.x - 120.0),
+		clampf(canvas.y - 300.0, 180.0, 520.0))
 
 
 ## Rebuild the modifier list for one chart. A modifier that only makes sense
@@ -267,7 +298,7 @@ func _fill_mods(has_clicks: bool) -> void:
 		var d := G.label(str(md.desc), 16, G.C_MUTED)
 		d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		d.custom_minimum_size = Vector2(360, 0)
+		d.custom_minimum_size = Vector2(260, 0)
 		row.add_child(d)
 		_mod_rows.add_child(row)
 
@@ -308,7 +339,7 @@ func _start_with_mods() -> void:
 
 
 # ---------------------------------------------------------------- new map
-func _new_map_dialog() -> void:
+func _new_map_dialog(forking := false) -> void:
 	G.play_sfx("click")
 	if _new_layer == null:
 		_new_layer = CanvasLayer.new()
@@ -333,12 +364,13 @@ func _new_map_dialog() -> void:
 		vb.custom_minimum_size = Vector2(560, 0)
 		panel.add_child(vb)
 
-		var t := G.label("NEW MAP", 34, G.C_TEXT, true)
-		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		vb.add_child(t)
+		_new_title = G.label("NEW MAP", 34, G.C_TEXT, true)
+		_new_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vb.add_child(_new_title)
 
-		var il := G.label("Song title — the game creates its own folder:", 18, G.C_MUTED)
-		vb.add_child(il)
+		_new_help = G.label("Song title — the game creates its own folder:", 18, G.C_MUTED)
+		_new_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vb.add_child(_new_help)
 
 		_title_input = LineEdit.new()
 		_title_input.placeholder_text = "My awesome song"
@@ -361,14 +393,28 @@ func _new_map_dialog() -> void:
 		help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vb.add_child(help)
 
+	_new_title.text = "COPY THIS SONG" if forking else "NEW MAP"
+	_new_help.text = ("This song ships with the game and cannot be edited in place. Name the copy that goes into your library:"
+		if forking else "Song title — the game creates its own folder:")
+	_title_input.text = (str(_fork_song.get("title", "")) + " remix") if forking else ""
 	_new_layer.visible = true
 	_title_input.grab_focus()
+	_title_input.select_all()
 
 
 func _create_new_map() -> void:
 	var title := _title_input.text.strip_edges()
 	if title == "":
 		_title_input.grab_focus()
+		return
+	if not _fork_song.is_empty():
+		var forked := RhythmMap.fork_song(_fork_song, title)
+		_new_layer.visible = false
+		_fork_song = {}
+		if forked.is_empty():
+			return
+		G.play_sfx("click")
+		G.main.open_editor(forked, _fork_diff)
 		return
 	var song := RhythmMap.create_new_song(title)
 	_new_layer.visible = false

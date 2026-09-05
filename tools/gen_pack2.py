@@ -312,6 +312,12 @@ def write_waveform(song_dir, mono):
         json.dump({"rate": WAVE_RATE, "peaks": [float(p) for p in peaks]}, f)
 
 
+# background hue per track, 0..1 - a song without a video still looks like
+# itself instead of every screen being the same red
+HUES = {"midnight_pulse": 0.62, "bass_rush": 0.38,
+        "crimson_step": 0.985, "afterburner": 0.12}
+
+
 def write_track(sid, title, bpm, preview, song, diffs):
     song_dir = os.path.join(ROOT, "songs", sid)
     os.makedirs(song_dir, exist_ok=True)
@@ -334,6 +340,7 @@ def write_track(sid, title, bpm, preview, song, diffs):
         "preview_start": preview,
         "length": round(song.len_s - 2.0, 2),
         "audio": "audio.ogg",
+        "hue": HUES.get(sid, 0.985),
         "difficulties": [{"name": n, "notes": v} for n, v in diffs],
     }
     with open(os.path.join(song_dir, "map.json"), "w", encoding="utf-8") as f:

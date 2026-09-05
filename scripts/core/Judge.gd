@@ -30,8 +30,19 @@ const HOLD_GRACE := 0.15
 ## weaker hit - touching a long cube and leaving must not score.
 const HOLD_MIN := 0.85
 
+## Each rank owns a slice of the accuracy scale, and the position inside the
+## catch zone decides where in that slice a hit lands. The old formula mixed
+## everything into one number and then clamped it up to a floor, so a clean run
+## of PERFECTs scored exactly the floor - 90% - and SS was unreachable.
+const BANDS := [
+	["PERFECT", P_PERFECT, 1.0, 0.93, 0.98],
+	["GREAT", P_GREAT, P_PERFECT, 0.76, 0.93],
+	["GOOD", P_GOOD, P_GREAT, 0.52, 0.76],
+	["BULLSHIT", 0.0, P_GOOD, 0.15, 0.52],
+]
+
 const ACC_FLOOR := {
-	"PERFECT": 0.90, "GREAT": 0.65, "GOOD": 0.35, "BULLSHIT": 0.08,
+	"PERFECT": 0.93, "GREAT": 0.76, "GOOD": 0.52, "BULLSHIT": 0.15,
 }
 
 
@@ -52,10 +63,18 @@ static func holding(cursor_local: Vector2, hit: Vector2, half: float) -> bool:
 	return cursor_local.distance_to(hit) <= half * 1.35 * k * HOLD_SLACK
 
 
-## Accuracy: almost entirely the zone, with a small bonus for landing on time.
+## Accuracy: where in the cell the cursor was, mapped into that rank's band,
+## with the last two percent left for landing on time. Dead centre and on the
+## beat is 100%.
 static func acc_for(dt: float, p_acc: float) -> float:
 	var t_bonus := 1.0 - clampf(absf(dt) / LAND_GRACE, 0.0, 1.0)
-	return clampf(p_acc * 0.92 + t_bonus * 0.08, 0.0, 1.0)
+	for b in BANDS:
+		if p_acc >= float(b[1]):
+			var lo := float(b[1])
+			var hi := float(b[2])
+			var f := 0.0 if hi <= lo else clampf((p_acc - lo) / (hi - lo), 0.0, 1.0)
+			return clampf(lerpf(float(b[3]), float(b[4]), f) + t_bonus * 0.02, 0.0, 1.0)
+	return 0.15
 
 
 ## A hold is worth its landing accuracy weighted by how much of it was held.

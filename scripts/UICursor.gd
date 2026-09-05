@@ -145,8 +145,22 @@ func jump_to(p: Vector2) -> void:
 ## A worn stick rests slightly off centre; feeding that through the input
 ## actions is what made the cursor creep upwards on its own.
 func _stick() -> Vector2:
-	var v := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X),
-		Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
+	# Only a joypad the engine recognises as a gamepad is read. Plenty of HID
+	# devices - some mice and keyboards among them - enumerate as joypads with
+	# axes resting at -1, which is exactly what dragged the cursor up and left
+	# for someone playing on WASD.
+	var pads := Input.get_connected_joypads()
+	if pads.is_empty():
+		return Vector2.ZERO
+	var dev := -1
+	for p in pads:
+		if Input.is_joy_known(p):
+			dev = p
+			break
+	if dev < 0:
+		return Vector2.ZERO
+	var v := Vector2(Input.get_joy_axis(dev, JOY_AXIS_LEFT_X),
+		Input.get_joy_axis(dev, JOY_AXIS_LEFT_Y))
 	var len_ := v.length()
 	if len_ <= Binds.STICK_DEADZONE:
 		return Vector2.ZERO

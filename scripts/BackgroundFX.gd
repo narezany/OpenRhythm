@@ -4,6 +4,9 @@ extends Node2D
 ## The palette is heavy black and blood red: the hue stays near zero.
 
 var mat: ShaderMaterial
+## Base hue of the background, 0..1. A song may set its own so tracks without a
+## video still look like themselves.
+var base_hue := 0.985
 var hue := 0.985
 var flash := 0.0
 var beat_env := 0.0
@@ -61,7 +64,7 @@ func _fit() -> void:
 
 func _process(delta: float) -> void:
 	var t := Time.get_ticks_msec() / 1000.0
-	hue = fposmod(0.985 + 0.03 * sin(t * 0.07), 1.0)
+	hue = fposmod(base_hue + 0.03 * sin(t * 0.07), 1.0)
 	flash = maxf(0.0, flash - delta * 2.6)
 	beat_env = maxf(0.0, beat_env - delta * 4.5)
 	mat.set_shader_parameter("i_time", Conductor.song_time if Conductor.playing else t)

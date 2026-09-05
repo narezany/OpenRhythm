@@ -4,6 +4,8 @@ extends Control
 
 var data: Dictionary
 var buttons: HBoxContainer
+var _versus_row: HBoxContainer
+var _versus_verdict: Label
 
 
 func _ready() -> void:
@@ -92,6 +94,18 @@ func _ready() -> void:
 		sc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vb.add_child(sc)
 
+	# versus: the other player's score, and who took it
+	if data.get("versus", false):
+		vb.add_child(HSpacer.new(8))
+		_versus_row = _row("VERSUS", "…", G.C_EMBER, 26)
+		vb.add_child(_versus_row)
+		_versus_verdict = G.label("", 24, G.C_GOLD, true)
+		_versus_verdict.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vb.add_child(_versus_verdict)
+		if not Net.opponent_finished.is_connected(_on_opponent_done):
+			Net.opponent_finished.connect(_on_opponent_done)
+		_update_versus()
+
 	var unlocked: Array = data.get("unlocked", [])
 	if not unlocked.is_empty():
 		vb.add_child(HSpacer.new(6))
@@ -164,7 +178,13 @@ func _ready() -> void:
 	hb.add_child(G.button("Main menu", func():
 		G.play_sfx("click")
 		G.custom_test = {}
+		Net.end_match()
 		G.main.goto_menu()))
+	if data.get("versus", false):
+		hb.add_child(G.button("Back to versus", func():
+			G.play_sfx("click")
+			Net.end_match()
+			G.main.goto_versus()))
 
 	# confetti for S and SS
 	if rank == "S" or rank == "SS":
@@ -206,6 +226,35 @@ func _ready() -> void:
 		panel.position = Vector2(vis.get_center().x - panel.size.x / 2.0 + 40.0,
 			vis.position.y + 96.0)
 		buttons.position.y = vis.end.y - buttons.size.y - 30.0)
+
+
+func _on_opponent_done(_result: Dictionary) -> void:
+	_update_versus()
+
+
+## Their score, and the verdict once they have finished too.
+func _update_versus() -> void:
+	if _versus_row == null or not is_instance_valid(_versus_row):
+		return
+	var them := int(Net.opponent.get("score", 0))
+	var done: bool = bool(Net.opponent.get("done", false))
+	var value := _versus_row.get_child(1) as Label
+	if value != null:
+		value.text = G.fmt_score(them) if done else "%s…" % G.fmt_score(them)
+	if not done:
+		_versus_verdict.text = tr("Waiting for the other player…")
+		_versus_verdict.add_theme_color_override("font_color", G.C_MUTED)
+		return
+	var mine := int(data.get("score", 0))
+	if mine > them:
+		_versus_verdict.text = tr("YOU WIN")
+		_versus_verdict.add_theme_color_override("font_color", G.C_GOLD)
+	elif mine < them:
+		_versus_verdict.text = tr("YOU LOSE")
+		_versus_verdict.add_theme_color_override("font_color", G.C_PRIMARY)
+	else:
+		_versus_verdict.text = tr("A DRAW")
+		_versus_verdict.add_theme_color_override("font_color", G.C_TEXT)
 
 
 func _confetti_ramp() -> Gradient:

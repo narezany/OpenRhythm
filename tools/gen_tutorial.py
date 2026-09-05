@@ -190,6 +190,7 @@ def main():
         "preview_start": bar_t(S_MIX),
         "length": round(s.len_s - 2.0, 2),
         "audio": "audio.ogg",
+        "hue": 0.55,
         "hints": [{"t": round(t, 2), "text": txt} for t, txt in HINTS],
         "difficulties": [{"name": "Easy", "notes": notes}],
     }

@@ -30,6 +30,10 @@ imports their maps.
 * **Any audio** — `.wav`, `.ogg`, `.mp3`. Song folders or `.zip` packs.
 * **Offset calibration** — tap along with a metronome and the game works out
   your audio delay for you.
+* **Versus** — two players, one chart, higher score wins. A direct
+  peer-to-peer connection with no server: one side hosts, the other types their
+  address. Both must be on the same build and holding the same chart, checked
+  by hashing the notes, so custom maps work as long as they are identical.
 * **Replays**, local records, lifetime stats and achievements.
 * **Accessibility** — reduce motion, reduce flashes, cursor size, video off.
 * **Six languages** — English, Russian, Chinese, German, Dutch and Spanish,

@@ -809,6 +809,81 @@ add("Could not copy this song into your library",
     "No se pudo copiar esta canción a tu biblioteca")
 
 
+# ---------------------------------------------------------------- versus
+add("VERSUS", "ДУЭЛЬ", "对战", "DUELL", "DUEL", "DUELO")
+add("two players\\none chart", "два игрока\\nодна карта", "两名玩家\\n同一张谱面",
+    "zwei Spieler\\neine Map", "twee spelers\\neen map", "dos jugadores\\nun mapa")
+add("Two players, one chart, higher score wins. Direct connection, no server.",
+    "Два игрока, одна карта, побеждает больший счёт. Прямое соединение, без сервера.",
+    "两名玩家，同一张谱面，分高者胜。直连，无需服务器。",
+    "Zwei Spieler, eine Map, mehr Punkte gewinnt. Direktverbindung, kein Server.",
+    "Twee spelers, een map, de hoogste score wint. Directe verbinding, geen server.",
+    "Dos jugadores, un mapa, gana quien puntúe más. Conexión directa, sin servidor.")
+add("HOST", "СОЗДАТЬ", "创建房间", "HOSTEN", "HOSTEN", "CREAR")
+add("JOIN", "ПОДКЛЮЧИТЬСЯ", "加入", "BEITRETEN", "MEEDOEN", "UNIRSE")
+add("Disconnect", "Отключиться", "断开连接", "Trennen", "Verbreken", "Desconectar")
+add("Not connected", "Нет подключения", "未连接", "Nicht verbunden",
+    "Niet verbonden", "Sin conexión")
+add("START THE MATCH", "НАЧАТЬ МАТЧ", "开始对战", "MATCH STARTEN",
+    "START DE MATCH", "EMPEZAR EL DUELO")
+add("Back to versus", "Назад к дуэли", "返回对战", "Zurück zum Duell",
+    "Terug naar duel", "Volver al duelo")
+add("host address, e.g. 192.168.1.42", "адрес хоста, например 192.168.1.42",
+    "房主地址，例如 192.168.1.42", "Host-Adresse, z. B. 192.168.1.42",
+    "hostadres, bijv. 192.168.1.42", "dirección del host, p. ej. 192.168.1.42")
+add("Waiting for a player…", "Ждём игрока…", "等待玩家加入…",
+    "Warte auf einen Spieler…", "Wachten op een speler…", "Esperando a un jugador…")
+add("Connected — waiting for the host to pick a song",
+    "Подключено — ждём, пока хост выберет песню",
+    "已连接 — 等待房主选歌",
+    "Verbunden — der Host wählt einen Song",
+    "Verbonden — de host kiest een nummer",
+    "Conectado — el host está eligiendo canción")
+add("Player connected", "Игрок подключился", "玩家已连接",
+    "Spieler verbunden", "Speler verbonden", "Jugador conectado")
+add("The other player left", "Второй игрок вышел", "对手已离开",
+    "Der andere Spieler ist weg", "De andere speler is weg", "El otro jugador se fue")
+add("Could not connect", "Не удалось подключиться", "无法连接",
+    "Verbindung fehlgeschlagen", "Verbinden mislukt", "No se pudo conectar")
+add("The host closed the game", "Хост закрыл игру", "房主关闭了游戏",
+    "Der Host hat das Spiel geschlossen", "De host heeft het spel gesloten",
+    "El host cerró la partida")
+add("Type the host's address first", "Сначала впиши адрес хоста", "请先输入房主地址",
+    "Gib zuerst die Host-Adresse ein", "Vul eerst het adres van de host in",
+    "Escribe primero la dirección del host")
+add("Nobody has joined yet", "Пока никто не подключился", "还没有人加入",
+    "Noch ist niemand beigetreten", "Er is nog niemand binnen", "Todavía no se unió nadie")
+add("Checking the other player has the same chart…",
+    "Проверяем, что у второго игрока та же карта…",
+    "正在检查对方是否有相同的谱面…",
+    "Prüfe, ob der andere dieselbe Map hat…",
+    "Controleren of de ander dezelfde map heeft…",
+    "Comprobando que el otro tenga el mismo mapa…")
+add("The charts do not match", "Карты не совпадают", "谱面不一致",
+    "Die Maps stimmen nicht überein", "De maps komen niet overeen",
+    "Los mapas no coinciden")
+add("You do not have that song", "У тебя нет этой песни", "你没有这首歌",
+    "Du hast diesen Song nicht", "Je hebt dat nummer niet", "No tienes esa canción")
+add("Different game version", "Разные версии игры", "游戏版本不同",
+    "Unterschiedliche Spielversion", "Andere spelversie", "Versión del juego distinta")
+add("Different network protocol", "Разные сетевые протоколы", "网络协议不同",
+    "Unterschiedliches Netzwerkprotokoll", "Ander netwerkprotocol",
+    "Protocolo de red distinto")
+add("YOU WIN", "ТЫ ПОБЕДИЛ", "你赢了", "DU GEWINNST", "JIJ WINT", "GANASTE")
+add("YOU LOSE", "ТЫ ПРОИГРАЛ", "你输了", "DU VERLIERST", "JIJ VERLIEST", "PERDISTE")
+add("A DRAW", "НИЧЬЯ", "平局", "UNENTSCHIEDEN", "GELIJKSPEL", "EMPATE")
+add("Waiting for the other player…", "Ждём второго игрока…", "等待对手完成…",
+    "Warte auf den anderen Spieler…", "Wachten op de andere speler…",
+    "Esperando al otro jugador…")
+add("COPY THIS SONG", "СКОПИРОВАТЬ ПЕСНЮ", "复制这首歌",
+    "SONG KOPIEREN", "NUMMER KOPIËREN", "COPIAR ESTA CANCIÓN")
+add("This song ships with the game and cannot be edited in place. Name the copy that goes into your library:",
+    "Эта песня идёт вместе с игрой, править её на месте нельзя. Как назвать копию в твоей библиотеке?",
+    "这首歌随游戏一起发布，无法就地编辑。给放进你曲库的副本起个名字：",
+    "Dieser Song gehört zum Spiel und kann nicht direkt bearbeitet werden. Wie soll die Kopie heißen?",
+    "Dit nummer hoort bij het spel en kan niet ter plekke bewerkt worden. Hoe heet de kopie?",
+    "Esta canción viene con el juego y no se puede editar en su sitio. ¿Cómo se llama la copia?")
+
 # ---------------------------------------------------------------- emit
 def gd_escape(s):
     return s.replace('"', '\\"')

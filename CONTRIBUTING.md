@@ -75,6 +75,16 @@ godot --headless --path . res://tools/CoreTest.tscn
 godot --headless --path . res://tools/ImportTest.tscn -- /path/to/map.sspm
 ```
 
+The versus handshake needs two processes:
+
+```bash
+OR_NET=host godot --headless --path . res://tools/NetTest.tscn   # one terminal
+OR_NET=join godot --headless --path . res://tools/NetTest.tscn   # another
+```
+
+Add `OR_NET_BAD=1` to the host to check that a mismatched chart is refused
+rather than played.
+
 `CoreTest` exits non-zero when a check fails, and prints one `PASS`/`FAIL`
 line per check. Add to `tools/test_core.gd` when you touch saving, judging or
 the map format.

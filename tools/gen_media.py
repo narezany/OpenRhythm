@@ -487,6 +487,7 @@ def main():
             "artist": "Open Rhythm OST",
             "bpm": 160.0,
             "preview_start": 6.0,
+            "hue": 0.07,
         },
         s2,
         _diffs(s2, "hyper_drive"),

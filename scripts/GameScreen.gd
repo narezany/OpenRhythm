@@ -56,6 +56,7 @@ var acc_fill: ColorRect
 var acc_bg: ColorRect
 var progress_bar: ProgressDraw
 var pause_layer: CanvasLayer
+var hud_versus: Label
 
 var _last_note_t := 0.0
 var _go_shown := false
@@ -145,6 +146,7 @@ func _build() -> void:
 	_is_tutorial = str(song.get("id", "")) == "tutorial"
 	_hints = song.get("hints", [])
 	bg = BackgroundFX.new()
+	bg.base_hue = float(song.get("hue", 0.985))
 	add_child(bg)
 
 	if not G.disable_song_video:
@@ -240,6 +242,12 @@ func _build_hud() -> void:
 
 	hud_combo = G.label("", 110, Color(1, 1, 1, 0.85), true)
 	hud.add_child(hud_combo)
+
+	if Net.in_match:
+		hud_versus = G.label("", 22, G.C_EMBER)
+		hud_versus.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		hud.add_child(hud_versus)
+		G.anchor_corner(hud_versus, true, false, 10, 88, Vector2(400, 26))
 
 	var mods_txt := ""
 	for id in G.active_mods:
@@ -790,6 +798,17 @@ func _update_hud(delta: float) -> void:
 
 	progress_bar.frac = Conductor.song_time / maxf(Conductor.length, 0.001)
 
+	# versus: keep the other player posted and show where they are
+	if Net.in_match:
+		Net.send_progress(_elapsed, score, max_combo, acc)
+		if hud_versus != null:
+			var them := int(Net.opponent.get("score", 0))
+			var lead := score - them
+			hud_versus.text = "VS  %s   (%s%s)" % [G.fmt_score(them),
+				"+" if lead >= 0 else "", G.fmt_score(lead)]
+			hud_versus.add_theme_color_override("font_color",
+				G.C_GOLD if lead >= 0 else G.C_PRIMARY)
+
 
 # ---------------------------------------------------------------- end/pause
 func _check_end() -> void:
@@ -829,6 +848,9 @@ func _finish() -> void:
 		"total_score": G.total_score,
 		"song_id": str(song.get("id", "")),
 	}
+	if Net.in_match:
+		Net.send_result(G.results)
+		G.results["versus"] = true
 	if _replay != null:
 		_replay.finish(G.results)
 		G.replay = _replay
