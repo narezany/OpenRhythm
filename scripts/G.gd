@@ -160,7 +160,7 @@ func dev_log(line: String) -> void:
 				tags.append(f)
 		_dev_log.store_line("build: %s | renderer %s | %s" % [
 			", ".join(tags),
-			ProjectSettings.get_setting("rendering/renderer/rendering_method", "?"),
+			ProjectSettings.get_setting_with_override("rendering/renderer/rendering_method"),
 			OS.get_model_name()])
 		for held in _dev_pending:
 			_dev_log.store_line(held)

@@ -62,15 +62,18 @@ shaders/enabled=true
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
-# Headsets get Vulkan. OpenXR on Android binds to the graphics API to create
-# its session, and the OpenGL ES binding is not the one that works there: the
-# interface is found, the session is never created, and the headset sits on its
-# loading screen while the game runs behind it. These two lines come after the
-# .mobile one on purpose - the later matching feature wins, so a Quest or Pico
-# package overrides the phone's renderer while the phone keeps it.
+# Headsets get Vulkan. OpenXR on Android binds to the graphics API when it
+# creates its session, and the OpenGL ES binding is not the one that works
+# there: the interface is found, the session never is, and the headset sits on
+# its loading screen while the game runs behind it.
+#
+# These two come BEFORE the .mobile line, and the order is the whole point.
+# The FIRST matching feature wins - measured, not assumed - and a headset
+# package matches "mobile" as well as its own tag, so listing them the other
+# way round quietly leaves it on Compatibility.
 renderer/rendering_method.quest="mobile"
 renderer/rendering_method.pico="mobile"
+renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=2
 viewport/transparent_background=false
