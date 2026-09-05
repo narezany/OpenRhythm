@@ -185,12 +185,17 @@ unzip -q godotopenxrvendorsaddon.zip -d /tmp/vendors
 cp -r /tmp/vendors/asset/addons/godotopenxrvendors addons/
 
 godot --headless --path . --install-android-build-template --export-release "Android" build/OpenRhythm.apk
-godot --headless --path . --export-release "Meta Quest" build/OpenRhythm-quest.apk
-godot --headless --path . --export-release "Pico"       build/OpenRhythm-pico.apk
+tools/build_headsets.sh
 ```
 
 Those two are gradle builds, so they need the Android SDK and a JDK the same way
-the phone package does.
+the phone package does. They also need the **Mobile** renderer: OpenXR on
+Android binds to the graphics API when it creates its session and wants Vulkan,
+and on the OpenGL ES binding the interface loads while the session never does -
+which from inside the headset looks like the app hanging on its loading screen.
+The engine picks a renderer before it knows an export's custom features, so that
+cannot be a per-preset setting; the script flips it for the length of those two
+builds and puts it back afterwards.
 
 </details>
 

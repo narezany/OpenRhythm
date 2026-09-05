@@ -184,8 +184,11 @@ jobs:
           # a headset package is a gradle build, which needs the template in place
           godot --headless --path . --install-android-build-template \
             --export-release "Android" build/android/OpenRhythm.apk || true
-          godot --headless --path . --export-release "Meta Quest" build/android/OpenRhythm-quest.apk
-          godot --headless --path . --export-release "Pico" build/android/OpenRhythm-pico.apk
+          # the headset packages need the Mobile renderer, which the script
+          # switches on for the length of those two builds
+          tools/build_headsets.sh godot
+          mv build/OpenRhythm-quest.apk build/android/OpenRhythm-quest.apk
+          mv build/OpenRhythm-pico.apk build/android/OpenRhythm-pico.apk
           rm -f "$GODOT_ANDROID_KEYSTORE_RELEASE_PATH"
 
       - if: steps.check.outputs.have_key == 'true'
