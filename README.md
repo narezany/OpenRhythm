@@ -105,7 +105,11 @@ timeline at the bottom is where you actually shape the chart.
 | drag right edge | set a hold length |
 | wheel / Ctrl+wheel / middle drag | scroll / zoom / pan |
 
-The waveform is drawn for `.wav` audio. Ogg and MP3 cannot be decoded from
+Saving a built-in song forks it into your library first — `res://` is inside
+the binary and cannot be written to.
+
+The waveform is drawn for `.wav` audio, or from a `waveform.json` if the song
+ships one. Ogg and MP3 cannot be decoded from
 GDScript, so those charts get the beat grid only.
 
 ## Music and rights

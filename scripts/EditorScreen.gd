@@ -696,7 +696,18 @@ func _bpm_change(delta_bpm: float) -> void:
 
 
 func _save() -> String:
-	var path := RhythmMap.save_custom(song, _serialize())
+	# A built-in song lives inside the binary and cannot be written to, so the
+	# first save forks it into the player's library and the editor carries on
+	# in the copy - the same as if the map had been created from scratch.
+	if not RhythmMap.is_user_song(song):
+		var copy := RhythmMap.fork_song(song)
+		if copy.is_empty():
+			_show_toast("Could not copy this song into your library")
+			return ""
+		song = copy
+		G.editor_song = song
+		_show_toast("Copied to your library: %s" % str(song.get("dir", "")))
+	var path := RhythmMap.save_custom(song, _serialize(), diff_idx)
 	if path != "":
 		_show_toast("Saved: %s" % path)
 		Achievements.unlock("mapper")

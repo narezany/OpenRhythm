@@ -73,16 +73,9 @@ var _prev_time := 0.0
 ## canvas is bigger than the design, so this is not DESIGN / 2.
 var field_center := G.DESIGN / 2.0
 
-## Tutorial hints: time in seconds -> text.
-const TUT_HINTS := [
-	{"t": 1.0, "text": "Welcome to the tutorial! Let's learn how to play."},
-	{"t": 7.0, "text": "Watch the frame: a cube will fly into a cell."},
-	{"t": 11.2, "text": "Move your cursor onto that cell and CATCH the cube when it lands!"},
-	{"t": 14.0, "text": "Dead center = PERFECT. A bit off = GREAT or GOOD. Edge = BULLSHIT."},
-	{"t": 17.0, "text": "Missed? No worries — try again, nobody's watching."},
-	{"t": 29.0, "text": "Got it! Cubes land with the music. Ready for more?"},
-	{"t": 34.0, "text": "Here comes the song — good luck!"},
-]
+## Teaching hints come from the song's own map.json, so their timing cannot
+## drift away from the chart they explain.
+var _hints: Array = []
 
 
 func _ready() -> void:
@@ -111,9 +104,11 @@ func _ready() -> void:
 func _load_notes(raw: Array, seek: float) -> void:
 	var mirror: bool = "mirror" in G.active_mods
 	# Click notes are opt-in: a chart may carry them, but they only come alive
-	# with the CLICKS modifier. Playing without it costs nothing.
+	# with the CLICKS modifier. Playing without it costs nothing. The tutorial
+	# is the exception - it is where clicks are taught, so they are always on.
 	var clicky: bool = "clicky" in G.active_mods
-	var use_marked: bool = "clicks_on" in G.active_mods
+	var use_marked: bool = "clicks_on" in G.active_mods \
+		or str(song.get("id", "")) == "tutorial"
 	for nd in raw:
 		var t := float(nd.get("t", 0.0))
 		if t < seek + 0.2:
@@ -137,7 +132,8 @@ func _load_notes(raw: Array, seek: float) -> void:
 			"gcol": G.C_PRIMARY,
 			"spin": randf_range(0.5, 1.1) * (1.0 if randf() > 0.5 else -1.0),
 			"progress": 0.0, "done": false, "hover": false, "node": null,
-			"holding": false, "held": 0.0, "base_acc": 0.0, "base_label": "",
+			"holding": false, "held": 0.0, "slipped": 0.0, "broken": false,
+			"base_acc": 0.0, "base_label": "",
 		})
 	notes.sort_custom(func(a, b): return a.t < b.t)
 	if not notes.is_empty():
@@ -147,6 +143,7 @@ func _load_notes(raw: Array, seek: float) -> void:
 # ---------------------------------------------------------------- build
 func _build() -> void:
 	_is_tutorial = str(song.get("id", "")) == "tutorial"
+	_hints = song.get("hints", [])
 	bg = BackgroundFX.new()
 	add_child(bg)
 
@@ -286,7 +283,7 @@ func hud_title_hud(hud: CanvasLayer) -> void:
 	var sub := G.label("%s  •  %s" % [str(song.get("artist", "")), diff_name], 18, G.C_MUTED)
 	sub.position = Vector2(16, 38)
 	hud.add_child(sub)
-	if _is_tutorial:
+	if not _hints.is_empty():
 		var tut := G.label("", 26, Color(1.0, 0.96, 0.90))
 		G.anchor_top_wide(tut, 130, 120, 140)
 		tut.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -544,12 +541,18 @@ func _resolve(n: Dictionary, dt: float, cursor_local: Vector2, p_acc_in := -1.0)
 	_award(n, acc, lbl)
 
 
-## Hold in progress: bank the time the cursor stays inside the cell.
+## Hold in progress: bank the time the cursor stays inside the cell, and give
+## up on it once the cursor has been away for longer than the grace. Brushing a
+## long cube and moving on must not score.
 func _update_hold(n: Dictionary, cursor_local: Vector2, delta: float, st: float) -> void:
-	var inside := Judge.holding(cursor_local, n.hit, n.half)
+	var inside: bool = Judge.holding(cursor_local, n.hit, n.half) and not n.broken
 	if inside:
 		n.held += delta
 		UICursor.hover_boost = 1.0
+	elif not n.broken:
+		n.slipped += delta
+		if n.slipped > Judge.HOLD_GRACE:
+			n.broken = true
 	var total := maxf(float(n.h), 0.001)
 	var left := clampf(1.0 - (st - float(n.t)) / total, 0.0, 1.0)
 	if n.node != null and is_instance_valid(n.node):
@@ -559,9 +562,12 @@ func _update_hold(n: Dictionary, cursor_local: Vector2, delta: float, st: float)
 		n.node.scale = Vector2.ONE * (1.0 + (0.06 if inside else 0.0))
 	if inside and randf() < delta * 14.0:
 		shock.burst(n.hit, G.C_EMBER, 2, 120.0)
-	if st >= float(n.t) + total:
+	if n.broken or st >= float(n.t) + total:
 		n.done = true
 		var frac: float = clampf(float(n.held) / total, 0.0, 1.0)
+		if frac < Judge.HOLD_MIN:
+			_resolve_miss(n)
+			return
 		var acc: float = Judge.hold_acc(float(n.base_acc), frac)
 		var lbl: String = Judge.degrade(str(n.base_label), frac)
 		acc = maxf(acc, Judge.ACC_FLOOR[lbl])
@@ -641,6 +647,11 @@ func _autoplay(delta: float) -> void:
 	for n in active:
 		if n.done:
 			continue
+		# a hold owns the cursor until it releases, exactly as a player must
+		if n.holding:
+			target = n.hit + field_center
+			best_dt = -1.0
+			break
 		var dt := absf(Conductor.play_time() - n.t)
 		if dt < best_dt:
 			best_dt = dt
@@ -699,17 +710,17 @@ func _update_fx(delta: float) -> void:
 		if not _is_tutorial:
 			texts.spawn(Vector2(0, 0), "GO!", G.C_PRIMARY)
 
-	if _is_tutorial and _tut_hint_label != null:
+	if _tut_hint_label != null and not _hints.is_empty():
 		var st_t := Conductor.play_time()
 		var hint_shown := false
-		for i in range(TUT_HINTS.size() - 1, -1, -1):
-			if st_t >= float(TUT_HINTS[i].t) and st_t < float(TUT_HINTS[i].t) + 5.0:
+		for i in range(_hints.size() - 1, -1, -1):
+			if st_t >= float(_hints[i].t) and st_t < float(_hints[i].t) + 5.0:
 				if _tut_hint_i != i:
 					_tut_hint_i = i
-					_tut_hint_label.text = str(TUT_HINTS[i].text)
+					_tut_hint_label.text = str(_hints[i].text)
 				_tut_hint_label.visible = true
-				var fade_in: float = clampf((st_t - float(TUT_HINTS[i].t)) * 3.0, 0.0, 1.0)
-				var fade_out: float = clampf((float(TUT_HINTS[i].t) + 4.6 - st_t) * 2.5, 0.0, 1.0)
+				var fade_in: float = clampf((st_t - float(_hints[i].t)) * 3.0, 0.0, 1.0)
+				var fade_out: float = clampf((float(_hints[i].t) + 4.6 - st_t) * 2.5, 0.0, 1.0)
 				_tut_hint_label.modulate.a = minf(fade_in, fade_out)
 				hint_shown = true
 				break

@@ -18,6 +18,14 @@ const P_GOOD := 0.10
 ## before the hold breaks.
 const HOLD_SLACK := 1.55
 
+## Total time the cursor may spend outside a hold before it counts as dropped.
+## A brief slip is forgiven; letting go is not.
+const HOLD_GRACE := 0.15
+
+## Below this much of a hold actually carried, it is a miss rather than a
+## weaker hit - touching a long cube and leaving must not score.
+const HOLD_MIN := 0.85
+
 const ACC_FLOOR := {
 	"PERFECT": 0.90, "GREAT": 0.65, "GOOD": 0.35, "BULLSHIT": 0.08,
 }

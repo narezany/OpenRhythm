@@ -340,20 +340,64 @@ static func write_map(song: Dictionary) -> String:
 		return ""
 	var clean := song.duplicate()
 	clean.erase("dir")
-	clean.erase("video")
+	# "video" is detected from the folder on load, but a forked song has to
+	# remember the file it copied, so only drop the probe result
+	if not FileAccess.file_exists(dir + "/" + str(song.get("video", ""))):
+		clean.erase("video")
 	f.store_string(JSON.stringify(clean, "\t"))
 	return path
 
 
-## Save notes. res-songs get a side map_custom.json; user songs are the single
-## source of truth in their own map.json.
-static func save_custom(song: Dictionary, notes: Array) -> String:
+## Copy a built-in song into the player's library so it can be edited.
+##
+## A res:// song lives inside the exported binary and cannot be written to, so
+## editing one has to fork it: the audio, the video and the metadata are copied
+## into a fresh folder and the editor carries on there.
+static func fork_song(song: Dictionary) -> Dictionary:
+	var src := str(song.get("dir", ""))
+	if src == "":
+		return {}
+	var copy := create_new_song(str(song.get("title", "Song")) + " (edit)")
+	var dst := str(copy["dir"])
+	for key in ["audio", "video"]:
+		var name := str(song.get(key, ""))
+		if name == "":
+			continue
+		var bytes := FileAccess.get_file_as_bytes(src + "/" + name)
+		if bytes.is_empty():
+			continue
+		var f := FileAccess.open(dst + "/" + name, FileAccess.WRITE)
+		if f != null:
+			f.store_buffer(bytes)
+			f.close()
+			copy[key] = name
+	copy["title"] = str(song.get("title", "Song"))
+	copy["artist"] = str(song.get("artist", ""))
+	copy["bpm"] = float(song.get("bpm", 120.0))
+	copy["preview_start"] = float(song.get("preview_start", 0.0))
+	copy["length"] = float(song.get("length", 60.0))
+	copy["forked_from"] = str(song.get("id", ""))
+	var diffs: Array = []
+	for d in song.get("difficulties", []):
+		diffs.append({"name": str(d.get("name", CUSTOM_NAME)),
+			"notes": (d.get("notes", []) as Array).duplicate(true)})
+	if diffs.is_empty():
+		diffs = [{"name": CUSTOM_NAME, "notes": []}]
+	copy["difficulties"] = diffs
+	write_map(copy)
+	return copy
+
+
+## Save notes into one difficulty. res-songs get a side map_custom.json; user
+## songs are the single source of truth in their own map.json.
+static func save_custom(song: Dictionary, notes: Array, diff_idx := 0) -> String:
 	if is_user_song(song):
 		var diffs: Array = song.get("difficulties", [])
 		if diffs.is_empty():
 			diffs = [{"name": CUSTOM_NAME, "notes": []}]
 			song["difficulties"] = diffs
-		diffs[0]["notes"] = notes
+		var i := clampi(diff_idx, 0, diffs.size() - 1)
+		diffs[i]["notes"] = notes
 		return write_map(song)
 	var data := {
 		"id": song.get("id", "unknown"),

@@ -2,193 +2,251 @@
  "id": "tutorial",
  "title": "TUTORIAL",
  "artist": "Open Rhythm",
- "bpm": 100.0,
- "preview_start": 0.0,
- "length": 53.2,
- "audio": "audio.wav",
+ "bpm": 96.0,
+ "preview_start": 55.0,
+ "length": 75.2,
+ "audio": "audio.ogg",
+ "hints": [
+  {
+   "t": 1.0,
+   "text": "Welcome to the tutorial! Let's learn how to play."
+  },
+  {
+   "t": 5.0,
+   "text": "Watch the frame: a cube will fly into one of the nine cells."
+  },
+  {
+   "t": 8.8,
+   "text": "Move your cursor onto that cell and CATCH the cube when it lands!"
+  },
+  {
+   "t": 15.0,
+   "text": "Dead center = PERFECT. A bit off = GREAT or GOOD. Edge = BULLSHIT."
+  },
+  {
+   "t": 22.5,
+   "text": "Missed? No worries — try again, nobody's watching."
+  },
+  {
+   "t": 30.9,
+   "text": "Long cubes are HOLDS: stay on them until they run out."
+  },
+  {
+   "t": 37.5,
+   "text": "Let go early and the hold does not count. Carry it to the end."
+  },
+  {
+   "t": 43.4,
+   "text": "A cube in a ring has to be CLICKED, not just covered."
+  },
+  {
+   "t": 50.0,
+   "text": "In other songs clicks are off until you switch on the CLICKS modifier."
+  },
+  {
+   "t": 53.6,
+   "text": "All three together now — good luck!"
+  }
+ ],
  "difficulties": [
   {
    "name": "Easy",
    "notes": [
     {
-     "t": 12.0,
+     "t": 10.0,
      "cell": 4,
-     "s": 1.35
+     "s": 1.45
     },
     {
-     "t": 18.0,
-     "cell": 2,
-     "s": 1.35
-    },
-    {
-     "t": 23.0,
-     "cell": 6,
-     "s": 1.35
-    },
-    {
-     "t": 28.0,
-     "cell": 8,
-     "s": 1.35
-    },
-    {
-     "t": 32.0,
-     "cell": 4,
-     "s": 1.0
-    },
-    {
-     "t": 32.6,
+     "t": 12.5,
      "cell": 1,
-     "s": 1.0
+     "s": 1.45
     },
     {
-     "t": 33.2,
-     "cell": 3,
-     "s": 1.0
-    },
-    {
-     "t": 33.8,
+     "t": 15.0,
      "cell": 7,
-     "s": 1.0
+     "s": 1.45
     },
     {
-     "t": 34.4,
+     "t": 17.5,
+     "cell": 3,
+     "s": 1.45
+    },
+    {
+     "t": 22.5,
+     "cell": 0,
+     "s": 1.3
+    },
+    {
+     "t": 23.75,
+     "cell": 8,
+     "s": 1.3
+    },
+    {
+     "t": 25.0,
+     "cell": 2,
+     "s": 1.3
+    },
+    {
+     "t": 26.25,
+     "cell": 6,
+     "s": 1.3
+    },
+    {
+     "t": 27.5,
      "cell": 5,
-     "s": 1.0
+     "s": 1.3
+    },
+    {
+     "t": 28.75,
+     "cell": 3,
+     "s": 1.3
+    },
+    {
+     "t": 30.0,
+     "cell": 1,
+     "s": 1.3
+    },
+    {
+     "t": 31.25,
+     "cell": 7,
+     "s": 1.3
+    },
+    {
+     "t": 32.5,
+     "cell": 4,
+     "s": 1.4,
+     "h": 1.25
     },
     {
      "t": 35.0,
-     "cell": 1,
-     "s": 1.0
-    },
-    {
-     "t": 35.6,
-     "cell": 3,
-     "s": 1.0
-    },
-    {
-     "t": 36.2,
-     "cell": 7,
-     "s": 1.0
-    },
-    {
-     "t": 36.8,
-     "cell": 4,
-     "s": 1.0
-    },
-    {
-     "t": 37.4,
      "cell": 2,
-     "s": 1.0
+     "s": 1.4,
+     "h": 1.25
     },
     {
-     "t": 38.0,
+     "t": 37.5,
      "cell": 6,
-     "s": 1.0
+     "s": 1.4,
+     "h": 1.25
     },
     {
-     "t": 38.6,
+     "t": 40.0,
+     "cell": 4,
+     "s": 1.4,
+     "h": 1.25
+    },
+    {
+     "t": 42.5,
      "cell": 8,
-     "s": 1.0
+     "s": 1.4,
+     "h": 1.25
     },
     {
-     "t": 39.2,
-     "cell": 5,
-     "s": 1.0
-    },
-    {
-     "t": 39.8,
-     "cell": 3,
-     "s": 1.0
-    },
-    {
-     "t": 40.4,
-     "cell": 7,
-     "s": 1.0
-    },
-    {
-     "t": 41.0,
-     "cell": 1,
-     "s": 1.0
-    },
-    {
-     "t": 41.6,
+     "t": 45.0,
      "cell": 4,
-     "s": 1.0
+     "s": 1.4,
+     "c": true
     },
     {
-     "t": 42.2,
-     "cell": 1,
-     "s": 1.0
+     "t": 46.25,
+     "cell": 0,
+     "s": 1.4,
+     "c": true
     },
     {
-     "t": 42.8,
-     "cell": 3,
-     "s": 1.0
+     "t": 47.5,
+     "cell": 8,
+     "s": 1.4,
+     "c": true
     },
     {
-     "t": 43.4,
-     "cell": 7,
-     "s": 1.0
-    },
-    {
-     "t": 44.0,
-     "cell": 5,
-     "s": 1.0
-    },
-    {
-     "t": 44.6,
-     "cell": 1,
-     "s": 1.0
-    },
-    {
-     "t": 45.2,
-     "cell": 3,
-     "s": 1.0
-    },
-    {
-     "t": 45.8,
-     "cell": 7,
-     "s": 1.0
-    },
-    {
-     "t": 46.4,
-     "cell": 4,
-     "s": 1.0
-    },
-    {
-     "t": 47.0,
+     "t": 48.75,
      "cell": 2,
-     "s": 1.0
-    },
-    {
-     "t": 47.6,
-     "cell": 6,
-     "s": 1.0
-    },
-    {
-     "t": 48.2,
-     "cell": 8,
-     "s": 1.0
-    },
-    {
-     "t": 48.8,
-     "cell": 5,
-     "s": 1.0
-    },
-    {
-     "t": 49.4,
-     "cell": 3,
-     "s": 1.0
+     "s": 1.4,
+     "c": true
     },
     {
      "t": 50.0,
-     "cell": 7,
-     "s": 1.0
+     "cell": 6,
+     "s": 1.4,
+     "c": true
     },
     {
-     "t": 50.6,
+     "t": 51.25,
+     "cell": 4,
+     "s": 1.4,
+     "c": true
+    },
+    {
+     "t": 55.0,
      "cell": 1,
-     "s": 1.0
+     "s": 1.3
+    },
+    {
+     "t": 56.25,
+     "cell": 5,
+     "s": 1.3
+    },
+    {
+     "t": 57.5,
+     "cell": 4,
+     "s": 1.3,
+     "h": 1.25
+    },
+    {
+     "t": 60.0,
+     "cell": 3,
+     "s": 1.3,
+     "c": true
+    },
+    {
+     "t": 61.25,
+     "cell": 7,
+     "s": 1.3
+    },
+    {
+     "t": 62.5,
+     "cell": 1,
+     "s": 1.3
+    },
+    {
+     "t": 63.75,
+     "cell": 5,
+     "s": 1.3
+    },
+    {
+     "t": 65.0,
+     "cell": 4,
+     "s": 1.3,
+     "h": 1.25
+    },
+    {
+     "t": 67.5,
+     "cell": 2,
+     "s": 1.3,
+     "c": true
+    },
+    {
+     "t": 68.75,
+     "cell": 6,
+     "s": 1.3
+    },
+    {
+     "t": 70.0,
+     "cell": 0,
+     "s": 1.3
+    },
+    {
+     "t": 71.25,
+     "cell": 8,
+     "s": 1.3
+    },
+    {
+     "t": 72.5,
+     "cell": 4,
+     "s": 1.3,
+     "c": true
     }
    ]
   }

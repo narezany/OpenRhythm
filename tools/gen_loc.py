@@ -722,6 +722,81 @@ add("on", "вкл", "开", "an", "aan", "sí")
 add("off", "выкл", "关", "aus", "uit", "no")
 
 
+# ---------------------------------------------------------------- tutorial v2
+add("Watch the frame: a cube will fly into one of the nine cells.",
+    "Смотри на рамку: куб прилетит в одну из девяти клеток.",
+    "看着方框：方块会飞进九个格子中的一个。",
+    "Achte auf den Rahmen: ein Würfel fliegt in eine der neun Zellen.",
+    "Let op het kader: er vliegt een kubus in een van de negen vakjes.",
+    "Mira el marco: un cubo volará a una de las nueve casillas.")
+add("Long cubes are HOLDS: stay on them until they run out.",
+    "Длинные кубы — это УДЕРЖАНИЯ: не отпускай их до конца.",
+    "长方块是长按音符：一直待在上面直到它结束。",
+    "Lange Würfel sind HALTE-NOTEN: bleib drauf, bis sie auslaufen.",
+    "Lange kubussen zijn HOUDNOTEN: blijf erop tot ze aflopen.",
+    "Los cubos largos son NOTAS MANTENIDAS: quédate en ellos hasta el final.")
+add("Let go early and the hold does not count. Carry it to the end.",
+    "Отпустишь раньше — удержание не засчитается. Веди до конца.",
+    "提前松开就不算数。要一直带到最后。",
+    "Zu früh losgelassen zählt nicht. Trag ihn bis zum Ende.",
+    "Te vroeg loslaten telt niet. Draag hem tot het einde.",
+    "Si lo sueltas antes, no cuenta. Llévalo hasta el final.")
+add("A cube in a ring has to be CLICKED, not just covered.",
+    "Куб в кольце нужно КЛИКНУТЬ, а не просто накрыть.",
+    "带圆环的方块必须点击，而不只是覆盖。",
+    "Ein Würfel im Ring muss GEKLICKT werden, nicht nur überdeckt.",
+    "Een kubus in een ring moet je KLIKKEN, niet alleen bedekken.",
+    "Un cubo con anillo hay que CLICARLO, no solo cubrirlo.")
+add("In other songs clicks are off until you switch on the CLICKS modifier.",
+    "В остальных песнях клики выключены, пока не включишь модификатор КЛИКИ.",
+    "在其它歌曲里点击音符默认关闭，需要打开「点击音符」modifier。",
+    "In anderen Songs sind Klicks aus, bis du den KLICKS-Modifikator einschaltest.",
+    "In andere nummers staan kliks uit tot je de KLIKS-modifier aanzet.",
+    "En otras canciones los clics están apagados hasta que actives el modificador CLICS.")
+add("All three together now — good luck!",
+    "А теперь всё вместе — удачи!", "现在三种一起来——祝你好运！",
+    "Und jetzt alle drei zusammen — viel Glück!",
+    "Nu alle drie tegelijk — succes!", "Ahora los tres juntos — ¡suerte!")
+
+# ---------------------------------------------------------------- judgements
+add("PERFECT", "ИДЕАЛЬНО", "完美", "PERFEKT", "PERFECT", "PERFECTO")
+add("GREAT", "ОТЛИЧНО", "很棒", "SEHR GUT", "GEWELDIG", "GENIAL")
+add("GOOD", "ХОРОШО", "不错", "GUT", "GOED", "BIEN")
+add("BULLSHIT", "ДЕРЬМО", "垃圾", "MURKS", "WAARDELOOS", "BASURA")
+add("MISS", "МИМО", "未命中", "DANEBEN", "MIS", "FALLO")
+add("GO!", "ПОЕХАЛИ!", "开始！", "LOS!", "GAAN!", "¡VAMOS!")
+
+# ---------------------------------------------------------------- credits
+add("created by narezany", "автор — narezany", "由 narezany 制作",
+    "erstellt von narezany", "gemaakt door narezany", "creado por narezany")
+add("coding — Claude Opus 5 (thanks for the late nights!)",
+    "код — Claude Opus 5 (спасибо за ночные сессии!)",
+    "编程 — Claude Opus 5（感谢那些通宵！）",
+    "Code — Claude Opus 5 (danke für die langen Nächte!)",
+    "code — Claude Opus 5 (bedankt voor de late nachten!)",
+    "código — Claude Opus 5 (¡gracias por las noches en vela!)")
+add("game idea — inspired by Rhythia", "идея — вдохновлено Rhythia",
+    "游戏创意 — 受 Rhythia 启发", "Spielidee — inspiriert von Rhythia",
+    "spelidee — geïnspireerd door Rhythia", "idea — inspirado en Rhythia")
+add("want more maps, contests and news?", "хочешь больше карт, конкурсов и новостей?",
+    "想要更多谱面、比赛和消息吗？", "Mehr Maps, Wettbewerbe und News?",
+    "meer maps, wedstrijden en nieuws?", "¿quieres más mapas, concursos y noticias?")
+add("join the community — buttons below", "заходи в сообщество — кнопки ниже",
+    "加入社区 — 按钮在下面", "komm in die Community — Buttons unten",
+    "kom bij de community — knoppen hieronder", "únete a la comunidad — botones abajo")
+
+# ---------------------------------------------------------------- editor v2
+add("Copied to your library: %s", "Скопировано в твою библиотеку: %s",
+    "已复制到你的曲库：%s", "In deine Bibliothek kopiert: %s",
+    "Naar je bibliotheek gekopieerd: %s", "Copiado a tu biblioteca: %s")
+add("Could not copy this song into your library",
+    "Не удалось скопировать песню в библиотеку",
+    "无法把这首歌复制到你的曲库",
+    "Song konnte nicht in die Bibliothek kopiert werden",
+    "Kon dit nummer niet naar je bibliotheek kopiëren",
+    "No se pudo copiar esta canción a tu biblioteca")
+
+
 # ---------------------------------------------------------------- emit
 def gd_escape(s):
     return s.replace('"', '\\"')
@@ -746,9 +821,12 @@ def collect_source_strings():
             for m in p.finditer(src):
                 g = m.group(1)
                 if '", "' in g:
-                    out.update(re.findall(r'"((?:[^"\\]|\\.)*)"', g))
+                    parts = re.findall(r'"((?:[^"\\]|\\.)*)"', g)
                 else:
-                    out.add(g)
+                    parts = [g]
+                # the regex captures source text, so \" is still escaped there
+                # while the table holds the runtime string
+                out.update(x.replace('\\"', '"') for x in parts)
     return out
 
 
@@ -763,6 +841,16 @@ def looks_translatable(s):
         return False
     letters = re.sub(r'[^A-Za-z]', '', s)
     return len(letters) >= 2
+
+
+def hint_strings():
+    """Tutorial hints live in songs/tutorial/map.json, not in the scripts."""
+    path = os.path.join(ROOT, "songs", "tutorial", "map.json")
+    if not os.path.exists(path):
+        return set()
+    import json
+    data = json.load(open(path, encoding="utf-8"))
+    return {str(h.get("text", "")) for h in data.get("hints", [])}
 
 
 def main():
@@ -839,7 +927,7 @@ def main():
     open(path, "w", encoding="utf-8").write("\n".join(lines))
     print("wrote %s: %d strings x %d languages" % (path, len(T), len(LANGS)))
 
-    found = collect_source_strings()
+    found = collect_source_strings() | hint_strings()
     missing = sorted(s for s in found if looks_translatable(s) and s not in T)
     extra = sorted(s for s in T if s not in found)
     if missing:

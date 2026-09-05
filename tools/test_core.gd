@@ -93,6 +93,27 @@ func _test_hold_notes() -> void:
 	ok(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(str(song.dir))),
 		"delete_song removes the folder it was given")
 
+	# editing a built-in song has to fork it: res:// cannot be written to
+	var built_in: Dictionary = {}
+	for s3 in RhythmMap.load_songs():
+		if not RhythmMap.is_user_song(s3):
+			built_in = s3
+			break
+	if built_in.is_empty():
+		ok(true, "no built-in song to fork from (running outside the export)")
+	else:
+		var fork := RhythmMap.fork_song(built_in)
+		ok(not fork.is_empty() and RhythmMap.is_user_song(fork),
+			"fork_song puts a built-in song into the library")
+		ok(FileAccess.file_exists(str(fork.dir) + "/" + str(fork.audio)),
+			"the forked copy carries its audio")
+		ok(RhythmMap.diffs_of(fork).size() == RhythmMap.diffs_of(built_in).size(),
+			"the forked copy keeps every difficulty")
+		RhythmMap.save_custom(fork, [{"t": 5.0, "cell": 1, "s": 1.0}], 0)
+		ok(RhythmMap.diffs_of(fork)[0].get("notes", []).size() == 1,
+			"save_custom writes into the difficulty it was given")
+		RhythmMap.delete_song(fork)
+
 
 func _test_judge() -> void:
 	print("== judge ==")
@@ -101,6 +122,8 @@ func _test_judge() -> void:
 	ok(Judge.hold_acc(1.0, 1.0) > Judge.hold_acc(1.0, 0.2), "a fully held note beats a dropped one")
 	ok(Judge.degrade("PERFECT", 1.0) == "PERFECT", "a clean hold keeps its rank")
 	ok(Judge.degrade("PERFECT", 0.3) == "GOOD", "a badly dropped hold loses two steps")
+	ok(Judge.HOLD_MIN > 0.5 and Judge.HOLD_GRACE < 0.3,
+		"a hold has to be carried nearly to the end to count")
 	ok(Judge.holding(Vector2(10, 0), Vector2.ZERO, 52.0), "cursor near the cell holds")
 	ok(not Judge.holding(Vector2(400, 0), Vector2.ZERO, 52.0), "cursor far away drops the hold")
 	ok(G.mirror_cell(0) == 2 and G.mirror_cell(3) == 5 and G.mirror_cell(8) == 6,
@@ -129,6 +152,20 @@ func _test_judge() -> void:
 						break
 					overlaps += 1
 	ok(overlaps == 0, "nothing flies while a hold runs (%d holds checked)" % holds_seen)
+
+	# two cubes at once is a note the player cannot take - there is one cursor
+	var tightest := 99.0
+	var tight_where := ""
+	for s4 in RhythmMap.load_songs():
+		for d in RhythmMap.diffs_of(s4):
+			var ns: Array = d.get("notes", [])
+			for i in range(1, ns.size()):
+				var gap: float = float(ns[i].t) - float(ns[i - 1].t)
+				if gap < tightest:
+					tightest = gap
+					tight_where = "%s/%s" % [str(s4.get("id", "")), str(d.get("name", ""))]
+	ok(tightest >= 0.14, "no chart stacks notes on one cursor (tightest %.3f s in %s)"
+		% [tightest, tight_where])
 	ok(holds_seen > 0 and clicks_seen > 0,
 		"shipped charts contain holds (%d) and click notes (%d)" % [holds_seen, clicks_seen])
 

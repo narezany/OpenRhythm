@@ -51,6 +51,7 @@ The exact path is printed on the **Songs** screen, with a *Copy path* button.
 | `length` | Song length in seconds; used for the progress bar before the audio loads. |
 | `audio` | File name inside the folder. Empty means "no audio yet". |
 | `difficulties` | Ordered list. Each has a `name` and a `notes` array. |
+| `hints` | Optional teaching text: `[{"t": 12.0, "text": "..."}]`. Shown for five seconds each; the tutorial uses them. |
 
 ## Notes
 
@@ -103,6 +104,13 @@ a target ring.
 
 Older maps used an `a` field (an angle in degrees) instead of `cell`. It still
 loads — the angle is snapped to the nearest cell. New maps should write `cell`.
+
+## Editing a built-in song
+
+A song that ships inside the binary lives under `res://` and cannot be written
+to. The first time you save one in the editor it is **forked**: the audio, the
+video and every difficulty are copied into a new folder in your library, and
+the editor carries on there. The toast names the folder.
 
 ## Rebuilding a chart
 

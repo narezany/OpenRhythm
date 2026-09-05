@@ -6,7 +6,7 @@ const LINES := [
 	["Open Rhythm", 44, "title"],
 	["created by narezany", 26, "text"],
 	["", 10, "gap"],
-	["coding — GLM 5.3 (thanks for the late nights!)", 19, "muted"],
+	["coding — Claude Opus 5 (thanks for the late nights!)", 19, "muted"],
 	["game idea — inspired by Rhythia", 19, "muted"],
 	["", 10, "gap"],
 	["want more maps, contests and news?", 21, "text"],
