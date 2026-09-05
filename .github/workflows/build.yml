@@ -11,8 +11,6 @@ env:
   # must match an actual godot-builds release tag, and the engine the
   # project is developed against
   GODOT_VERSION: "4.7.2-stable"
-
-env:
   # OpenXR loaders for Quest and Pico, fetched by the android job
   OPENXR_VENDORS: 5.1.0-stable
 
