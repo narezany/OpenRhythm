@@ -17,17 +17,27 @@ class_name VRStage
 const PANEL_W := 5.4              # the backdrop screen, metres across
 const PANEL_Y := 1.62
 const PANEL_Z := -3.6
-const FIELD_W := 1.25             # the 3x3 grid, metres across
-const FIELD_Y := 1.38
-const FIELD_Z := -0.72
+## The grid sits in two different places depending on how you play. A saber has
+## to reach it, so it is at arm's length and no wider than a swing. A pointer
+## does not, and a target that close means throwing your whole arm around to
+## cross it - so it moves back and grows, and ends up covering about the same
+## part of your view.
+const FIELD_W_SABER := 1.25
+const FIELD_Y_SABER := 1.38
+const FIELD_Z_SABER := -0.72
+const FIELD_W_POINT := 1.95
+const FIELD_Y_POINT := 1.50
+const FIELD_Z_POINT := -2.20
 const FLIGHT := 7.0               # how far back a cube starts its run
 const CUT_SPEED := 2.0            # m/s the saber tip has to be moving to cut
 const CUT_SLAB := 0.16            # how close to the grid plane a cut counts
 const BLADE_LEN := 0.85
 
 ## design pixels -> metres, on the grid and on the backdrop
-var field_mpp := FIELD_W / (G.FRAME_HALF * 2.0)
+var field_w := FIELD_W_POINT
+var field_mpp := FIELD_W_POINT / (G.FRAME_HALF * 2.0)
 var panel_mpp := PANEL_W / G.DESIGN.x
+var _laid_out := ""
 
 var origin: XROrigin3D
 var camera: XRCamera3D
@@ -47,6 +57,7 @@ var _tip_prev := [Vector3.ZERO, Vector3.ZERO]
 var _tip_have := [false, false]
 var _cut_cool := [0.0, 0.0]
 var _trigger_was := false
+var _btn_cool := 0.0
 var _cursor_design := G.DESIGN * 0.5
 
 
@@ -127,15 +138,34 @@ func _build_screen() -> void:
 	add_child(panel)
 
 
-## The 3x3 grid the cubes land on, close enough to reach.
+## The 3x3 grid the cubes land on.
 func _build_field() -> void:
 	field = Node3D.new()
-	field.position = Vector3(0, FIELD_Y, FIELD_Z)
 	add_child(field)
+	_layout_field()
+
+
+## Put the grid where the current way of playing wants it, and only when that
+## has actually changed - the mesh is rebuilt with it.
+func _layout_field() -> void:
+	var style: String = G.vr_style
+	if style == _laid_out:
+		return
+	_laid_out = style
+	var saber := style == "saber"
+	field_w = FIELD_W_SABER if saber else FIELD_W_POINT
+	field_mpp = field_w / (G.FRAME_HALF * 2.0)
+	field.position = Vector3(0,
+		FIELD_Y_SABER if saber else FIELD_Y_POINT,
+		FIELD_Z_SABER if saber else FIELD_Z_POINT)
+	for c in field.get_children():
+		if c is MeshInstance3D and c.get("owner_note") == null and not _live.has(c):
+			c.queue_free()
 	var frame := MeshInstance3D.new()
 	frame.mesh = _field_mesh()
 	frame.material_override = _line_material()
 	field.add_child(frame)
+	field.move_child(frame, 0)
 
 
 func _build_pointer() -> void:
@@ -160,6 +190,7 @@ func _build_pointer() -> void:
 
 # ---------------------------------------------------------------- per frame
 func _process(delta: float) -> void:
+	_layout_field()
 	_track_screen()
 	var saber := G.vr_style == "saber" and _gs != null
 	if saber:
@@ -171,6 +202,32 @@ func _process(delta: float) -> void:
 		blades[i].visible = saber
 		_cut_cool[i] = maxf(0.0, _cut_cool[i] - delta)
 	_sync_notes()
+	_buttons(delta)
+
+
+## The controller buttons that are not the trigger: one steps back the way Esc
+## does on a keyboard, the other puts the room back in front of you when you
+## have drifted or sat down.
+func _buttons(delta: float) -> void:
+	_btn_cool = maxf(0.0, _btn_cool - delta)
+	if _btn_cool > 0.0:
+		return
+	var back := false
+	var recentre := false
+	for c in hands:
+		if not c.get_has_tracking_data():
+			continue
+		if c.is_button_pressed("menu_button") or c.is_button_pressed("by_button"):
+			back = true
+		if c.get_float("grip") > 0.8 and c.is_button_pressed("by_button"):
+			recentre = true
+	if recentre:
+		XRServer.center_on_hmd(XRServer.RESET_BUT_KEEP_TILT, true)
+		_btn_cool = 0.6
+		return
+	if back and main != null:
+		main.go_back()
+		_btn_cool = 0.4
 
 
 ## Follow what the flat game is doing, and get its 2D playfield out of the way
@@ -409,7 +466,9 @@ func _lay_laser(from: Vector3, to: Vector3) -> void:
 	laser.global_position = from + d * 0.5
 	var up := Vector3.UP if absf(d.normalized().dot(Vector3.UP)) < 0.98 else Vector3.FORWARD
 	laser.look_at(to, up)
-	laser.rotate_object_local(Vector3.RIGHT, PI * 0.5)
+	# look_at points -Z at the target; the cylinder runs along its own +Y, so
+	# tip it a quarter turn the way that lands +Y on -Z
+	laser.rotate_object_local(Vector3.RIGHT, -PI * 0.5)
 	laser.scale = Vector3(1, len_, 1)
 
 
@@ -440,8 +499,8 @@ func _line_material() -> StandardMaterial3D:
 func _field_mesh() -> ArrayMesh:
 	var im := ImmediateMesh.new()
 	im.surface_begin(Mesh.PRIMITIVE_LINES)
-	var half := FIELD_W * 0.5
-	var step := FIELD_W / 3.0
+	var half := field_w * 0.5
+	var step := field_w / 3.0
 	im.surface_set_color(Color(G.C_EMBER.r, G.C_EMBER.g, G.C_EMBER.b, 0.55))
 	for i in 4:
 		var o := -half + step * i

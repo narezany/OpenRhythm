@@ -74,6 +74,7 @@ godot --path .
 | **Accessibility** | reduce motion, reduce flashes, cursor size, video off |
 | **Six languages** | English, Russian, Chinese, German, Dutch, Spanish |
 | **Controls** | mouse, touch, gamepad stick or keyboard, with rebindable keys |
+| **VR** | the desktop build opens in a headset when one is running and in a window when it is not; Quest and Pico get their own packages. Aim with a laser pointer, or hold a saber in each hand and cut the cubes from any direction |
 
 Runs on Linux, Windows, Android and the web.
 
@@ -151,6 +152,45 @@ compares a protocol number, the game version and a SHA-256 of the notes
 themselves, so custom maps work exactly like the bundled ones as long as the
 charts are identical. The audio file name and any video are left out of that
 hash — neither changes what you play.
+
+</details>
+
+<details>
+<summary><b>VR</b></summary>
+
+<br>
+
+There is no VR build of the desktop game and no switch to flip. It looks for an
+OpenXR runtime at startup: SteamVR running and a headset awake means it opens in
+VR, nothing there means it opens in a window. *Settings → VR* can say no, and
+picks how you hit the cubes.
+
+**Laser pointer** puts the grid across the room and aims a beam at it; the
+trigger is a click, which is what click notes want. **Sabers** bring the grid to
+arm's length and put a blade in each hand. A cube counts the moment a blade
+sweeps through it, from any direction - the cubes have no side to cut them on,
+so swing the way that feels right. Grip + B recentres the room, and the menu
+button steps back the way Esc does.
+
+Everything else is the flat game: the same charts, the same judging, the same
+menus and editor, running on a screen hanging in front of you. Only the cubes
+come out of it into the room.
+
+Quest and Pico get their own packages. Building them needs the OpenXR loaders,
+which are not in this repository:
+
+```bash
+curl -LO https://github.com/GodotVR/godot_openxr_vendors/releases/download/5.1.0-stable/godotopenxrvendorsaddon.zip
+unzip -q godotopenxrvendorsaddon.zip -d /tmp/vendors
+cp -r /tmp/vendors/asset/addons/godotopenxrvendors addons/
+
+godot --headless --path . --install-android-build-template --export-release "Android" build/OpenRhythm.apk
+godot --headless --path . --export-release "Meta Quest" build/OpenRhythm-quest.apk
+godot --headless --path . --export-release "Pico"       build/OpenRhythm-pico.apk
+```
+
+Those two are gradle builds, so they need the Android SDK and a JDK the same way
+the phone package does.
 
 </details>
 

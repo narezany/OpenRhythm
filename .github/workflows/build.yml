@@ -12,6 +12,10 @@ env:
   # project is developed against
   GODOT_VERSION: "4.7.2-stable"
 
+env:
+  # OpenXR loaders for Quest and Pico, fetched by the android job
+  OPENXR_VENDORS: 5.1.0-stable
+
 jobs:
   # Cheap guard: release signing credentials must never reach the repository.
   secrets-check:
@@ -153,6 +157,37 @@ jobs:
           godot --headless --path . --import || true
           mkdir -p build/android
           godot --headless --path . --export-release "Android" build/android/OpenRhythm.apk
+          rm -f "$GODOT_ANDROID_KEYSTORE_RELEASE_PATH"
+
+      # The headset builds need the OpenXR loaders, which are not in this repo:
+      # they are 80 MB of vendor binaries with their own licences, so CI fetches
+      # them at the version pinned here.
+      - if: steps.check.outputs.have_key == 'true'
+        name: Fetch the OpenXR vendor plugin
+        run: |
+          set -euo pipefail
+          curl -sL -o vendors.zip \
+            https://github.com/GodotVR/godot_openxr_vendors/releases/download/${OPENXR_VENDORS}/godotopenxrvendorsaddon.zip
+          unzip -q vendors.zip -d vendors
+          mkdir -p addons
+          cp -r vendors/asset/addons/godotopenxrvendors addons/
+          rm -rf vendors vendors.zip
+
+      - if: steps.check.outputs.have_key == 'true'
+        name: Export Quest and Pico
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_KEYSTORE_USER }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
+          godot --headless --path . --import || true
+          # a headset package is a gradle build, which needs the template in place
+          godot --headless --path . --install-android-build-template \
+            --export-release "Android" build/android/OpenRhythm.apk || true
+          godot --headless --path . --export-release "Meta Quest" build/android/OpenRhythm-quest.apk
+          godot --headless --path . --export-release "Pico" build/android/OpenRhythm-pico.apk
           rm -f "$GODOT_ANDROID_KEYSTORE_RELEASE_PATH"
 
       - if: steps.check.outputs.have_key == 'true'

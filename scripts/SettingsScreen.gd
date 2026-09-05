@@ -11,7 +11,7 @@ const PRESETS := [
 	"b04ad9", "ff6fa8", "7a4a2a", "ffd23f",
 ]
 
-const TABS := ["Audio", "Video", "Accessibility", "Controls", "Language", "Melly"]
+const TABS := ["Audio", "Video", "Accessibility", "Controls", "VR", "Language", "Melly"]
 const FPS_STEPS := [0, 30, 60, 90, 120, 144, 165, 240]
 
 var tab := 0
@@ -81,11 +81,67 @@ func _switch(i: int) -> void:
 		1: _build_video()
 		2: _build_a11y()
 		3: _build_controls()
-		4: _build_language()
-		5: _build_melly()
+		4: _build_vr()
+		5: _build_language()
+		6: _build_melly()
 
 
 # ---------------------------------------------------------------- tabs
+## VR. The same build plays flat or in a headset, so there is nothing here to
+## turn VR on with - it is on when a headset is - only how it plays and a way
+## to say no.
+func _build_vr() -> void:
+	var here := G.label(
+		"In VR now." if G.vr_active
+		else "Flat. Start the game with a headset running and it opens in VR by itself.",
+		19, G.C_GOLD if G.vr_active else G.C_MUTED)
+	here.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	here.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(here)
+	_body.add_child(_sep())
+
+	_body.add_child(G.label("How you hit the cubes", 21, G.C_TEXT))
+	var pointer_btn: Button = null
+	var saber_btn: Button = null
+	var paint := func():
+		pointer_btn.add_theme_color_override("font_color",
+			G.C_PRIMARY if G.vr_style == "pointer" else G.C_MUTED)
+		saber_btn.add_theme_color_override("font_color",
+			G.C_PRIMARY if G.vr_style == "saber" else G.C_MUTED)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	pointer_btn = G.button("Laser pointer", func():
+		G.vr_style = "pointer"
+		G.save_all()
+		G.play_sfx("click")
+		paint.call(), 22)
+	saber_btn = G.button("Sabers", func():
+		G.vr_style = "saber"
+		G.save_all()
+		G.play_sfx("click")
+		paint.call(), 22)
+	row.add_child(pointer_btn)
+	row.add_child(saber_btn)
+	_body.add_child(row)
+	paint.call()
+	var how := G.label("The pointer aims a beam and the trigger presses. Sabers are held in your hands and a cube counts when a blade sweeps through it - from any direction, since the cubes have no side to cut them on. Swing however feels right.",
+		15, Color(1, 1, 1, 0.45))
+	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(how)
+	_body.add_child(_sep())
+
+	_body.add_child(_check("Open in VR when a headset is there", G.vr_start == "auto",
+		func(on):
+			G.vr_start = "auto" if on else "off"
+			G.save_all()))
+	var note := G.label("Off keeps the game in a window even with a headset connected. Takes effect next launch.",
+		15, Color(1, 1, 1, 0.45))
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(note)
+
+
 func _build_audio() -> void:
 	_body.add_child(_slider("Master volume", G.master_vol, 0.0, 1.0, 0.05,
 		func(v): G.set_master_volume(v); G.save_all()))

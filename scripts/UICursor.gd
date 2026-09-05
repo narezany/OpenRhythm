@@ -63,7 +63,9 @@ func _visible_rect() -> Rect2:
 ## True while the drawn cursor is being kept apart from the system pointer.
 ## Only sensitivity does that, and only where warping actually works.
 func _warping() -> bool:
-	return _warp_ok and absf(G.mouse_sens - 1.0) > 0.01
+	# In a headset there is no system pointer to keep under anything: the aim
+	# comes from a controller and the cursor is set directly.
+	return _warp_ok and not G.vr_active and absf(G.mouse_sens - 1.0) > 0.01
 
 
 func _input(event: InputEvent) -> void:
@@ -76,6 +78,8 @@ func _input(event: InputEvent) -> void:
 		# finger, which means a drag arrives twice: once as a touch event and
 		# once as mouse motion. Counting both moved the cursor at double speed.
 		return
+	if G.vr_active:
+		return                      # the headset is doing the aiming
 	var mm := event as InputEventMouseMotion
 	if not _warping():
 		# The drawn cursor IS the system pointer, so take its position rather

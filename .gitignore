@@ -39,3 +39,9 @@ docs/img/*.import
 
 # Python bytecode from the chart tools
 __pycache__/
+
+# OpenXR loaders for the headset builds: 80 MB of vendor binaries under their
+# own licences. CI fetches them at the version pinned in the workflow; locally,
+# unzip godotopenxrvendorsaddon.zip from the godot_openxr_vendors release into
+# addons/.
+addons/godotopenxrvendors/

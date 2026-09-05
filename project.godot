@@ -41,11 +41,11 @@ window/handheld/orientation=0
 
 [xr]
 
-# Off until the VR mode is finished. With it on, every launch - including on a
-# phone, which has no runtime - starts by trying to open OpenXR and logging the
-# failure. Boot falls back to a flat window either way, so leaving it off costs
-# nothing and keeps an unproven code path out of a shipping build.
-openxr/enabled=false
+# On everywhere the engine has it. The desktop build then finds a runtime when
+# SteamVR is up and starts in VR, and finds nothing when it is not and starts
+# in a window - one build, no switch to flip. The phone package is exported
+# with XR mode off, so it has no OpenXR to try in the first place.
+openxr/enabled=true
 # No alert box when there is no headset: most players are on a flat screen and
 # a runtime that is simply not running is not an error worth interrupting them
 # with. Boot falls back to a window on its own.

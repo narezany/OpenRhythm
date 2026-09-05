@@ -260,6 +260,33 @@ add("press a key…", "нажми клавишу…", "请按一个键…", "Tas
 
 # ---------------------------------------------------------------- gameplay
 add("PAUSED", "ПАУЗА", "已暂停", "PAUSE", "GEPAUZEERD", "EN PAUSA")
+add("VR", "VR", "VR", "VR", "VR", "RV")
+add("In VR now.", "Сейчас в VR.", "当前处于 VR。", "Jetzt in VR.", "Nu in VR.", "Ahora en RV.")
+add("Flat. Start the game with a headset running and it opens in VR by itself.",
+    "Плоский режим. Запусти игру при включённом шлеме — она сама откроется в VR.",
+    "平面模式。戴上头显后启动游戏，它会自行进入 VR。",
+    "Flach. Starte das Spiel mit laufendem Headset, dann offnet es sich von selbst in VR.",
+    "Plat. Start het spel met een headset aan en het opent vanzelf in VR.",
+    "Plano. Inicia el juego con las gafas encendidas y se abrira en RV solo.")
+add("How you hit the cubes", "Чем бить по кубам", "你用什么打方块",
+    "Womit du die Wurfel triffst", "Waarmee je de kubussen raakt", "Con que golpeas los cubos")
+add("Laser pointer", "Лазерная указка", "激光指针", "Laserpointer", "Laserpointer", "Puntero laser")
+add("Sabers", "Сабли", "光剑", "Sabel", "Sabels", "Sables")
+add("The pointer aims a beam and the trigger presses. Sabers are held in your hands and a cube counts when a blade sweeps through it - from any direction, since the cubes have no side to cut them on. Swing however feels right.",
+    "Указка светит лучом, курок — это клик. Сабли держишь в руках, и куб засчитывается, когда лезвие проходит сквозь него — с любой стороны, у кубов нет правильного направления реза. Маши как удобно.",
+    "指针发射光束，扳机即点击。光剑握在手中，剑刃扫过方块即算命中——任何方向都行，方块没有规定的切割面。怎么顺手怎么挥。",
+    "Der Pointer zielt mit einem Strahl, der Trigger druckt. Sabel halst du in den Handen, und ein Wurfel zahlt, sobald eine Klinge hindurchfahrt - aus jeder Richtung, denn die Wurfel haben keine Schnittseite. Schwing, wie es sich richtig anfuhlt.",
+    "De pointer richt een straal en de trigger drukt. Sabels houd je in je handen, en een kubus telt zodra een blad erdoorheen zwaait - uit elke richting, want de kubussen hebben geen snijkant. Zwaai zoals het goed voelt.",
+    "El puntero apunta un haz y el gatillo pulsa. Los sables van en tus manos y un cubo cuenta cuando una hoja lo atraviesa, desde cualquier direccion: los cubos no tienen lado por donde cortarlos. Golpea como te salga.")
+add("Open in VR when a headset is there", "Открывать в VR, если есть шлем",
+    "有头显时以 VR 打开", "In VR offnen, wenn ein Headset da ist",
+    "In VR openen als er een headset is", "Abrir en RV si hay gafas")
+add("Off keeps the game in a window even with a headset connected. Takes effect next launch.",
+    "Выключено — игра останется в окне даже с подключённым шлемом. Применится при следующем запуске.",
+    "关闭后即使连接了头显，游戏也会留在窗口中。下次启动生效。",
+    "Aus lasst das Spiel im Fenster, auch mit angeschlossenem Headset. Gilt ab dem nachsten Start.",
+    "Uit houdt het spel in een venster, ook met een aangesloten headset. Werkt vanaf de volgende start.",
+    "Desactivado mantiene el juego en ventana aunque haya gafas conectadas. Se aplica al siguiente inicio.")
 add("Hitsound offset", "Смещение хитсаунда", "打击音偏移", "Hitsound-Versatz",
     "Hitsound-offset", "Desfase del hitsound")
 add("Only the hitsound, not the judging. Phones often play sound later than they admit to; raise this until the tap sits on the beat.",
