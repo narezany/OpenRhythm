@@ -868,6 +868,42 @@ add("This song ships with the game and cannot be edited in place. Name the copy 
     "Dit nummer hoort bij het spel en kan niet ter plekke bewerkt worden. Hoe heet de kopie?",
     "Esta canción viene con el juego y no se puede editar en su sitio. ¿Cómo se llama la copia?")
 
+# ---------------------------------------------------------------- updater
+add("Update", "Обновить", "更新", "Aktualisieren", "Bijwerken", "Actualizar")
+add("Retry", "Ещё раз", "重试", "Nochmal", "Opnieuw", "Reintentar")
+add("Downloading…", "Скачиваю…", "正在下载…", "Lade herunter…", "Downloaden…", "Descargando…")
+add("Version %s is out — you have %s", "Вышла версия %s — у тебя %s",
+    "已发布 %s 版 — 你的是 %s", "Version %s ist da — du hast %s",
+    "Versie %s is uit — jij hebt %s", "Salió la versión %s — tienes %s")
+add("Installing — the game will restart", "Устанавливаю — игра перезапустится",
+    "正在安装 — 游戏会重启", "Wird installiert — das Spiel startet neu",
+    "Installeren — het spel start opnieuw", "Instalando — el juego se reiniciará")
+add("Saved to Downloads — open it to install",
+    "Сохранено в «Загрузки» — открой файл, чтобы установить",
+    "已保存到下载文件夹 — 打开它进行安装",
+    "In Downloads gespeichert — zum Installieren öffnen",
+    "Opgeslagen in Downloads — open het om te installeren",
+    "Guardado en Descargas — ábrelo para instalar")
+add("Check for updates", "Проверять обновления", "检查更新",
+    "Nach Updates suchen", "Controleren op updates", "Buscar actualizaciones")
+add("Asks GitHub once, when the menu opens, whether a newer release exists. Nothing is sent.",
+    "Один запрос к GitHub при открытии меню: есть ли релиз новее. Ничего не отправляется.",
+    "打开菜单时向 GitHub 查询一次是否有更新版本。不会发送任何数据。",
+    "Fragt GitHub einmal beim Öffnen des Menüs, ob es eine neuere Version gibt. Es wird nichts gesendet.",
+    "Vraagt GitHub eenmaal bij het openen van het menu of er een nieuwere versie is. Er wordt niets verzonden.",
+    "Pregunta a GitHub una vez, al abrir el menú, si hay una versión más nueva. No se envía nada.")
+add("Could not start the download", "Не удалось начать загрузку", "无法开始下载",
+    "Download konnte nicht gestartet werden", "Kon de download niet starten",
+    "No se pudo iniciar la descarga")
+add("Download failed", "Загрузка не удалась", "下载失败",
+    "Download fehlgeschlagen", "Download mislukt", "Falló la descarga")
+add("The downloaded file is empty", "Скачанный файл пустой", "下载的文件是空的",
+    "Die heruntergeladene Datei ist leer", "Het gedownloade bestand is leeg",
+    "El archivo descargado está vacío")
+add("Could not unpack the update", "Не удалось распаковать обновление", "无法解压更新",
+    "Update konnte nicht entpackt werden", "Kon de update niet uitpakken",
+    "No se pudo descomprimir la actualización")
+
 # ---------------------------------------------------------------- emit
 def gd_escape(s):
     return s.replace('"', '\\"')

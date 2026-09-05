@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_settings_roundtrip()
 	_test_hold_notes()
 	_test_judge()
+	_test_updater()
 	_test_offset()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -168,6 +169,17 @@ func _test_judge() -> void:
 		% [tightest, tight_where])
 	ok(holds_seen > 0 and clicks_seen > 0,
 		"shipped charts contain holds (%d) and click notes (%d)" % [holds_seen, clicks_seen])
+
+
+func _test_updater() -> void:
+	print("== updater ==")
+	ok(Updater.compare("0.3.1", "0.3.0") > 0, "a newer patch is newer")
+	ok(Updater.compare("v0.4.0", "0.3.9") > 0, "a leading v is ignored")
+	ok(Updater.compare("1.0.0", "0.9.9") > 0, "a major bump is newer")
+	ok(Updater.compare("0.3.0", "0.3.0") == 0, "the same version is not an update")
+	ok(Updater.compare("0.2.9", "0.3.0") < 0, "an older release is not offered")
+	ok(Updater.compare("0.3", "0.3.0") == 0, "a missing patch counts as zero")
+	ok(G.VERSION.split(".").size() == 3, "the game version is semantic (%s)" % G.VERSION)
 
 
 func _test_offset() -> void:

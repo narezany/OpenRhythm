@@ -30,6 +30,12 @@ var back_btn: Button
 var carousel_y := 300.0
 var _social_btns: Array = []
 
+# --- update banner ---
+var _updater: Updater
+var _update_panel: PanelContainer
+var _update_label: Label
+var _update_btn: Button
+
 
 func _ready() -> void:
 	G.anchor_full(self)   # fill the canvas: children anchor against this
@@ -95,11 +101,81 @@ func _ready() -> void:
 	_add_social("res://assets/icons/telegram.svg", "Telegram forum",
 		"https://t.me/openrhythmforum", 1)
 
+	_build_update_banner()
+
 	# adaptive anchors: headers to the edges, footer to the visible bottom
 	G.view_changed.connect(_relayout)
 	_relayout()
 	_refill()
 	Conductor.ensure_menu_music()
+
+
+## A quiet strip under the logo: it only appears once GitHub has confirmed
+## there is a newer release for this platform.
+func _build_update_banner() -> void:
+	_update_panel = PanelContainer.new()
+	_update_panel.add_theme_stylebox_override("panel", G.panel_style(
+		Color(G.C_GOLD.r, G.C_GOLD.g, G.C_GOLD.b, 0.75)))
+	_update_panel.visible = false
+	add_child(_update_panel)
+	G.anchor_top_wide(_update_panel, 150, 54, 320)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 14)
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	_update_panel.add_child(hb)
+	_update_label = G.label("", 18, G.C_GOLD)
+	_update_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hb.add_child(_update_label)
+	_update_btn = G.button("Update", _start_update, 16)
+	hb.add_child(_update_btn)
+
+	if not G.check_updates:
+		return
+	_updater = Updater.new()
+	add_child(_updater)
+	_updater.check_done.connect(_on_update_check)
+	_updater.progress.connect(_on_update_progress)
+	_updater.failed.connect(_on_update_failed)
+	_updater.ready_to_install.connect(_on_update_ready)
+	if _updater.can_update():
+		_updater.check()
+
+
+func _on_update_check(available: bool, version: String) -> void:
+	if not available or _update_panel == null:
+		return
+	_update_label.text = tr("Version %s is out — you have %s") % [version, G.VERSION]
+	_update_panel.visible = true
+	G.play_sfx("click", 1.4, -12.0)
+
+
+func _start_update() -> void:
+	G.play_sfx("click")
+	_update_btn.disabled = true
+	_update_label.text = tr("Downloading…")
+	_updater.download()
+
+
+func _on_update_progress(done: int, total: int) -> void:
+	if total <= 0:
+		return
+	_update_label.text = "%s  %d%%  (%.0f / %.0f MB)" % [tr("Downloading…"),
+		int(100.0 * done / total), done / 1048576.0, total / 1048576.0]
+
+
+func _on_update_failed(reason: String) -> void:
+	_update_label.text = reason
+	_update_btn.disabled = false
+	_update_btn.text = tr("Retry")
+
+
+func _on_update_ready(path: String) -> void:
+	if OS.has_feature("android"):
+		_update_label.text = tr("Saved to Downloads — open it to install")
+		_update_btn.visible = false
+		return
+	_update_label.text = tr("Installing — the game will restart")
+	_updater.install(path)
 
 
 func _relayout() -> void:

@@ -5,7 +5,10 @@ const DESIGN := Vector2(1280, 720)
 const FRAME_HALF := 250.0
 const CELL := 166.0            # spacing of the 3x3 note grid
 const SAVE_PATH := "user://save.json"
-const VERSION := "demo 0.2"
+## Semantic version, matched against the tag of a GitHub release by the
+## updater. Bump it in the same commit as the tag.
+const VERSION := "0.3.0"
+const REPO := "narezany/OpenRhythm"
 
 # --- heavy black & blood-red palette ---
 const C_PRIMARY := Color("ff2b3a")   # blood red — main accent
@@ -75,6 +78,7 @@ var key_binds := {}              # action name -> [physical keycode, ...]
 # --- misc ---
 var locale := ""
 var disclaimer_seen := false
+var check_updates := true
 
 # --- lifetime stats ---
 var stat_plays := 0
@@ -413,6 +417,7 @@ func _load_save() -> void:
 				gamepad_speed = float(data.get("gamepad_speed", 950.0))
 				locale = str(data.get("locale", ""))
 				disclaimer_seen = bool(data.get("disclaimer_seen", false))
+				check_updates = bool(data.get("check_updates", true))
 				stat_plays = int(data.get("stat_plays", 0))
 				stat_notes = int(data.get("stat_notes", 0))
 				stat_best_combo = int(data.get("stat_best_combo", 0))
@@ -452,6 +457,7 @@ func save_all() -> void:
 			"disable_song_video": disable_song_video, "cursor_scale": cursor_scale,
 			"gamepad_speed": gamepad_speed, "key_binds": key_binds,
 			"locale": locale, "disclaimer_seen": disclaimer_seen,
+			"check_updates": check_updates,
 			"stat_plays": stat_plays, "stat_notes": stat_notes,
 			"stat_best_combo": stat_best_combo, "stat_playtime": stat_playtime,
 			"unlocked": unlocked,
@@ -595,11 +601,16 @@ static func angle_to_cell(a_deg: float) -> int:
 # ---------------------------------------------------------------- screenshots (dev)
 func _schedule_shot() -> void:
 	var wait := 2.2
+	# OR_SHOT_WAIT holds the window open longer, which is what makes it
+	# possible to size it from outside before the frame is grabbed
+	var forced := OS.get_environment("OR_SHOT_WAIT")
 	match shot_mode:
 		"select": wait = 2.6
 		"game": wait = 5.5 + shot_seek * 0.0
 		"results": wait = 2.6
 		"editor": wait = 2.6
+	if forced != "":
+		wait = float(forced)
 	await get_tree().create_timer(wait, true).timeout
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()

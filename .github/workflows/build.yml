@@ -32,7 +32,7 @@ jobs:
             exit 1
           fi
 
-  export:
+  desktop:
     needs: secrets-check
     runs-on: ubuntu-latest
     strategy:
@@ -40,14 +40,14 @@ jobs:
       matrix:
         include:
           - preset: "Linux"
-            out: "build/OpenRhythm.x86_64"
-            artifact: "openrhythm-linux"
+            out: "build/linux/OpenRhythm.x86_64"
+            artifact: "linux"
           - preset: "Windows Desktop"
             out: "build/windows/OpenRhythm.exe"
-            artifact: "openrhythm-windows"
+            artifact: "windows"
           - preset: "Web"
             out: "build/web/index.html"
-            artifact: "openrhythm-web"
+            artifact: "web"
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +60,6 @@ jobs:
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
-          # templates live in ~/.local/share/godot/export_templates/<4.7.stable>
           unzip -q templates.tpz
           dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-/.}"
           mkdir -p "$(dirname "$dest")"
@@ -73,6 +72,10 @@ jobs:
         if: matrix.preset == 'Linux'
         run: godot --headless --path . res://tools/CoreTest.tscn
 
+      - name: Layout tests
+        if: matrix.preset == 'Linux'
+        run: godot --headless --path . res://tools/LayoutTest.tscn
+
       - name: Export ${{ matrix.preset }}
         run: |
           mkdir -p "$(dirname '${{ matrix.out }}')"
@@ -81,11 +84,86 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: build/
+          path: build/${{ matrix.artifact }}/
+
+  # Android is only built when the signing key is available as secrets. An
+  # unsigned build would be useless: it could not install over an existing copy.
+  android:
+    needs: secrets-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        name: Is a signing key configured?
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "have_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_key=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No ANDROID_KEYSTORE_BASE64 secret; skipping the Android build."
+          fi
+
+      - if: steps.check.outputs.have_key == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - if: steps.check.outputs.have_key == 'true'
+        uses: android-actions/setup-android@v3
+
+      - if: steps.check.outputs.have_key == 'true'
+        name: Install Godot and export templates
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}"
+          curl -fL -o godot.zip "${base}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          curl -fL -o templates.tpz "${base}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          unzip -q templates.tpz
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-/.}"
+          mkdir -p "$(dirname "$dest")"
+          mv templates "$dest"
+          sdkmanager "build-tools;34.0.0" "platforms;android-34" >/dev/null
+
+      - if: steps.check.outputs.have_key == 'true'
+        name: Point Godot at the Android SDK
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          ver="${GODOT_VERSION%%-*}"; ver="${ver%.*}"
+          cat > "$HOME/.config/godot/editor_settings-${ver}.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "${ANDROID_SDK_ROOT}"
+          export/android/java_sdk_path = "${JAVA_HOME}"
+          EOF
+
+      - if: steps.check.outputs.have_key == 'true'
+        name: Export Android
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_KEYSTORE_USER }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
+          godot --headless --path . --import || true
+          mkdir -p build/android
+          godot --headless --path . --export-release "Android" build/android/OpenRhythm.apk
+          rm -f "$GODOT_ANDROID_KEYSTORE_RELEASE_PATH"
+
+      - if: steps.check.outputs.have_key == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: build/android/
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: export
+    needs: [desktop, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -93,11 +171,22 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
-      - name: Zip each platform
+
+      - name: Package one file per platform
         run: |
-          cd dist
-          for d in */; do (cd "$d" && zip -qr "../${d%/}.zip" .); done
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          mkdir -p out
+          for p in linux windows web; do
+            [ -d "dist/$p" ] || continue
+            (cd "dist/$p" && zip -qr "../../out/OpenRhythm-${tag}-${p}.zip" .)
+          done
+          if [ -f dist/android/OpenRhythm.apk ]; then
+            cp dist/android/OpenRhythm.apk "out/OpenRhythm-${tag}-android.apk"
+          fi
+          ls -la out
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.zip
+          files: out/*
           generate_release_notes: true

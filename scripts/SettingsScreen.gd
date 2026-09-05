@@ -153,6 +153,14 @@ func _build_video() -> void:
 	_body.add_child(_check("Disable song video", G.disable_song_video, func(on):
 		G.disable_song_video = on
 		G.save_all()))
+	_body.add_child(_check("Check for updates", G.check_updates, func(on):
+		G.check_updates = on
+		G.save_all()))
+	var uh := G.label("Asks GitHub once, when the menu opens, whether a newer release exists. Nothing is sent.",
+		15, Color(1, 1, 1, 0.45))
+	uh.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	uh.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(uh)
 
 
 func _build_a11y() -> void:
