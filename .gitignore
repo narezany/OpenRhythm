@@ -34,3 +34,6 @@ Thumbs.db
 songs/monster/
 songs/verity/
 songs/be_my_friend/
+
+# Godot imports every image it finds; the README art is not game content
+docs/img/*.import
