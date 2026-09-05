@@ -88,13 +88,24 @@ func texture(file: String) -> Texture2D:
 		return _textures[name]
 	var path := dir + "/" + name
 	var tex: Texture2D = null
-	if path.begins_with("res://"):
-		if ResourceLoader.exists(path):
-			tex = load(path)
-	elif FileAccess.file_exists(path):
+	# A song shipped inside the binary has its art imported as a resource; a
+	# song in the player's library is just a file on disk. Try both, because a
+	# folder dropped into res:// by hand has not been imported yet either.
+	if path.begins_with("res://") and ResourceLoader.exists(path):
+		tex = load(path)
+	if tex == null:
 		var img := Image.new()
-		if img.load(path) == OK:
-			if img.get_width() <= MAX_IMAGE_PX and img.get_height() <= MAX_IMAGE_PX:
-				tex = ImageTexture.create_from_image(img)
+		var ok := false
+		if FileAccess.file_exists(path):
+			ok = img.load(path) == OK
+		if not ok:
+			var bytes := FileAccess.get_file_as_bytes(path)
+			if not bytes.is_empty():
+				ok = img.load_png_from_buffer(bytes) == OK \
+					or img.load_jpg_from_buffer(bytes) == OK \
+					or img.load_webp_from_buffer(bytes) == OK
+		if ok and img.get_width() <= MAX_IMAGE_PX \
+				and img.get_height() <= MAX_IMAGE_PX:
+			tex = ImageTexture.create_from_image(img)
 	_textures[name] = tex
 	return tex

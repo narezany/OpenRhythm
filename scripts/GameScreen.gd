@@ -70,6 +70,7 @@ var _elapsed := 0.0
 ## on the cursor merely being in the right place.
 var _click_edge := false
 var _prev_time := 0.0
+var _had_focus := false
 ## Centre of the playfield in canvas units. On anything that is not 16:9 the
 ## canvas is bigger than the design, so this is not DESIGN / 2.
 var field_center := G.DESIGN / 2.0
@@ -955,8 +956,14 @@ func _finish() -> void:
 ## Losing focus mid-song would cost the player the run, so pause instead.
 func _notification(what: int) -> void:
 	match what:
+		NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_WM_WINDOW_FOCUS_IN:
+			_had_focus = true
 		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
-			if not ended and not paused and is_inside_tree() and pause_layer != null:
+			# only pause if the window actually had focus and then lost it - a
+			# window manager that never focuses us on launch would otherwise
+			# drop the player into a paused song before they touched anything
+			if _had_focus and not ended and not paused and is_inside_tree() \
+					and pause_layer != null:
 				_toggle_pause()
 
 
