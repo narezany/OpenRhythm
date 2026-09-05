@@ -433,16 +433,22 @@ func _create_new_map() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		if _mods_layer != null and _mods_layer.visible:
-			_mods_layer.visible = false
-			return
-		if _new_layer != null and _new_layer.visible:
-			_new_layer.visible = false
-			return
-		if mode == "story":
-			G.main.goto_story()
-			return
-		G.main.goto_menu()
+		go_back()
+		return
+
+
+## Esc, and the Android back button: close whatever panel is open first.
+func go_back() -> void:
+	if _mods_layer != null and _mods_layer.visible:
+		_mods_layer.visible = false
+		return
+	if _new_layer != null and _new_layer.visible:
+		_new_layer.visible = false
+		return
+	if mode == "story":
+		G.main.goto_story()
+		return
+	G.main.goto_menu()
 
 
 class HSpacer extends Control:

@@ -200,5 +200,11 @@ func _offer(song: Dictionary, diff_idx: int) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		Net.close()
-		G.main.goto_menu()
+		go_back()
+		return
+
+
+## Esc, and the Android back button.
+func go_back() -> void:
+	Net.close()
+	G.main.goto_menu()

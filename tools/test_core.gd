@@ -17,6 +17,9 @@ func _ready() -> void:
 	_test_judge()
 	_test_updater()
 	_test_offset()
+	_test_fork_audio()
+	await _test_back_button()
+	_test_touch_cursor()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
 
@@ -190,3 +193,157 @@ func _test_offset() -> void:
 	G.audio_offset = 0.05
 	ok(is_equal_approx(Conductor.play_time(), 9.95), "a positive offset judges notes later")
 	G.audio_offset = 0.0
+
+
+## The Android back button. It has to behave like Esc, and - this is the part
+## that kept crashing - it must not swap screens while the engine is still
+## delivering the notification, because that frees the node being processed.
+func _test_back_button() -> void:
+	print("== android back button ==")
+	var screens := {
+		"SongSelectScreen": true, "GameScreen": true, "EditorScreen": true,
+		"SettingsScreen": true, "SongsScreen": true, "StatsScreen": true,
+		"StoryScreen": true, "CreditsScreen": true, "ResultsScreen": true,
+		"VersusScreen": true, "CalibrationScreen": true, "PlayChoiceScreen": true,
+	}
+	var missing: Array[String] = []
+	for name_ in screens:
+		var src: GDScript = load("res://scripts/%s.gd" % name_)
+		var has := false
+		for m in src.get_script_method_list():
+			if str(m.get("name", "")) == "go_back":
+				has = true
+		if not has:
+			missing.append(name_)
+	ok(missing.is_empty(), "every screen answers the back button (%s)"
+		% ("all " + str(screens.size()) if missing.is_empty() else str(missing)))
+
+	G.disclaimer_seen = true
+	G.shot_mode = ""
+	var main: Node = load("res://scripts/Main.gd").new()
+	add_child(main)
+	await get_tree().process_frame
+	ok(main.current is MenuScreen, "the game starts on the menu")
+
+	main.goto_settings()
+	await get_tree().process_frame
+	ok(main.current is SettingsScreen, "settings opened")
+	main.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	ok(main.current is SettingsScreen,
+		"back does not tear the screen down inside the notification")
+	await get_tree().process_frame
+	ok(is_instance_valid(main) and main.current is MenuScreen,
+		"a frame later back has returned to the menu")
+
+	# and again, from a screen that has a panel to close first
+	main.goto_songs()
+	await get_tree().process_frame
+	main.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	await get_tree().process_frame
+	ok(is_instance_valid(main) and main.current is MenuScreen, "back works from the song list")
+
+	# on the menu itself one press only warns, two leave
+	main.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	await get_tree().process_frame
+	ok(is_instance_valid(main) and main.current is MenuScreen,
+		"one press on the menu does not quit the game")
+	main.free()
+
+
+## One finger steers, the rest are taps. Two fingers used to fight over the
+## cursor; now the second one is free to hit a click note where the first is.
+func _test_touch_cursor() -> void:
+	print("== touch cursor ==")
+	G.view_w = 1280.0
+	G.view_h = 720.0
+	G.mouse_sens = 1.0
+	var c := UICursor
+	c._fingers.clear()
+	c._cursor_finger = -1
+	c._touch_input(_touch(0, true, Vector2(300, 300)))
+	ok(c.pos.is_equal_approx(Vector2(300, 300)), "the first finger takes the cursor")
+	c._touch_input(_drag(0, Vector2(340, 300)))
+	ok(c.pos.is_equal_approx(Vector2(340, 300)), "and moves it")
+	c._touch_input(_touch(1, true, Vector2(900, 620)))
+	ok(c.pos.is_equal_approx(Vector2(340, 300)), "a second finger does not snatch the cursor")
+	c._touch_input(_drag(1, Vector2(950, 650)))
+	ok(c.pos.is_equal_approx(Vector2(340, 300)), "nor drag it around")
+	c._touch_input(_touch(1, false, Vector2(950, 650)))
+	ok(c.pos.is_equal_approx(Vector2(340, 300)) and c._cursor_finger == 0,
+		"lifting it leaves the first finger in charge")
+	c._touch_input(_touch(1, true, Vector2(200, 200)))
+	c._touch_input(_touch(0, false, Vector2(340, 300)))
+	ok(c._cursor_finger == 1, "lifting the steering finger hands over to the one still down")
+	c._touch_input(_drag(1, Vector2(210, 200)))
+	ok(c.pos.is_equal_approx(Vector2(350, 300)),
+		"the new steering finger carries on from where the cursor was")
+	c._touch_input(_touch(1, false, Vector2(210, 200)))
+	ok(c._fingers.is_empty() and c._cursor_finger == -1, "letting go clears every finger")
+
+
+func _touch(idx: int, pressed: bool, at: Vector2) -> InputEventScreenTouch:
+	var e := InputEventScreenTouch.new()
+	e.index = idx
+	e.pressed = pressed
+	e.position = at
+	return e
+
+
+func _drag(idx: int, at: Vector2) -> InputEventScreenDrag:
+	var e := InputEventScreenDrag.new()
+	e.index = idx
+	e.position = at
+	return e
+
+
+## Forking a built-in song. The copy may not carry the audio file itself - in an
+## exported build the original is packed as an imported resource - but it still
+## has music, and the editor must not tell the player otherwise.
+func _test_fork_audio() -> void:
+	print("== forked songs keep their music ==")
+	var songs := RhythmMap.load_songs()
+	var src := {}
+	for s in songs:
+		if str(s.get("dir", "")).begins_with("res://") and RhythmMap.has_audio(s):
+			src = s
+			break
+	if src.is_empty():
+		ok(false, "a built-in song with audio was found to fork")
+		return
+	var fork := RhythmMap.fork_song(src, "Fork Test")
+	ok(not fork.is_empty(), "the fork was created")
+	ok(RhythmMap.has_audio(fork), "the fork reports that it has audio")
+	ok(RhythmMap.audio_path(fork) != "", "and a path to play it from")
+	ok(RhythmMap.audio_stream(fork) != null, "which really does load as a stream")
+	# and it survives a save/load round trip, which is what the editor does
+	RhythmMap.write_map(fork)
+	var reloaded: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string(str(fork["dir"]) + "/map.json"))
+	if reloaded is Dictionary:
+		reloaded["dir"] = fork["dir"]
+		ok(RhythmMap.has_audio(reloaded), "and after being saved and read back")
+	else:
+		ok(false, "the forked map.json reads back")
+	# the exported-build shape: no file of its own, only a reference back to the
+	# packed original. This is the case that showed the "no audio" banner.
+	var packed := fork.duplicate()
+	packed["audio_ref"] = str(src["dir"]) + "/" + str(src.get("audio", ""))
+	packed["audio"] = ""
+	ok(RhythmMap.has_audio(packed), "a fork that only references its original still has audio")
+	ok(RhythmMap.audio_stream(packed) != null, "and that reference still plays")
+	_wipe(str(fork["dir"]))
+
+
+## Remove a folder the test made under user://.
+func _wipe(dir: String) -> void:
+	var d := DirAccess.open(dir)
+	if d == null:
+		return
+	d.list_dir_begin()
+	var f := d.get_next()
+	while f != "":
+		if not d.current_is_dir():
+			d.remove(f)
+		f = d.get_next()
+	d.list_dir_end()
+	DirAccess.remove_absolute(dir)

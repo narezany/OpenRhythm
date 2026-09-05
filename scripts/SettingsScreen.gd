@@ -358,4 +358,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("ui_cancel"):
-		G.main.goto_menu()
+		go_back()
+		return
+
+
+## Esc, and the Android back button.
+func go_back() -> void:
+	G.main.goto_menu()

@@ -286,5 +286,11 @@ class HSpacer extends Control:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		G.custom_test = {}
-		G.main.goto_menu()
+		go_back()
+		return
+
+
+## Esc, and the Android back button.
+func go_back() -> void:
+	G.custom_test = {}
+	G.main.goto_menu()

@@ -260,6 +260,9 @@ add("press a key…", "нажми клавишу…", "请按一个键…", "Tas
 
 # ---------------------------------------------------------------- gameplay
 add("PAUSED", "ПАУЗА", "已暂停", "PAUSE", "GEPAUZEERD", "EN PAUSA")
+add("PRESS BACK AGAIN TO EXIT", "НАЖМИТЕ НАЗАД ЕЩЁ РАЗ ДЛЯ ВЫХОДА", "再按一次返回键退出",
+    "ZUM BEENDEN ERNEUT ZURÜCK DRÜCKEN", "DRUK NOGMAALS OP TERUG OM AF TE SLUITEN",
+    "PULSA ATRÁS OTRA VEZ PARA SALIR")
 add("ESC — pause", "ESC — пауза", "ESC — 暂停", "ESC — Pause", "ESC — pauze", "ESC — pausa")
 add("RESULTS", "РЕЗУЛЬТАТЫ", "成绩", "ERGEBNIS", "RESULTAAT", "RESULTADOS")
 add("Retry", "Ещё раз", "重试", "Nochmal", "Opnieuw", "Reintentar")

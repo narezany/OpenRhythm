@@ -307,8 +307,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.is_action_pressed("ui_accept"):
 			_advance()
 		elif event.is_action_pressed("ui_cancel"):
-			# Esc: finish the line, then the next one, then leave
-			_advance() if _li < _lines.size() else G.main.goto_menu()
+			go_back()
 		return
 	if event.is_action_pressed("ui_cancel"):
-		G.main.goto_menu()
+		go_back()
+		return
+
+
+## Esc, and the Android back button. During a cutscene it skips ahead a line
+## rather than dropping the player out of the story.
+func go_back() -> void:
+	if _novel_layer != null:
+		# finish the line, then the next one, then leave
+		if _li < _lines.size():
+			_advance()
+		else:
+			G.main.goto_menu()
+		return
+	G.main.goto_menu()

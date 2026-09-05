@@ -187,7 +187,13 @@ func _toast(text: String) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		if _import_dialog != null and _import_dialog.visible:
-			_import_dialog.hide()
-			return
-		G.main.goto_menu()
+		go_back()
+		return
+
+
+## Esc, and the Android back button: close the import dialog first.
+func go_back() -> void:
+	if _import_dialog != null and _import_dialog.visible:
+		_import_dialog.hide()
+		return
+	G.main.goto_menu()

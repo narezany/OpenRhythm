@@ -3,6 +3,12 @@ extends Node
 
 var current: Node = null
 
+# Last back press on the menu, for the two-press exit. Starts far in the past,
+# not at zero: msec since launch is small, and zero would read as "just pressed"
+# for the first couple of seconds a player is on the menu.
+var _back_at := -100000
+var _back_hint: Label = null
+
 
 func _ready() -> void:
 	G.main = self
@@ -78,18 +84,59 @@ func switch_to(node: Node) -> void:
 	add_child(node)
 
 
-## Android "back" behaves like Esc (pause / back), not like quitting the game.
-## The event is pushed straight into the viewport rather than queued through
-## Input: a queued action arrives a frame later and the system can act on the
-## back press before the game ever sees it.
+## Android "back" behaves like Esc: it pauses, closes a panel or steps back a
+## screen, and never quits the game out from under the player.
+##
+## It is called deferred, and it calls a method on the screen directly instead
+## of synthesising an input event. Going back usually swaps screens, which frees
+## one node and adds another; doing that while the engine is still delivering
+## the notification - or, as an injected event did, while it is walking the
+## input tree - destroys the node the engine is in the middle of using, and
+## Android takes the whole process down with it.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		var ev := InputEventAction.new()
-		ev.action = "ui_cancel"
-		ev.pressed = true
-		var vp := get_viewport()
-		if vp != null:
-			vp.push_input(ev, true)
+		go_back.call_deferred()
+
+
+## Back button, one frame later, on whatever screen is up. A screen that does
+## not define go_back() has nowhere to go back to (the first-launch notice) and
+## is left alone.
+func go_back() -> void:
+	if not is_instance_valid(current):
+		return
+	if current.has_method("go_back"):
+		current.go_back()
+	elif current is MenuScreen:
+		_back_to_exit()
+
+
+## On the main menu there is no screen left to return to, so back leaves the
+## game - but only if it is pressed twice, so a stray press does not close it.
+func _back_to_exit() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _back_at < 2500:
+		get_tree().quit()
+		return
+	_back_at = now
+	_show_back_hint()
+
+
+func _show_back_hint() -> void:
+	if _back_hint == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 90
+		add_child(layer)
+		_back_hint = Label.new()
+		_back_hint.add_theme_font_size_override("font_size", 26)
+		_back_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_back_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(_back_hint)
+		G.anchor_bottom_wide(_back_hint, 120.0, 46.0)
+	_back_hint.text = "PRESS BACK AGAIN TO EXIT"
+	_back_hint.modulate = Color(1, 1, 1, 1)
+	var tw := create_tween()
+	tw.tween_interval(1.6)
+	tw.tween_property(_back_hint, "modulate:a", 0.0, 0.7)
 
 
 ## Real visible window aspect, for the adaptive layout.

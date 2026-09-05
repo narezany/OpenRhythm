@@ -971,7 +971,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if ended:
 		return
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed(Binds.PAUSE):
-		_toggle_pause()
+		go_back()
 		return
 	if event.is_action_pressed(Binds.RESTART) and not paused:
 		_retry()
@@ -1030,3 +1030,12 @@ class ProgressDraw extends Control:
 		draw_rect(Rect2(0, y - 1.5, fw, 3),
 			Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.85))
 		draw_circle(Vector2(fw, y), 5.0, Color(1.0, 0.75, 0.70, 0.95))
+
+
+
+## Esc, and the Android back button: pause, or unpause. Once the song is over
+## the results screen is on its way in and back does nothing.
+func go_back() -> void:
+	if ended:
+		return
+	_toggle_pause()

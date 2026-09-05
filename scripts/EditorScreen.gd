@@ -355,7 +355,7 @@ func _build() -> void:
 	toast.modulate.a = 0.0
 	hud.add_child(toast)
 
-	if str(song.get("audio", "")) == "":
+	if not RhythmMap.has_audio(song):
 		_build_audio_row()
 
 	if G.is_mobile():
@@ -810,7 +810,7 @@ func _compute_waveform() -> void:
 			if timeline != null:
 				timeline.queue_redraw()
 			return
-	var path := str(song.get("dir", "")) + "/" + str(song.get("audio", ""))
+	var path := RhythmMap.audio_path(song)
 	if not FileAccess.file_exists(path) or path.get_extension().to_lower() != "wav":
 		return
 	var a := _analyze_wav(path)
@@ -868,7 +868,7 @@ func _detect_bpm(flux: Array, frame: float) -> float:
 
 
 func _auto_build() -> void:
-	var path := str(song.get("dir", "")) + "/" + str(song.get("audio", ""))
+	var path := RhythmMap.audio_path(song)
 	var use_bpm := bpm
 	var onsets: Array = []
 	if FileAccess.file_exists(path) and path.get_extension().to_lower() == "wav":
@@ -1097,7 +1097,7 @@ func _scan_audio() -> void:
 				song["audio"] = f
 				break
 		f = dir.get_next()
-	if str(song.get("audio", "")) != "":
+	if RhythmMap.has_audio(song):
 		_after_audio_attached()
 	else:
 		_show_toast("No audio files in the song folder")
@@ -1116,8 +1116,7 @@ func _attach_audio_path() -> void:
 
 
 func _after_audio_attached() -> void:
-	var stream := RhythmMap.import_audio(
-		str(song.get("dir", "")) + "/" + str(song.get("audio", "")))
+	var stream := RhythmMap.import_audio(RhythmMap.audio_path(song))
 	if stream != null:
 		song["length"] = stream.get_length()
 		length = float(song["length"])
@@ -1154,8 +1153,7 @@ func _process(_delta: float) -> void:
 # ---------------------------------------------------------------- input
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		_save()
-		G.main.goto_select("edit")
+		go_back()
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if _key(event as InputEventKey):
@@ -1303,3 +1301,11 @@ func _playfield_touch(st: InputEventScreenTouch) -> void:
 			if _pick(local).is_empty():
 				_place(local)
 		_press_t_ms = 0
+
+
+
+## Esc, and the Android back button: save the chart before leaving, so a phone
+## gesture can never lose work.
+func go_back() -> void:
+	_save()
+	G.main.goto_select("edit")

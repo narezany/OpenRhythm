@@ -252,6 +252,26 @@ static func custom_of(song: Dictionary) -> Array:
 
 
 # ---------------------------------------------------------------- audio/video
+## True when the song has audio the game can actually play.
+##
+## A fork of a built-in song often has no file of its own - in an exported
+## build the original is packed as an imported resource, so the copy points
+## back at it through audio_ref instead. That song plays perfectly well, and
+## anything asking "does this song have music" has to accept the reference,
+## or the editor greets a freshly forked chart with a "no audio" banner while
+## its own Test button happily plays the track.
+static func has_audio(song: Dictionary) -> bool:
+	return str(song.get("audio", "")) != "" or str(song.get("audio_ref", "")) != ""
+
+
+## Where the song's audio actually lives, or "" if it has none.
+static func audio_path(song: Dictionary) -> String:
+	var name := str(song.get("audio", ""))
+	if name != "":
+		return str(song.get("dir", "")) + "/" + name
+	return str(song.get("audio_ref", ""))
+
+
 static func audio_stream(song: Dictionary) -> AudioStream:
 	var name := str(song.get("audio", "audio.wav"))
 	if name != "":

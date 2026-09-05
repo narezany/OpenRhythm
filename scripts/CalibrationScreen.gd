@@ -105,7 +105,7 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		G.main.goto_settings()
+		go_back()
 		return
 	var tapped := false
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -219,3 +219,8 @@ class TapViz extends Control:
 			var rx: float = mid + (screen._result / span) * (w * 0.5)
 			draw_rect(Rect2(clampf(rx, 0.0, w) - 1.5, y - 20, 3, 40),
 				Color(G.C_GOLD.r, G.C_GOLD.g, G.C_GOLD.b, 0.9))
+
+
+## Esc, and the Android back button.
+func go_back() -> void:
+	G.main.goto_settings()

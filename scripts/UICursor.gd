@@ -11,7 +11,10 @@ var touch_mode := false
 var cursor_visible := true
 
 var _trail: Array[Vector2] = []
-var _last_drag := Vector2.INF
+## index -> last known position, for every finger currently down
+var _fingers := {}
+## the one finger that moves the cursor; -1 when nothing is down
+var _cursor_finger := -1
 var _draw_node: Node2D
 var _os_expected := Vector2.INF   # where we believe the system pointer is
 var relay_node: Node
@@ -39,58 +42,71 @@ func _visible_rect() -> Rect2:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion:
-		var mm := event as InputEventMouseMotion
-		if _os_expected == Vector2.INF:
-			# first event: initial sync, sensitivity not applied
-			_os_expected = mm.position
-			pos = mm.position
-			return
-		var d: Vector2 = mm.position - _os_expected
-		_os_expected = mm.position
-		if d.length() > 300.0:
-			return   # a teleport (alt-tab, OS warp) is not player movement
-		pos += d * G.mouse_sens
-		var vis := _visible_rect()
-		pos = pos.clamp(vis.position, vis.end)
-		touch_mode = false
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			touch_mode = true
-			_last_drag = event.position
-			if G.relative_touch and G.touch_zone:
-				# relative: the cursor stays put, the finger acts as a stick
-				pass
-			else:
-				# absolute: jump straight to the tap, otherwise a quick tap
-				# only catches the cursor halfway through a lerp
-				pos = event.position
-				_trail.clear()
-		else:
-			_last_drag = Vector2.INF
-	elif event is InputEventScreenDrag:
-		if _last_drag != Vector2.INF:
-			pos += (event.position - _last_drag) * G.mouse_sens
-		_last_drag = event.position
-
-
-## Raw touch handler: events before GUI controls swallow them, so relative
-## mode keeps working when a finger lands on a button.
-func _touch_input(event: InputEvent) -> void:
-	if not (G.relative_touch and G.touch_zone):
+	# Touch is handled by the relay below, which sees every finger regardless of
+	# which control it landed on. Here we only deal with the mouse.
+	if not (event is InputEventMouseMotion):
 		return
+	if not _fingers.is_empty():
+		# The project emulates a mouse from touch so that buttons react to a
+		# finger, which means a drag arrives twice: once as a touch event and
+		# once as mouse motion. Counting both moved the cursor at double speed.
+		return
+	var mm := event as InputEventMouseMotion
+	if _os_expected == Vector2.INF:
+		# first event: initial sync, sensitivity not applied
+		_os_expected = mm.position
+		pos = mm.position
+		return
+	var d: Vector2 = mm.position - _os_expected
+	_os_expected = mm.position
+	if d.length() > 300.0:
+		return   # a teleport (alt-tab, OS warp) is not player movement
+	pos += d * G.mouse_sens
+	var vis := _visible_rect()
+	pos = pos.clamp(vis.position, vis.end)
+	touch_mode = false
+
+
+## All touch input, from the relay at the tree root.
+##
+## Exactly one finger drives the cursor at a time. Every other finger is a tap:
+## that is what lets you steer with one thumb and hit a click note with the
+## other, and it is why laying two fingers down no longer makes the cursor
+## shake between them.
+func _touch_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var st := event as InputEventScreenTouch
 		if st.pressed:
+			_fingers[st.index] = st.position
 			touch_mode = true
-			_last_drag = st.position
+			if _cursor_finger < 0:
+				_cursor_finger = st.index
+				if not (G.relative_touch and G.touch_zone):
+					# absolute: jump straight to the tap, otherwise a quick tap
+					# only catches the cursor halfway through a lerp
+					pos = st.position
+					_trail.clear()
+			# a press from any other finger is a tap in place: the cursor does
+			# not move, which is what makes two-thumb play work
 		else:
-			_last_drag = Vector2.INF
+			_fingers.erase(st.index)
+			if st.index == _cursor_finger:
+				# hand control to whatever finger is still down
+				_cursor_finger = -1
+				for i in _fingers:
+					_cursor_finger = i
+					break
 	elif event is InputEventScreenDrag:
 		var dr := event as InputEventScreenDrag
-		if _last_drag != Vector2.INF:
-			pos += (dr.position - _last_drag) * G.mouse_sens
-		_last_drag = dr.position
+		var prev = _fingers.get(dr.index, dr.position)
+		_fingers[dr.index] = dr.position
+		if dr.index != _cursor_finger:
+			return                      # a second finger never steers
+		# Both modes move by the finger's delta, scaled by sensitivity; they
+		# differ only in where the cursor starts from when the finger lands.
+		pos += (dr.position - prev) * G.mouse_sens
+		var vis := _visible_rect()
+		pos = pos.clamp(vis.position, vis.end)
 
 
 ## Raw touch sink at the tree root: sees every touch no matter which control
