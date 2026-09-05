@@ -5,10 +5,25 @@ extends Node
 var fails := 0
 
 
+## Progress also goes to user://coretest.log, flushed line by line. Stdout is
+## buffered when it is redirected, so a run that hangs loses everything it had
+## printed - which is exactly when you need to know how far it got.
+var _log: FileAccess = null
+
+
 func ok(cond: bool, what: String) -> void:
 	if not cond:
 		fails += 1
-	print("%s  %s" % ["PASS" if cond else "FAIL", what])
+	_say("%s  %s" % ["PASS" if cond else "FAIL", what])
+
+
+func _say(line: String) -> void:
+	print(line)
+	if _log == null:
+		_log = FileAccess.open("user://coretest.log", FileAccess.WRITE)
+	if _log != null:
+		_log.store_line("%6d ms  %s" % [Time.get_ticks_msec(), line])
+		_log.flush()
 
 
 func _ready() -> void:
@@ -20,6 +35,7 @@ func _ready() -> void:
 	_test_fork_audio()
 	_test_beat()
 	_test_editor_roundtrip()
+	await _test_editor_scale()
 	await _test_back_button()
 	_test_touch_cursor()
 	_test_mouse_cursor()
@@ -28,7 +44,7 @@ func _ready() -> void:
 
 
 func _test_settings_roundtrip() -> void:
-	print("== settings round-trip ==")
+	_say("== settings round-trip ==")
 	G.master_vol = 0.42
 	G.music_vol = 0.31
 	G.sfx_vol = 0.77
@@ -74,7 +90,7 @@ func _test_settings_roundtrip() -> void:
 
 
 func _test_hold_notes() -> void:
-	print("== hold notes ==")
+	_say("== hold notes ==")
 	var song := RhythmMap.create_new_song("Hold Test")
 	var notes := [
 		{"t": 1.0, "cell": 4, "s": 1.0},
@@ -123,7 +139,7 @@ func _test_hold_notes() -> void:
 
 
 func _test_judge() -> void:
-	print("== judge ==")
+	_say("== judge ==")
 	ok(Judge.label_for(0.0, 0.9) == "PERFECT", "centre hit is PERFECT")
 	ok(Judge.label_for(0.0, 0.05) == "BULLSHIT", "edge hit is BULLSHIT")
 	ok(Judge.hold_acc(1.0, 1.0) > Judge.hold_acc(1.0, 0.2), "a fully held note beats a dropped one")
@@ -178,7 +194,7 @@ func _test_judge() -> void:
 
 
 func _test_updater() -> void:
-	print("== updater ==")
+	_say("== updater ==")
 	ok(Updater.compare("0.3.1", "0.3.0") > 0, "a newer patch is newer")
 	ok(Updater.compare("v0.4.0", "0.3.9") > 0, "a leading v is ignored")
 	ok(Updater.compare("1.0.0", "0.9.9") > 0, "a major bump is newer")
@@ -189,7 +205,7 @@ func _test_updater() -> void:
 
 
 func _test_offset() -> void:
-	print("== conductor offset ==")
+	_say("== conductor offset ==")
 	# Informational: how far behind the audio device is on this machine. Every
 	# hitsound is handed over that early, so if this is large and the sound
 	# still lands late, the compensation is not being applied.
@@ -206,7 +222,7 @@ func _test_offset() -> void:
 ## that kept crashing - it must not swap screens while the engine is still
 ## delivering the notification, because that frees the node being processed.
 func _test_back_button() -> void:
-	print("== android back button ==")
+	_say("== android back button ==")
 	var screens := {
 		"SongSelectScreen": true, "GameScreen": true, "EditorScreen": true,
 		"SettingsScreen": true, "SongsScreen": true, "StatsScreen": true,
@@ -272,7 +288,7 @@ func _test_back_button() -> void:
 ## One finger steers, the rest are taps. Two fingers used to fight over the
 ## cursor; now the second one is free to hit a click note where the first is.
 func _test_touch_cursor() -> void:
-	print("== touch cursor ==")
+	_say("== touch cursor ==")
 	G.view_w = 1280.0
 	G.view_h = 720.0
 	G.mouse_sens = 1.0
@@ -319,7 +335,7 @@ func _drag(idx: int, at: Vector2) -> InputEventScreenDrag:
 ## exported build the original is packed as an imported resource - but it still
 ## has music, and the editor must not tell the player otherwise.
 func _test_fork_audio() -> void:
-	print("== forked songs keep their music ==")
+	_say("== forked songs keep their music ==")
 	var songs := RhythmMap.load_songs()
 	var src := {}
 	for s in songs:
@@ -373,7 +389,7 @@ func _wipe(dir: String) -> void:
 ## Everything it produces rests on its timing being right, so the timing is
 ## measured against a click track at times we already know rather than assumed.
 func _test_beat() -> void:
-	print("== beat analysis ==")
+	_say("== beat analysis ==")
 	var bpm := 128.0
 	var dur := 24.0
 	var sr := 22050
@@ -452,7 +468,7 @@ func _test_beat() -> void:
 ## and the notes - click markers and all - looked like they had never been
 ## saved.
 func _test_editor_roundtrip() -> void:
-	print("== editor save and fork ==")
+	_say("== editor save and fork ==")
 	var song := RhythmMap.create_new_song("Roundtrip Test")
 	song["difficulties"] = [
 		{"name": "Easy", "notes": []},
@@ -509,7 +525,7 @@ func _test_editor_roundtrip() -> void:
 ## off to one side while their clicks landed somewhere else entirely, and only
 ## alt-tabbing put it back.
 func _test_mouse_cursor() -> void:
-	print("== mouse cursor ==")
+	_say("== mouse cursor ==")
 	G.mouse_sens = 1.0
 	var c := UICursor
 	c._fingers.clear()
@@ -539,3 +555,53 @@ func _motion(at: Vector2) -> InputEventMouseMotion:
 	e.position = at
 	e.global_position = at
 	return e
+
+
+## A long, dense chart has to stay editable.
+##
+## Select-all and delete used to hang the game outright: every note removed
+## re-sorted the chart and rebuilt every view, comparing each note against
+## every node on screen. On a seventeen-minute track that is billions of
+## comparisons and the editor never came back.
+func _test_editor_scale() -> void:
+	_say("== editor on a long chart ==")
+	var song := RhythmMap.create_new_song("Scale Test")
+	var big: Array = []
+	var t := 1.0
+	while t < 17.0 * 60.0:
+		big.append({"t": snappedf(t, 0.001), "cell": int(t * 7.0) % 9, "s": 1.0})
+		t += 0.25
+	RhythmMap.save_custom(song, big, 0)
+	var loaded := {}
+	for x in RhythmMap.load_songs():
+		if str(x.get("id", "")) == str(song.get("id", "")):
+			loaded = x
+	var main: Node = load("res://scenes/Main.tscn").instantiate()
+	add_child(main)
+	await get_tree().process_frame
+	var t0 := Time.get_ticks_msec()
+	main.open_editor(loaded, 0)
+	await get_tree().process_frame
+	var ed = main.current
+	var open_ms := Time.get_ticks_msec() - t0
+	ok(ed.notes.size() == big.size(),
+		"a %d note chart opens (%d ms)" % [ed.notes.size(), open_ms])
+	ok(open_ms < 6000, "and opening it does not take all day (%d ms)" % open_ms)
+	ed.cur_time = 300.0
+	ed.notes_changed()
+	var live: int = ed.notes_root.get_child_count()
+	ok(live > 0 and live < 200,
+		"the notes around the playhead have a node, and only those (%d)" % live)
+	ed.cur_time = 900.0
+	ed.notes_changed()
+	ok(ed.notes_root.get_child_count() > 0,
+		"and they follow the playhead down the track")
+
+	ed.timeline.selection = ed.notes.duplicate()
+	t0 = Time.get_ticks_msec()
+	ed._delete_selection()
+	var del_ms := Time.get_ticks_msec() - t0
+	ok(ed.notes.is_empty(), "select all and delete clears the chart")
+	ok(del_ms < 2000, "and finishes rather than hanging (%d ms)" % del_ms)
+	main.free()
+	_wipe(str(song["dir"]))

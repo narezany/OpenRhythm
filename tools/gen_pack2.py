@@ -17,7 +17,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_media import SR, ROOT, Song, fft_filter, midi2f   # noqa: E402
-from charting import build_chart, describe                 # noqa: E402
+from charting import build_from_events, describe                 # noqa: E402
 
 np.random.seed(1312)
 
@@ -362,7 +362,7 @@ def main():
         s = fn()
         diffs = []
         for name, level in (("Easy", 0), ("Normal", 1), ("Hyper", 2)):
-            notes = build_chart(s.events, level, s.beat, sid)
+            notes = build_from_events(s.events, level, s.beat, sid)
             diffs.append((name, notes))
             print("    %-7s %s" % (name, describe(notes, s.len_s - 2.0)))
         write_track(sid, title, bpm, preview, s, diffs)

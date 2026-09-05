@@ -4,6 +4,10 @@ extends Node2D
 ## A hold note is drawn as the same cube with a receding body behind it that
 ## shrinks as the hold runs out, so a long cube reads as long.
 
+## The note this view is showing, so the editor can let go of it when the view
+## is recycled. Null in gameplay, where views are not pooled.
+var owner_note = null
+
 var half := 55.0
 var color := Color.WHITE
 var progress := 0.0

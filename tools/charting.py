@@ -161,8 +161,85 @@ def _place_holds(events, level, beat, enabled, song_key):
     return out, windows
 
 
+# How much a note of each kind is worth as something to chart. A chart wants
+# the hits a listener is actually counting, so a kick outranks a hat.
+KIND_WEIGHT = {"kick": 1.0, "snare": 0.95, "clap": 0.95, "bass": 0.7,
+               "lead": 0.6, "hat": 0.35}
+# How full a subdivision has to be before a bar is charted at it.
+COVER = 0.35
+
+
+def select_times(events, level, beat):
+    """Note times for one difficulty, decided a bar at a time.
+
+    Two rules, and both of them are about the chart sounding like the music.
+
+    Only the layers this difficulty follows are considered - Easy hears the
+    drums, Normal the melody as well, Hyper everything - so a cube always lands
+    on something the player can hear, rather than on a hat nobody is counting.
+
+    And a bar is charted at ONE subdivision: the fastest this difficulty allows
+    that the music actually fills. Every gap in the bar is then a whole number
+    of that subdivision. Taking whichever hits happen to clear a minimum
+    spacing instead leaves dotted three-sixteenth stutters between the
+    survivors, which is what turns a chart into noise even when every note is
+    on a real hit.
+    """
+    keep = KINDS[level]
+    step = beat / 4.0
+    slots = {}
+    for (t, kind, _midi, vel) in events:
+        if kind not in keep:
+            continue
+        k = int(round(t / step))
+        if k < 0 or abs(k * step - t) > step * 0.4:
+            continue                      # not on the grid this music runs on
+        w = KIND_WEIGHT.get(kind, 0.5) * max(float(vel), 0.1)
+        if k not in slots or w > slots[k][0]:
+            slots[k] = (w, kind)
+    if not slots:
+        return []
+    min_gap = max(GAP_FLOOR[level], beat * GAP_BEATS[level])
+    allowed = [d for d in (1, 2, 4, 8) if d * step >= min_gap - 1e-6] or [8]
+    out = []
+    last_bar = max(slots) // 16
+    for bar in range(int(last_bar) + 1):
+        base = bar * 16
+        window = [slots.get(base + j) for j in range(16)]
+        if not any(window):
+            continue
+        pick, off = allowed[-1], 0
+        for d in allowed:
+            # Which beat of the bar the subdivision starts on matters as much
+            # as how fast it is: a backbeat sits on two and four, and counting
+            # only from the bar line would miss it entirely and halve the
+            # chart.
+            best_off, best_score = 0, -1.0
+            for o in range(d):
+                at = [window[j] for j in range(o, 16, d)]
+                score = sum(x[0] for x in at if x)
+                if score > best_score:
+                    best_score, best_off = score, o
+            at = [window[j] for j in range(best_off, 16, d)]
+            if at and sum(1 for x in at if x) / float(len(at)) >= COVER:
+                pick, off = d, best_off
+                break
+        for j in range(off, 16, pick):
+            hit = window[j]
+            if hit:
+                out.append(((base + j) * step, hit[1], hit[0], (base + j) % 16))
+    return out
+
+
+def build_from_events(events, level, beat, song_key, holds=True, clicks=True):
+    """Chart one difficulty straight from the music's own note events."""
+    picked = select_times(events, level, beat)
+    return build_chart([(t, kind, 0, w) for (t, kind, w, _slot) in picked],
+                       level, beat, song_key, holds, clicks, pre_selected=True)
+
+
 def build_chart(events, level, beat, song_key, holds=True, clicks=True,
-                bars_per_phrase=2):
+                bars_per_phrase=2, pre_selected=False):
     """Build one difficulty. events: [(t, kind, midi, vel)]."""
     keep = KINDS[level]
     pitches = [m for (_t, k, m, _v) in events if k == "lead" and m > 0]
@@ -183,14 +260,21 @@ def build_chart(events, level, beat, song_key, holds=True, clicks=True,
     strong_i = 0
 
     for (t, kind, midi, vel) in sorted(events, key=lambda e: e[0]):
-        if kind not in keep or _inside(blocked, t):
+        if _inside(blocked, t):
+            continue
+        if not pre_selected and kind not in keep:
             continue
         gap = t - last_t
-        if gap < min_gap:
-            continue
-        # hats are filler: only where the groove has actually left a hole
-        if kind == "hat" and gap < min_gap * 1.4:
-            continue
+        # Times chosen by select_times are already spaced for this difficulty,
+        # and dropping any of them here would break the run they belong to.
+        if not pre_selected:
+            if gap < min_gap:
+                continue
+            # hats are filler: only where the groove has actually left a hole
+            if kind == "hat" and gap < min_gap * 1.4:
+                continue
+        elif gap < min_gap * 0.55:
+            continue                      # a hold pushed two notes together
         phrase = int(t / phrase_len) if phrase_len > 0 else 0
         if phrase != cur_phrase:
             cur_phrase = phrase

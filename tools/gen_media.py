@@ -13,7 +13,7 @@ import wave
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from charting import build_chart, describe   # noqa: E402
+from charting import build_from_events, describe   # noqa: E402
 
 SR = 44100
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -407,7 +407,7 @@ def _diffs(song, key):
     """Easy / Normal / Hyper from the same events, via the shared builder."""
     out = []
     for name, level in (("Easy", 0), ("Normal", 1), ("Hyper", 2)):
-        notes = build_chart(song.events, level, song.beat, key)
+        notes = build_from_events(song.events, level, song.beat, key)
         out.append((name, notes))
         print("    %-7s %s" % (name, describe(notes, song.len_s - 2.0)))
     return out

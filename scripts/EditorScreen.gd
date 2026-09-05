@@ -260,9 +260,26 @@ func _delete_selection() -> void:
 	if timeline.selection.is_empty():
 		return
 	push_history("delete")
-	for n in timeline.selection.duplicate():
-		erase_note(n)
+	# One pass, one refresh. Erasing them one at a time re-sorted and rebuilt
+	# the whole chart per note, which on a long track never finished.
+	# marked on the notes themselves: searching the selection for each one is
+	# quadratic again, which is the whole bug
+	for n in timeline.selection:
+		n["_del"] = true
+	var kept: Array = []
+	for n in notes:
+		if bool(n.get("_del", false)):
+			if n.get("node") != null and is_instance_valid(n.node):
+				n.node.queue_free()
+				n["node"] = null
+			continue
+		kept.append(n)
+	var gone: int = notes.size() - kept.size()
+	notes = kept
 	timeline.selection.clear()
+	notes_changed()
+	G.play_sfx("click", 0.8, -8.0)
+	_show_toast("Deleted %d notes" % gone)
 
 
 ## C: make the selection click notes, or take it back if they already are.
@@ -576,34 +593,60 @@ func _update_note_view(n: Dictionary) -> void:
 
 func _ghost_items() -> Array:
 	var items: Array = []
-	for n in notes:
-		if absf(float(n.t) - cur_time) <= 0.35:
-			items.append({"hit": n.hit, "half": n.half, "progress": 1.0,
-				"color": n.color, "done": false, "hover": false, "node": n.get("node")})
+	for i in range(_index_at(cur_time - 0.35), _index_at(cur_time + 0.35)):
+		var n: Dictionary = notes[i]
+		items.append({"hit": n.hit, "half": n.half, "progress": 1.0,
+			"color": n.color, "done": false, "hover": false, "node": n.get("node")})
 	return items
 
 
-## Rebuild missing views and drop orphans - the cure for phantom notes.
+## Only the notes around the playhead get a node.
+##
+## A seventeen-minute track can hold thousands of them, and giving every one a
+## node meant every edit rebuilt thousands of nodes while comparing each
+## against every child - which is what froze the editor solid on a select-all
+## and delete. Everything outside the window is data until the playhead
+## reaches it.
+const VIEW_WINDOW := 2.0
+
+
 func _sync_note_views() -> void:
-	for n in notes:
+	var lo := _index_at(cur_time - VIEW_WINDOW)
+	var hi := _index_at(cur_time + VIEW_WINDOW)
+	var want := {}
+	for i in range(lo, hi):
+		var n: Dictionary = notes[i]
 		if n.get("node") == null or not is_instance_valid(n.node):
 			var v := NoteView.new()
 			v.half = n.half
 			v.hold_total = float(n.get("h", 0.0))
 			v.is_click = bool(n.get("c", false))
 			v.set_color(n.color)
+			v.owner_note = n
 			notes_root.add_child(v)
 			notes_root.move_child(v, 0)
 			n["node"] = v
-			_update_note_view(n)
+		want[n["node"]] = true
+		_update_note_view(n)
 	for c in notes_root.get_children():
-		var found := false
-		for n in notes:
-			if n.get("node") == c:
-				found = true
-				break
-		if not found:
-			c.queue_free()
+		if want.has(c):
+			continue
+		if c.get("owner_note") != null:
+			c.owner_note["node"] = null
+		c.queue_free()
+
+
+## First note at or after `t`, by binary search on the sorted list.
+func _index_at(t: float) -> int:
+	var lo := 0
+	var hi := notes.size()
+	while lo < hi:
+		var mid := (lo + hi) / 2
+		if float(notes[mid]["t"]) < t:
+			lo = mid + 1
+		else:
+			hi = mid
+	return lo
 
 
 func _place(local: Vector2) -> void:
