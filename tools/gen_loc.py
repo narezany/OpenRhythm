@@ -329,12 +329,24 @@ add("2 • NIGHT DRIVE", "2 • НОЧНАЯ ПОЕЗДКА", "2 • 夜间驾�
     "2 • NACHTFAHRT", "2 • NACHTRIT", "2 • VIAJE NOCTURNO")
 add("3 • OVERDRIVE", "3 • ОВЕРДРАЙВ", "3 • 超载",
     "3 • OVERDRIVE", "3 • OVERDRIVE", "3 • SOBREMARCHA")
-add("Learn the basics with Melly.\\nTutorial song.",
-    "Основы вместе с Melly.\\nОбучающая песня.",
-    "和 Melly 一起学基础。\\n教程曲目。",
-    "Die Grundlagen mit Melly.\\nTutorial-Song.",
-    "De basis met Melly.\\nTutorialnummer.",
-    "Lo básico con Melly.\\nCanción de tutorial.")
+add("Learn the basics with Melly.\\nJust the tutorial.",
+    "Основы вместе с Melly.\\nТолько туториал.",
+    "和 Melly 一起学基础。\\n只有教程。",
+    "Die Grundlagen mit Melly.\\nNur das Tutorial.",
+    "De basis met Melly.\\nAlleen de tutorial.",
+    "Lo básico con Melly.\\nSolo el tutorial.")
+add("This map has no audio yet", "У этой карты ещё нет музыки", "这张谱面还没有音频",
+    "Diese Map hat noch kein Audio", "Deze map heeft nog geen audio",
+    "Este mapa aún no tiene audio")
+add("Pick a file and the game copies it into the song's own folder, or drop the file in there yourself and press Scan.",
+    "Выбери файл — игра сама скопирует его в папку песни. Или положи файл туда сам и нажми «Просканировать».",
+    "选一个文件，游戏会把它复制到这首歌自己的文件夹里；也可以自己把文件放进去再点扫描。",
+    "Wähle eine Datei, das Spiel kopiert sie in den Songordner - oder lege sie selbst dort ab und drücke Scannen.",
+    "Kies een bestand, het spel kopieert het naar de map van het nummer - of zet het er zelf in en druk op Scannen.",
+    "Elige un archivo y el juego lo copia a la carpeta de la canción, o ponlo tú ahí y pulsa Escanear.")
+add("Open folder", "Открыть папку", "打开文件夹", "Ordner öffnen", "Map openen", "Abrir carpeta")
+add("Folder path copied", "Путь к папке скопирован", "已复制文件夹路径",
+    "Ordnerpfad kopiert", "Mappad gekopieerd", "Ruta de la carpeta copiada")
 add("Hyper Drive, Neon Drift, Midnight Pulse.\\nChoose your difficulty.",
     "Hyper Drive, Neon Drift, Midnight Pulse.\\nВыбери сложность.",
     "Hyper Drive、Neon Drift、Midnight Pulse。\\n选择难度。",

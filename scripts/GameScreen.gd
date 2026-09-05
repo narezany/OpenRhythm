@@ -411,6 +411,7 @@ func _process(delta: float) -> void:
 			n.node.trail_emitting(n.progress < 0.995)
 		var dt: float = st - n.t
 		var near: bool = cursor_local.distance_to(n.hit) <= n.half * 1.75
+		var is_click: bool = bool(n.get("click", false))
 		n.hover = near
 		if near:
 			UICursor.hover_boost = 1.0
@@ -418,7 +419,10 @@ func _process(delta: float) -> void:
 		# not the first touch: brushing the edge early is fine as long as you
 		# reach the centre by the time the cube lands.
 		if dt < 0.0:
-			pass
+			# a click is allowed to land a little early - waiting for the exact
+			# frame the cube touches down is not a timing anyone can hit
+			if is_click and near and _click_edge and dt >= -Judge.CLICK_EARLY:
+				_resolve(n, dt, cursor_local, Judge.pos_acc(cursor_local, n.hit, n.half))
 		elif dt <= Judge.LAND_GRACE:
 			if near:
 				# The hitsound belongs to the music, not to the bookkeeping: it
@@ -432,7 +436,7 @@ func _process(delta: float) -> void:
 				if p > float(n.get("best_p", -1.0)):
 					n["best_p"] = p
 					n["best_dt"] = dt
-				if bool(n.get("click", false)):
+				if is_click:
 					# a click note waits for the press
 					if _click_edge:
 						_resolve(n, dt, cursor_local, p)
@@ -441,7 +445,7 @@ func _process(delta: float) -> void:
 		else:
 			# a click note that was never pressed is a miss, however good the
 			# cursor position was
-			if not bool(n.get("click", false)) and float(n.get("best_p", -1.0)) >= 0.0:
+			if not is_click and float(n.get("best_p", -1.0)) >= 0.0:
 				_resolve_best(n)
 			else:
 				_resolve_miss(n)
@@ -523,6 +527,12 @@ func _spawn(n: Dictionary) -> void:
 
 
 func _resolve(n: Dictionary, dt: float, cursor_local: Vector2, p_acc_in := -1.0) -> void:
+	n["hit_dt"] = dt
+	# an early click resolves before the cube lands, so the sound is scheduled
+	# for the landing rather than played now - it belongs to the music
+	if not bool(n.get("sounded", false)):
+		n["sounded"] = true
+		_play_hit_on_beat(dt)
 	var p_acc := p_acc_in if p_acc_in >= 0.0 else Judge.pos_acc(cursor_local, n.hit, n.half)
 	var acc := Judge.acc_for(dt, p_acc)
 	var lbl := Judge.label_for(dt, p_acc)
@@ -591,7 +601,12 @@ func _award(n: Dictionary, acc: float, lbl: String) -> void:
 	var ncol: Color = n.color
 	shock.ring(n.hit, ncol, 60.0 + 45.0 * (1.0 - acc))
 	var to_center: Vector2 = (Vector2.ZERO - (n.hit as Vector2)).normalized()
-	texts.spawn(n.hit + to_center * 46.0, lbl, col)
+	# a click note also reports how far off the press was, in milliseconds -
+	# that is the only note type where timing is something you can practise
+	var suffix := ""
+	if bool(n.get("click", false)):
+		suffix = "  %+d" % roundi(float(n.get("hit_dt", 0.0)) * 1000.0)
+	texts.spawn(n.hit + to_center * 46.0, lbl, col, suffix)
 	trauma += (0.10 if lbl == "PERFECT" else 0.06) * G.motion()
 	flash += (0.10 if lbl == "PERFECT" else 0.05) * G.flashes()
 	frame_view.hit_glow = minf(1.0, frame_view.hit_glow + 0.4)

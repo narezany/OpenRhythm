@@ -25,13 +25,10 @@ const ACTIONS := {
 	HIT: {"label": "Confirm / advance", "keys": [KEY_ENTER, KEY_SPACE], "pad": [JOY_BUTTON_A]},
 }
 
-## Left stick drives the cursor; these axis events are always present.
-const STICK_AXES := {
-	CURSOR_LEFT: [JOY_AXIS_LEFT_X, -1.0],
-	CURSOR_RIGHT: [JOY_AXIS_LEFT_X, 1.0],
-	CURSOR_UP: [JOY_AXIS_LEFT_Y, -1.0],
-	CURSOR_DOWN: [JOY_AXIS_LEFT_Y, 1.0],
-}
+## The left stick is read straight from the axes in UICursor, with a radial
+## deadzone. Binding it to the four cursor actions as well would double-count a
+## resting stick and pull the cursor in whichever direction it drifts.
+const STICK_DEADZONE := 0.28
 
 
 ## Rebuild every action from defaults plus the player's overrides.
@@ -51,22 +48,24 @@ static func apply(overrides: Dictionary) -> void:
 			var jb := InputEventJoypadButton.new()
 			jb.button_index = int(btn)
 			InputMap.action_add_event(name, jb)
-		if STICK_AXES.has(name):
-			var ax: Array = STICK_AXES[name]
-			var jm := InputEventJoypadMotion.new()
-			jm.axis = int(ax[0])
-			jm.axis_value = float(ax[1])
-			InputMap.action_add_event(name, jm)
-	# Esc and gamepad B both mean "back" everywhere in the UI.
+	# Esc, the gamepad B button and the Android hardware back key all mean
+	# "back" everywhere in the UI.
 	if InputMap.has_action("ui_cancel"):
 		var has_b := false
+		var has_back := false
 		for ev in InputMap.action_get_events("ui_cancel"):
 			if ev is InputEventJoypadButton and ev.button_index == JOY_BUTTON_B:
 				has_b = true
+			if ev is InputEventKey and ev.physical_keycode == KEY_BACK:
+				has_back = true
 		if not has_b:
 			var b := InputEventJoypadButton.new()
 			b.button_index = JOY_BUTTON_B
 			InputMap.action_add_event("ui_cancel", b)
+		if not has_back:
+			var k := InputEventKey.new()
+			k.physical_keycode = KEY_BACK
+			InputMap.action_add_event("ui_cancel", k)
 
 
 static func default_keys(action: String) -> Array:

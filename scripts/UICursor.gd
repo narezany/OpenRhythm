@@ -105,9 +105,12 @@ class RelayNode extends Node:
 
 func _process(_delta: float) -> void:
 	_pad_vec = Vector2.ZERO
-	if InputMap.has_action(Binds.CURSOR_LEFT) and not _typing():
-		_pad_vec = Input.get_vector(Binds.CURSOR_LEFT, Binds.CURSOR_RIGHT,
-			Binds.CURSOR_UP, Binds.CURSOR_DOWN)
+	if not _typing():
+		var keys := Vector2.ZERO
+		if InputMap.has_action(Binds.CURSOR_LEFT):
+			keys = Input.get_vector(Binds.CURSOR_LEFT, Binds.CURSOR_RIGHT,
+				Binds.CURSOR_UP, Binds.CURSOR_DOWN)
+		_pad_vec = (keys + _stick()).limit_length(1.0)
 	if _pad_vec.length() > 0.01:
 		# gamepad or keyboard drives the cursor directly
 		touch_mode = false
@@ -136,6 +139,18 @@ func _process(_delta: float) -> void:
 func jump_to(p: Vector2) -> void:
 	pos = p
 	_trail.clear()
+
+
+## Left stick with a radial deadzone, rescaled so it still reaches full speed.
+## A worn stick rests slightly off centre; feeding that through the input
+## actions is what made the cursor creep upwards on its own.
+func _stick() -> Vector2:
+	var v := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X),
+		Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
+	var len_ := v.length()
+	if len_ <= Binds.STICK_DEADZONE:
+		return Vector2.ZERO
+	return v.normalized() * ((len_ - Binds.STICK_DEADZONE) / (1.0 - Binds.STICK_DEADZONE))
 
 
 ## True while the game window is the focused one. Warping the system pointer

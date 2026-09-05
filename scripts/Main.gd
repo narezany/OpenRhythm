@@ -32,7 +32,12 @@ func _ready() -> void:
 			if songs.is_empty():
 				goto_menu()
 				return
-			open_editor(songs[0], 0)
+			var want_edit := OS.get_environment("OR_SONG")
+			var pick: Dictionary = songs[0]
+			for s in songs:
+				if str(s.get("id", "")) == want_edit:
+					pick = s
+			open_editor(pick, 0)
 		"settings":
 			goto_settings()
 		"songs":
@@ -72,13 +77,17 @@ func switch_to(node: Node) -> void:
 
 
 ## Android "back" behaves like Esc (pause / back), not like quitting the game.
+## The event is pushed straight into the viewport rather than queued through
+## Input: a queued action arrives a frame later and the system can act on the
+## back press before the game ever sees it.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		var ev := InputEventAction.new()
 		ev.action = "ui_cancel"
 		ev.pressed = true
-		Input.parse_input_event(ev)
-		get_viewport().set_input_as_handled()
+		var vp := get_viewport()
+		if vp != null:
+			vp.push_input(ev, true)
 
 
 ## Real visible window aspect, for the adaptive layout.

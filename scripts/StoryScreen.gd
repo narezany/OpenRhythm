@@ -12,8 +12,8 @@ const STORIES := [
 	{
 		"key": "first_steps",
 		"title": "1 • FIRST STEPS",
-		"sub": "Learn the basics with Melly.\nTutorial song.",
-		"songs": ["tutorial", "hyper_drive", "neon_drift"],
+		"sub": "Learn the basics with Melly.\nJust the tutorial.",
+		"songs": ["tutorial"],
 		"pick_diff": false,
 		"needs": "",
 		"dialog": [

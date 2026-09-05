@@ -5,9 +5,10 @@ extends Node2D
 var items: Array = []   # {pos, text, color, age, tilt}
 
 
-## draw_string does not auto-translate, so the label is translated on the way in.
-func spawn(pos: Vector2, text: String, color: Color) -> void:
-	text = tr(text)
+## draw_string does not auto-translate, so the label is translated on the way
+## in. The suffix is appended afterwards and left alone - it is a number.
+func spawn(pos: Vector2, text: String, color: Color, suffix := "") -> void:
+	text = tr(text) + suffix
 	items.append({
 		"pos": pos, "text": text, "color": color, "age": 0.0,
 		"tilt": randf_range(-0.07, 0.07),

@@ -545,8 +545,11 @@ func _relayout() -> void:
 			n.position = playfield_center
 			n.scale = Vector2.ONE * field_scale
 	if audio_panel != null and is_instance_valid(audio_panel):
-		G.anchor_margins(audio_panel, 14.0, work_top + work_h - 106.0,
-			canvas.x - left_w + 14.0, tl_h + 24.0)
+		# across the left column, under the transport: a fixed box, never
+		# squeezed into nothing by a short window
+		var ah: float = minf(230.0, maxf(work_h - 20.0, 120.0))
+		G.anchor_margins(audio_panel, 14.0, work_top + 6.0,
+			canvas.x - left_w - 14.0, maxf(canvas.y - work_top - 6.0 - ah, 0.0))
 
 
 # ---------------------------------------------------------------- playfield
@@ -795,6 +798,18 @@ func _analyze_wav(path: String) -> Dictionary:
 
 func _compute_waveform() -> void:
 	wave_peaks = PackedFloat32Array()
+	# A song may ship a precomputed waveform: ogg and mp3 cannot be decoded
+	# from GDScript, so that file is the only way they get one.
+	var wpath := str(song.get("dir", "")) + "/waveform.json"
+	if FileAccess.file_exists(wpath):
+		var data = JSON.parse_string(FileAccess.get_file_as_string(wpath))
+		if data is Dictionary and data.get("peaks") is Array:
+			wave_rate = float(data.get("rate", WAVE_RATE))
+			for v in data["peaks"]:
+				wave_peaks.append(clampf(float(v), 0.0, 1.0))
+			if timeline != null:
+				timeline.queue_redraw()
+			return
 	var path := str(song.get("dir", "")) + "/" + str(song.get("audio", ""))
 	if not FileAccess.file_exists(path) or path.get_extension().to_lower() != "wav":
 		return
@@ -810,6 +825,7 @@ func _compute_waveform() -> void:
 	for i in peaks.size():
 		peaks[i] = peaks[i] / mx
 	wave_peaks = peaks
+	wave_rate = WAVE_RATE
 	if timeline != null:
 		timeline.queue_redraw()
 
@@ -1011,33 +1027,60 @@ func _on_audio_file_picked(p: String) -> void:
 	_after_audio_attached()
 
 
+## A map with no audio is the one thing a new mapper always gets stuck on, so
+## this says plainly what to do and where, and stays until it is done.
 func _build_audio_row() -> void:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", G.panel_style(
-		Color(G.C_GOLD.r, G.C_GOLD.g, G.C_GOLD.b, 0.55)))
+		Color(G.C_GOLD.r, G.C_GOLD.g, G.C_GOLD.b, 0.9)))
 	hud.add_child(panel)
 	audio_panel = panel
 
 	var vb2 := VBoxContainer.new()
-	vb2.add_theme_constant_override("separation", 6)
+	vb2.add_theme_constant_override("separation", 8)
 	panel.add_child(vb2)
 
-	vb2.add_child(G.label("No audio yet. Pick a file — it is copied into this song's folder.",
-		15, G.C_GOLD))
+	var head := G.label("This map has no audio yet", 24, G.C_GOLD)
+	vb2.add_child(head)
+	var body := G.label("Pick a file and the game copies it into the song's own folder, or drop the file in there yourself and press Scan.",
+		15, G.C_TEXT)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(320, 0)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb2.add_child(body)
 
 	var hb2 := HBoxContainer.new()
 	hb2.add_theme_constant_override("separation", 8)
 	vb2.add_child(hb2)
-	hb2.add_child(G.button("Pick audio file…", _open_audio_dialog, 15))
-	hb2.add_child(G.button("Scan song folder", _scan_audio, 15))
+	hb2.add_child(G.button("Pick audio file…", _open_audio_dialog, 16))
+	hb2.add_child(G.button("Scan song folder", _scan_audio, 16))
+
+	var folder := _start_dir()
+	var fl := G.label(folder, 14, G.C_PRIMARY)
+	fl.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	fl.custom_minimum_size = Vector2(320, 0)
+	fl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb2.add_child(fl)
+
+	var hb3 := HBoxContainer.new()
+	hb3.add_theme_constant_override("separation", 8)
+	vb2.add_child(hb3)
+	hb3.add_child(G.button("Copy path", func():
+		DisplayServer.clipboard_set(folder)
+		G.play_sfx("click")
+		_show_toast("Folder path copied"), 15))
+	if not G.is_mobile():
+		hb3.add_child(G.button("Open folder", func():
+			OS.shell_open(folder)
+			G.play_sfx("click"), 15))
 	_audio_path = LineEdit.new()
 	_audio_path.placeholder_text = "…or paste a full path"
 	_audio_path.add_theme_font_override("font", G.font_body)
 	_audio_path.add_theme_font_size_override("font_size", 15)
 	_audio_path.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hb2.add_child(_audio_path)
-	hb2.add_child(G.button("Attach", _attach_audio_path, 15))
-	vb2.add_child(G.label("Folder: %s" % _start_dir(), 12, G.C_MUTED))
+	hb3.add_child(_audio_path)
+	hb3.add_child(G.button("Attach", _attach_audio_path, 15))
+	_show_toast("This map has no audio yet")
 
 
 func _scan_audio() -> void:

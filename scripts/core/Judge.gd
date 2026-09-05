@@ -7,6 +7,10 @@ extends RefCounted
 const LEAD := 0.06          # a cube may be taken slightly before it lands
 const LAND_GRACE := 0.15    # how long a landed cube waits before it counts as a miss
 
+## A click may come in this early. Together with LAND_GRACE it makes the press
+## window roughly a third of a second wide, which is a timing a human can hit.
+const CLICK_EARLY := 0.14
+
 # Zone thresholds on p_acc (1 at the cell centre, 0 at the edge of the catch zone).
 # Generous on purpose: PERFECT covers more than half the cell.
 const P_PERFECT := 0.52

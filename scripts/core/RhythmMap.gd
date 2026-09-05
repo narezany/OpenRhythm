@@ -253,10 +253,23 @@ static func custom_of(song: Dictionary) -> Array:
 
 # ---------------------------------------------------------------- audio/video
 static func audio_stream(song: Dictionary) -> AudioStream:
-	var path: String = str(song["dir"]) + "/" + str(song.get("audio", "audio.wav"))
-	if path.begins_with("res://"):
-		return load(path)
-	return import_audio(path)
+	var name := str(song.get("audio", "audio.wav"))
+	if name != "":
+		var path: String = str(song["dir"]) + "/" + name
+		if path.begins_with("res://"):
+			return load(path)
+		var s := import_audio(path)
+		if s != null:
+			return s
+	# A song forked from a built-in one cannot always carry a copy of the
+	# audio: in an exported build the original is packed as an imported
+	# resource, not as a file, so the fork points back at it instead.
+	var ref := str(song.get("audio_ref", ""))
+	if ref == "":
+		return null
+	if ref.begins_with("res://"):
+		return load(ref)
+	return import_audio(ref)
 
 
 ## Runtime audio import from any path (user:// or absolute).
@@ -278,7 +291,14 @@ static func import_audio(path: String) -> AudioStream:
 static func video_stream(song: Dictionary) -> VideoStream:
 	var vname := str(song.get("video", ""))
 	if vname == "":
-		return null
+		var vref := str(song.get("video_ref", ""))
+		if vref == "":
+			return null
+		if vref.begins_with("res://"):
+			return load(vref)
+		var vs2 := VideoStreamTheora.new()
+		vs2.file = ProjectSettings.globalize_path(vref)
+		return vs2
 	var path: String = str(song["dir"]) + "/" + vname
 	if not FileAccess.file_exists(path):
 		return null
@@ -365,6 +385,10 @@ static func fork_song(song: Dictionary) -> Dictionary:
 			continue
 		var bytes := FileAccess.get_file_as_bytes(src + "/" + name)
 		if bytes.is_empty():
+			# exported build: the original is packed as an imported resource,
+			# so there are no raw bytes to copy - reference it instead
+			copy[key] = ""
+			copy[key + "_ref"] = src + "/" + name
 			continue
 		var f := FileAccess.open(dst + "/" + name, FileAccess.WRITE)
 		if f != null:
