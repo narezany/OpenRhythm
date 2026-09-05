@@ -210,6 +210,18 @@ func anchor_bottom_center(c: Control, up: float, size: Vector2) -> void:
 	c.offset_bottom = -up
 
 
+## A fixed-size control offset from the horizontal centre of the canvas.
+func anchor_center_x(c: Control, dx: float, top: float, size: Vector2) -> void:
+	c.anchor_left = 0.5
+	c.anchor_right = 0.5
+	c.anchor_top = 0.0
+	c.anchor_bottom = 0.0
+	c.offset_left = dx
+	c.offset_right = dx + size.x
+	c.offset_top = top
+	c.offset_bottom = top + size.y
+
+
 ## A control that follows the canvas with fixed margins on every side.
 func anchor_margins(c: Control, l: float, t: float, r: float, b: float) -> void:
 	c.anchor_left = 0.0
@@ -520,6 +532,8 @@ const MODS := [
 		"desc": "The grid is mirrored left to right. Same score."},
 	{"id": "hidden", "label": "HIDDEN", "mult": 1.20,
 		"desc": "No outline guides for upcoming notes. +20% score."},
+	{"id": "clicky", "label": "CLICKY", "mult": 1.35,
+		"desc": "Every cube has to be clicked, not just covered. +35% score."},
 ]
 
 ## SPEED UP and SLOW DOWN are mutually exclusive.

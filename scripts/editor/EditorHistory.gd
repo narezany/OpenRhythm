@@ -61,5 +61,6 @@ static func _snapshot(notes: Array) -> Array:
 			"cell": int(n.get("cell", 4)),
 			"s": float(n.get("s", 1.0)),
 			"h": float(n.get("h", 0.0)),
+			"c": bool(n.get("c", false)),
 		})
 	return out

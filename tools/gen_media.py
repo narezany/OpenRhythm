@@ -7,9 +7,13 @@ Run from the project root: python3 tools/gen_media.py
 import json
 import math
 import os
+import sys
 import wave
 
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from charting import build_chart, describe   # noqa: E402
 
 SR = 44100
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -91,6 +95,8 @@ class Song:
         t = np.arange(len(sig)) / SR
         sig *= np.exp(-t / (0.11 if open_ else 0.016))
         self.place(t0, sig, 0.16 * vel)
+        # recorded so the chart builder can use hats as filler on Hyper
+        self.events.append((t0, "hat", 0, vel))
 
     def clap(self, t0, vel=1.0):
         n = int(0.32 * SR)
@@ -116,6 +122,7 @@ class Song:
         sig = fft_filter(saw * 0.7 + sub * 0.55, "lp", 700)
         env = np.minimum(t / 0.004, 1.0) * np.exp(-np.maximum(t - dur * 0.75, 0) / 0.05)
         self.place(t0, sig * env, 0.5 * vel)
+        self.events.append((t0, "bass", midi, vel))
 
     def lead(self, t0, dur, midi, vel=1.0):
         n = int(dur * SR)
@@ -396,6 +403,16 @@ def open_hat_notes(s, dense):
     pass  # hats stay out of the chart, it is dense enough already
 
 
+def _diffs(song, key):
+    """Easy / Normal / Hyper from the same events, via the shared builder."""
+    out = []
+    for name, level in (("Easy", 0), ("Normal", 1), ("Hyper", 2)):
+        notes = build_chart(song.events, level, song.beat, key)
+        out.append((name, notes))
+        print("    %-7s %s" % (name, describe(notes, song.len_s - 2.0)))
+    return out
+
+
 def write_song(song_dir, meta, song, diffs):
     os.makedirs(song_dir, exist_ok=True)
     song.save(os.path.join(song_dir, "audio.wav"))
@@ -458,7 +475,7 @@ def main():
             "preview_start": 16.0,
         },
         s1,
-        [("Normal", build_notes(s1.events, False)), ("Hyper", build_notes(s1.events, True))],
+        _diffs(s1, "neon_drift"),
     )
     print("Hyper Drive:")
     s2 = track_hyper_drive()
@@ -472,7 +489,7 @@ def main():
             "preview_start": 6.0,
         },
         s2,
-        [("Normal", build_notes(s2.events, False)), ("Hyper", build_notes(s2.events, True))],
+        _diffs(s2, "hyper_drive"),
     )
     print("done.")
 

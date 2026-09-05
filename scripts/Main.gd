@@ -22,7 +22,8 @@ func _ready() -> void:
 			for s in songs:
 				if str(s.get("id", "")) == want:
 					G.selected_song = s
-			G.selected_diff = 0
+			var want_diff := OS.get_environment("OR_DIFF")
+			G.selected_diff = int(want_diff) if want_diff != "" else 0
 			start_game()
 		"results":
 			_fake_results()
@@ -98,6 +99,8 @@ func goto_disclaimer() -> void:
 func goto_menu() -> void:
 	G.touch_zone = false
 	G.replay_mode = false
+	G.story_playlist = []
+	G.story_idx = 0
 	switch_to(MenuScreen.new())
 	Conductor.ensure_menu_music()
 
@@ -142,6 +145,8 @@ func goto_play_menu() -> void:
 
 func goto_story() -> void:
 	G.touch_zone = false
+	G.story_playlist = []
+	G.story_idx = 0
 	switch_to(StoryScreen.new())
 	Conductor.ensure_menu_music()
 

@@ -181,13 +181,20 @@ func _draw_notes() -> void:
 		var y := lane_to_y(int(n.cell)) + 2.0
 		var hh := lh - 4.0
 		var picked: bool = n in selection
+		var is_click: bool = bool(n.get("c", false))
 		var base := Color(0.92, 0.90, 0.90, 0.92)
 		if nh > 0.0:
 			base = Color(1.0, 0.72, 0.42, 0.92)
+		if is_click:
+			base = Color(1.0, 0.48, 0.24, 0.95)
 		if picked:
 			base = Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.95)
 		draw_rect(Rect2(x, y, wpx, hh), base)
 		draw_rect(Rect2(x, y, wpx, hh), Color(0, 0, 0, 0.5), false, 1.0)
+		if is_click:
+			# a ring marks the cubes that have to be pressed
+			draw_arc(Vector2(x + wpx * 0.5, y + hh * 0.5), minf(hh, wpx) * 0.34,
+				0, TAU, 12, Color(1, 1, 1, 0.9), 1.6, true)
 		if nh > 0.0:
 			# handle on the right edge, the thing you grab to change the length
 			draw_rect(Rect2(x + wpx - 3.0, y, 3.0, hh), Color(1, 1, 1, 0.8))

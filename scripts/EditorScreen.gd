@@ -54,6 +54,11 @@ var side_panel: PanelContainer
 var top_bar: HFlowContainer
 var audio_panel: PanelContainer
 var auto_dense: HSlider
+var auto_holds: CheckBox
+var auto_clicks: CheckBox
+var click_btn: Button
+## New notes placed on the playfield become click notes while this is on.
+var click_mode := false
 var _audio_path: LineEdit
 var _toast_tween: Tween
 var _file_dialog: FileDialog
@@ -99,6 +104,7 @@ func _load_notes(raw: Array) -> void:
 			"t": float(nd.get("t", 0.0)),
 			"s": maxf(float(nd.get("s", 1.0)), 0.4),
 			"h": maxf(float(nd.get("h", 0.0)), 0.0),
+			"c": bool(nd.get("c", false)),
 		}
 		if nd.has("cell"):
 			n["cell"] = wrapi(int(nd.get("cell", 0)), 0, 9)
@@ -127,6 +133,8 @@ func _serialize() -> Array:
 			"s": float(n.s)}
 		if float(n.get("h", 0.0)) > 0.0:
 			e["h"] = snappedf(float(n.h), 0.001)
+		if bool(n.get("c", false)):
+			e["c"] = true
 		out.append(e)
 	return out
 
@@ -145,11 +153,11 @@ func push_history(label := "") -> void:
 	history.push(notes, label)
 
 
-func add_note(t: float, cell: int, hold := 0.0) -> Dictionary:
+func add_note(t: float, cell: int, hold := 0.0, click := false) -> Dictionary:
 	for n in notes:
 		if int(n.cell) == cell and absf(float(n.t) - t) < 0.001:
 			return n
-	var n := {"t": t, "cell": cell, "s": SIZES[size_i], "h": hold}
+	var n := {"t": t, "cell": cell, "s": SIZES[size_i], "h": hold, "c": click}
 	recalc(n)
 	notes.append(n)
 	notes_changed()
@@ -181,7 +189,8 @@ func _restore(snapshot: Array) -> void:
 	notes.clear()
 	for nd in snapshot:
 		var n := {"t": float(nd.t), "cell": int(nd.cell), "s": float(nd.s),
-			"h": float(nd.get("h", 0.0)), "node": null}
+			"h": float(nd.get("h", 0.0)), "c": bool(nd.get("c", false)),
+			"node": null}
 		recalc(n)
 		notes.append(n)
 	if timeline != null:
@@ -213,7 +222,8 @@ func _copy() -> void:
 	clipboard.clear()
 	for n in timeline.selection:
 		clipboard.append({"dt": float(n.t) - base, "cell": int(n.cell),
-			"s": float(n.s), "h": float(n.get("h", 0.0))})
+			"s": float(n.s), "h": float(n.get("h", 0.0)),
+			"c": bool(n.get("c", false))})
 	_show_toast("Copied %d notes" % clipboard.size())
 
 
@@ -223,7 +233,8 @@ func _paste() -> void:
 	push_history("paste")
 	var added: Array = []
 	for e in clipboard:
-		added.append(add_note(cur_time + float(e.dt), int(e.cell), float(e.h)))
+		added.append(add_note(cur_time + float(e.dt), int(e.cell), float(e.h),
+			bool(e.get("c", false))))
 	timeline.selection = added
 	_show_toast("Pasted %d notes" % added.size())
 
@@ -240,7 +251,8 @@ func _duplicate() -> void:
 	var shift := maxf(span - base, _snap_step())
 	var added: Array = []
 	for n in timeline.selection:
-		added.append(add_note(float(n.t) + shift, int(n.cell), float(n.get("h", 0.0))))
+		added.append(add_note(float(n.t) + shift, int(n.cell),
+			float(n.get("h", 0.0)), bool(n.get("c", false))))
 	timeline.selection = added
 
 
@@ -251,6 +263,31 @@ func _delete_selection() -> void:
 	for n in timeline.selection.duplicate():
 		erase_note(n)
 	timeline.selection.clear()
+
+
+## C: make the selection click notes, or take it back if they already are.
+func _toggle_click() -> void:
+	if timeline.selection.is_empty():
+		click_mode = not click_mode
+		_update_click_btn()
+		_show_toast("New notes are click notes" if click_mode
+			else "New notes are normal")
+		return
+	push_history("click")
+	var any_plain := false
+	for n in timeline.selection:
+		if not bool(n.get("c", false)):
+			any_plain = true
+	for n in timeline.selection:
+		n["c"] = any_plain
+	notes_changed()
+	_show_toast("Click notes: %s" % ("on" if any_plain else "off"))
+
+
+func _update_click_btn() -> void:
+	if click_btn != null:
+		click_btn.add_theme_color_override("font_color",
+			G.C_PRIMARY if click_mode else G.C_TEXT)
 
 
 ## H: give the selection a one-beat hold, or take it away if it already has one.
@@ -405,6 +442,8 @@ func _build_side_panel() -> void:
 	rate_btn = G.button("Speed  %.2fx" % RATES[rate_i], _cycle_rate, 15)
 	row3.add_child(rate_btn)
 	row3.add_child(G.button("Hold note", _toggle_hold, 15))
+	click_btn = G.button("Click note", _toggle_click, 15)
+	row3.add_child(click_btn)
 	row3.add_child(G.button("Select all", func(): timeline.select_all(), 15))
 	vb.add_child(row3)
 
@@ -434,6 +473,10 @@ func _build_side_panel() -> void:
 	auto_dense.value = 60.0
 	auto_dense.custom_minimum_size = Vector2(220, 24)
 	row5.add_child(auto_dense)
+	auto_holds = _auto_check("Hold notes", true)
+	row5.add_child(auto_holds)
+	auto_clicks = _auto_check("Click notes", true)
+	row5.add_child(auto_clicks)
 	row5.add_child(G.button("Generate", _auto_build, 16))
 	vb.add_child(row5)
 	var ahint := G.label("Replaces the whole chart. Onset detection needs a .wav; other formats get an even beat grid.",
@@ -451,6 +494,15 @@ func _build_side_panel() -> void:
 	vb.add_child(keys)
 
 	_update_snap_label()
+
+
+func _auto_check(text: String, on: bool) -> CheckBox:
+	var c := CheckBox.new()
+	c.text = text
+	c.button_pressed = on
+	c.add_theme_font_override("font", G.font_body)
+	c.add_theme_font_size_override("font_size", 15)
+	return c
 
 
 func _tag(text: String) -> Label:
@@ -509,6 +561,7 @@ func _update_note_view(n: Dictionary) -> void:
 	n.node.position = n.hit
 	n.node.rotation = 0.0
 	n.node.hold_total = float(n.get("h", 0.0))
+	n.node.is_click = bool(n.get("c", false))
 	n.node.hold_left = 1.0
 	n.node.scale = Vector2.ONE
 
@@ -529,6 +582,7 @@ func _sync_note_views() -> void:
 			var v := NoteView.new()
 			v.half = n.half
 			v.hold_total = float(n.get("h", 0.0))
+			v.is_click = bool(n.get("c", false))
 			v.set_color(n.color)
 			notes_root.add_child(v)
 			notes_root.move_child(v, 0)
@@ -546,7 +600,7 @@ func _sync_note_views() -> void:
 
 func _place(local: Vector2) -> void:
 	push_history("add note")
-	var n := add_note(snap_time(cur_time), G.cell_index(local))
+	var n := add_note(snap_time(cur_time), G.cell_index(local), 0.0, click_mode)
 	shock.ring(n.hit, Color.WHITE, 70.0)
 	if timeline != null:
 		timeline.selection = [n]
@@ -827,6 +881,7 @@ func _auto_build() -> void:
 	if notes_out.size() < 8:
 		_show_toast("Auto: too few notes (%d)" % notes_out.size())
 		return
+	notes_out = _auto_decorate(notes_out, spb)
 	push_history("auto-generate")
 	for n in notes:
 		if n.get("node") != null and is_instance_valid(n.node):
@@ -834,7 +889,8 @@ func _auto_build() -> void:
 	notes.clear()
 	for nd in notes_out:
 		var n := {"t": float(nd.t), "s": float(nd.s), "cell": int(nd.cell),
-			"h": 0.0, "node": null}
+			"h": float(nd.get("h", 0.0)), "c": bool(nd.get("c", false)),
+			"node": null}
 		recalc(n)
 		notes.append(n)
 	bpm = use_bpm
@@ -846,6 +902,36 @@ func _auto_build() -> void:
 	_save()
 	_show_toast("Auto: %d notes @ %.1f BPM" % [notes.size(), use_bpm])
 	G.play_sfx("click")
+
+
+## Turn some of the generated notes into holds and click notes, per the two
+## checkboxes. Nothing is placed while a hold runs - there is one cursor, so a
+## note flying in during a hold is a note you cannot take.
+func _auto_decorate(raw: Array, spb: float) -> Array:
+	var want_holds: bool = auto_holds != null and auto_holds.button_pressed
+	var want_clicks: bool = auto_clicks != null and auto_clicks.button_pressed
+	if not want_holds and not want_clicks:
+		return raw
+	var hold_len := spb * 1.25
+	var out: Array = []
+	var blocked_until := -9.0
+	var i := 0
+	var strong := 0
+	for nd in raw:
+		var t := float(nd.t)
+		if t < blocked_until:
+			continue
+		var e: Dictionary = nd.duplicate()
+		i += 1
+		if want_holds and i % 6 == 0:
+			e["h"] = snappedf(hold_len, 0.001)
+			blocked_until = t + hold_len + spb * 0.35
+		elif want_clicks:
+			strong += 1
+			if strong % 5 == 0:
+				e["c"] = true
+		out.append(e)
+	return out
 
 
 ## Ogg/mp3: an even half-beat grid; a hash picks which subdivisions survive so
@@ -1074,6 +1160,9 @@ func _key(k: InputEventKey) -> bool:
 			return true
 		KEY_H:
 			_toggle_hold()
+			return true
+		KEY_C:
+			_toggle_click()
 			return true
 		KEY_T:
 			_test()

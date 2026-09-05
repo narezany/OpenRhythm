@@ -17,6 +17,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_media import SR, ROOT, Song, fft_filter, midi2f   # noqa: E402
+from charting import build_chart, describe                 # noqa: E402
 
 np.random.seed(1312)
 
@@ -299,83 +300,6 @@ def track_afterburner():
 
 
 # --------------------------------------------------------------------------
-# Charts
-# --------------------------------------------------------------------------
-# Low pitches sit on the bottom row, high ones on top; drums keep the centre
-# column so the eye has an anchor.
-KICK_CELLS = [4, 7, 4, 1]
-SNARE_CELLS = [3, 5, 5, 3]
-
-
-def pitch_cell(midi, lo, hi, seq):
-    span = max(hi - lo, 1)
-    row = 2 - int(np.clip((midi - lo) * 3 // span, 0, 2))
-    col = seq % 3
-    return row * 3 + col
-
-
-def build_chart(events, level, beat):
-    """level: 0 easy, 1 normal, 2 hyper.
-
-    Easy keeps the pulse and little else, Normal adds the melody, Hyper takes
-    everything. Note size shrinks as the level climbs.
-    """
-    pitches = [m for (_, k, m, _) in events if k == "lead" and m > 0]
-    lo = min(pitches) if pitches else 40
-    hi = max(pitches) if pitches else 80
-    # the floor is tied to the tempo, so a fast track does not become a wall
-    min_gap = [max(0.42, beat * 1.10), max(0.20, beat * 0.52), max(0.10, beat * 0.26)][level]
-    size_mul = [1.22, 1.05, 0.92][level]
-    notes = []
-    cell_last = {}
-    last_any = -9.0
-    ki = 0
-    si = 0
-    li = 0
-    for (t, kind, midi, vel) in sorted(events, key=lambda e: e[0]):
-        cand = []
-        if kind == "kick":
-            if level == 0 and ki % 2:
-                ki += 1
-                continue
-            cand = [(KICK_CELLS[ki % 4], 1.15 if ki % 4 == 0 else 1.0, 0.0)]
-            ki += 1
-        elif kind in ("snare", "clap"):
-            cand = [(SNARE_CELLS[si % 4], 1.05, 0.0)]
-            si += 1
-        elif kind == "lead":
-            li += 1
-            if level == 0:
-                continue                      # easy is drums and holds only
-            if level == 1 and (li % 3 == 2 or vel < 0.85):
-                continue
-            cand = [(pitch_cell(midi, lo, hi, li), 0.9, 0.0)]
-        elif kind == "bass":
-            # a long bass note becomes a hold: the shape of the sound on screen
-            hold = beat * [2.5, 2.0, 1.5][level]
-            cand = [(pitch_cell(midi, lo, hi, 1), 1.2, hold)]
-        else:
-            continue
-        if t - last_any < min_gap:
-            continue
-        for (cell, size, hold) in cand:
-            cell = int(np.clip(cell, 0, 8))
-            if t - cell_last.get(cell, -9.0) < 0.16:
-                cell = (cell + 4) % 9
-                if t - cell_last.get(cell, -9.0) < 0.16:
-                    continue
-            cell_last[cell] = t
-            e = {"t": round(float(t), 3), "cell": cell,
-                 "s": round(float(size) * size_mul, 2)}
-            if hold > 0.0:
-                e["h"] = round(float(hold), 3)
-            notes.append(e)
-            last_any = t
-    notes.sort(key=lambda n: n["t"])
-    return notes
-
-
-# --------------------------------------------------------------------------
 # Output
 # --------------------------------------------------------------------------
 def write_waveform(song_dir, mono):
@@ -429,11 +353,11 @@ def main():
     for sid, title, bpm, preview, fn in plan:
         print(f"{title}:")
         s = fn()
-        diffs = [
-            ("Easy", build_chart(s.events, 0, s.beat)),
-            ("Normal", build_chart(s.events, 1, s.beat)),
-            ("Hyper", build_chart(s.events, 2, s.beat)),
-        ]
+        diffs = []
+        for name, level in (("Easy", 0), ("Normal", 1), ("Hyper", 2)):
+            notes = build_chart(s.events, level, s.beat, sid)
+            diffs.append((name, notes))
+            print("    %-7s %s" % (name, describe(notes, s.len_s - 2.0)))
         write_track(sid, title, bpm, preview, s, diffs)
     print("done.")
 

@@ -18,13 +18,12 @@ func _ready() -> void:
 
 	var locked := not _tutorial_done()
 
-	# --- Free Play, unlocked after the tutorial ---
-	_card(Vector2(220, 210), "FREE PLAY",
+	# the two cards sit either side of the canvas centre, not at fixed x
+	_card(-440.0, "FREE PLAY",
 		"Every song in your library.\nMods, difficulties, records.",
 		func(): G.main.goto_select("play"), locked)
-	# --- Story Mode, always open: story 1 is the tutorial ---
-	_card(Vector2(640, 210), "STORY MODE",
-		"Two stories: learn with Melly,\nthen prove yourself on Night Drive.",
+	_card(20.0, "STORY MODE",
+		"Three stories: learn with Melly,\nthen drive, then survive Overdrive.",
 		func(): G.main.goto_story(), false)
 
 	var lock_note := G.label(
@@ -47,12 +46,11 @@ func _tutorial_done() -> bool:
 	return not G.get_best("tutorial", "Easy").is_empty()
 
 
-func _card(pos: Vector2, title: String, sub: String, on_pick: Callable, locked: bool) -> void:
+func _card(dx: float, title: String, sub: String, on_pick: Callable, locked: bool) -> void:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", G.panel_style(
 		Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.25 if locked else 0.8)))
-	p.position = pos
-	p.size = Vector2(420, 230)
+	G.anchor_center_x(p, dx, 210.0, Vector2(420, 230))
 	add_child(p)
 	var vb := VBoxContainer.new()
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER

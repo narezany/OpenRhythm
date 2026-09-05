@@ -80,6 +80,15 @@ func _test_hold_notes() -> void:
 	ok(absf(float(back[1].get("h", 0.0)) - 0.75) < 0.001, "hold length survives a save")
 	ok(absf(float(back[2].get("h", 0.0)) - 2.0) < 0.001, "long hold survives a save")
 	ok(float(back[0].get("h", 0.0)) == 0.0, "plain note stays plain")
+
+	# click notes survive a round-trip too
+	RhythmMap.save_custom(song, [
+		{"t": 1.0, "cell": 4, "s": 1.0},
+		{"t": 2.0, "cell": 2, "s": 1.0, "c": true},
+	])
+	var back2: Array = RhythmMap.diffs_of(song)[0].get("notes", [])
+	ok(bool(back2[1].get("c", false)), "click flag survives a save")
+	ok(not bool(back2[0].get("c", false)), "plain note is not a click note")
 	RhythmMap.delete_song(song)
 	ok(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(str(song.dir))),
 		"delete_song removes the folder it was given")
@@ -98,6 +107,30 @@ func _test_judge() -> void:
 		"MIRROR flips cells horizontally")
 	ok(is_equal_approx(G.mod_rate(["speed"]), 1.4) and is_equal_approx(G.mod_rate([]), 1.0),
 		"speed modifier sets the playback rate")
+	ok(G.mod_mult(["clicky"]) > 1.3, "CLICKY pays a bonus")
+
+	# every shipped chart must keep the cursor free while a hold runs
+	var overlaps := 0
+	var holds_seen := 0
+	var clicks_seen := 0
+	for s2 in RhythmMap.load_songs():
+		for d in RhythmMap.diffs_of(s2):
+			var ns: Array = d.get("notes", [])
+			for i in ns.size():
+				var h := float(ns[i].get("h", 0.0))
+				if bool(ns[i].get("c", false)):
+					clicks_seen += 1
+				if h <= 0.0:
+					continue
+				holds_seen += 1
+				var end: float = float(ns[i].t) + h
+				for j in range(i + 1, ns.size()):
+					if float(ns[j].t) >= end:
+						break
+					overlaps += 1
+	ok(overlaps == 0, "nothing flies while a hold runs (%d holds checked)" % holds_seen)
+	ok(holds_seen > 0 and clicks_seen > 0,
+		"shipped charts contain holds (%d) and click notes (%d)" % [holds_seen, clicks_seen])
 
 
 func _test_offset() -> void:

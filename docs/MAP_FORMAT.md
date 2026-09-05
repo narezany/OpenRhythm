@@ -55,7 +55,7 @@ The exact path is printed on the **Songs** screen, with a *Copy path* button.
 ## Notes
 
 ```json
-{ "t": 12.5, "cell": 4, "s": 1.0, "h": 0.5 }
+{ "t": 12.5, "cell": 4, "s": 1.0, "h": 0.5, "c": true }
 ```
 
 | Field | Default | Meaning |
@@ -64,6 +64,7 @@ The exact path is printed on the **Songs** screen, with a *Copy path* button.
 | `cell` | — | Grid cell, `0..8`, left to right then top to bottom. `0` is top-left, `4` is the centre, `8` is bottom-right. |
 | `s` | `1.0` | Size multiplier of the cube, `0.4..`. Bigger cubes are easier. |
 | `h` | `0` | Hold length in seconds. `0` (or absent) is a normal note. |
+| `c` | `false` | Click note: the cube must be **pressed**, not just covered. |
 
 ### Hold notes
 
@@ -74,6 +75,21 @@ scaled up with the hold length.
 
 In the editor, drag the right edge of a note in the timeline to give it a
 length, or select notes and press **H** to toggle a one-beat hold.
+
+**Do not let anything else fly while a hold runs.** There is one cursor: a note
+arriving during a hold is a note the player cannot take. The bundled charts
+leave the whole hold window empty, and the editor's auto-generator does the
+same.
+
+### Click notes
+
+A note with `"c": true` has to be *clicked* - mouse button, tap or the gamepad
+button - while the cursor is on it. Covering it is not enough, and the catch
+window ends in a miss if no press arrives. They are drawn as ember cubes inside
+a target ring.
+
+The CLICKY modifier turns every note in a chart into a click note for +35%
+score.
 
 ### Legacy fields
 

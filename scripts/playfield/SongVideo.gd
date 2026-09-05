@@ -27,8 +27,6 @@ func _ready() -> void:
 
 	# solid backdrop so nothing shows through the letterboxed edges
 	_backdrop = ColorRect.new()
-	_backdrop.size = G.DESIGN * 1.25
-	_backdrop.position = -G.DESIGN * 0.125
 	_backdrop.color = Color(0.02, 0.0, 0.004, 1.0)
 	_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_backdrop)
@@ -38,13 +36,22 @@ func _ready() -> void:
 	_vp.volume_db = -60.0          # music comes from the audio file, not the clip
 	_vp.bus = "Music"
 	_vp.expand = true
-	var cover := G.DESIGN * 1.25
-	_vp.size = cover
-	_vp.position = -G.DESIGN * 0.125
 	_vp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_vp)
+	_fit()
+	G.view_changed.connect(_fit)
 	_vp.finished.connect(_on_finished)
 	_vp.play()
+
+
+## Cover the whole canvas, not the 16:9 design - otherwise the clip sits in the
+## top-left corner of a phone screen with a black band down one side.
+func _fit() -> void:
+	var canvas := G.canvas_size()
+	for c in [_backdrop, _vp]:
+		if c != null and is_instance_valid(c):
+			c.size = canvas * 1.25
+			c.position = -canvas * 0.125
 
 
 func _process(delta: float) -> void:

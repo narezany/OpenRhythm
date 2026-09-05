@@ -15,6 +15,10 @@ var hold_left := 1.0         # 1 at the start of the hold, 0 when it runs out
 var hold_active := false     # cursor is inside the cell right now
 var hold_started := false
 
+## A click note has to be pressed, not just covered, so it is drawn as an
+## ember cube ringed by a target.
+var is_click := false
+
 var _halo: Node2D
 var _t := 0.0
 
@@ -34,7 +38,7 @@ func trail_emitting(v: bool) -> void:
 
 
 func _process(delta: float) -> void:
-	if hold_total > 0.0:
+	if hold_total > 0.0 or is_click:
 		_t += delta
 		queue_redraw()
 
@@ -71,6 +75,9 @@ func _draw() -> void:
 	var rect := Rect2(-r, -r, r * 2.0, r * 2.0)
 	var face := Color(0.92, 0.90, 0.89, 1.0)
 	var inner_col := Color(1.0, 0.99, 0.98, 1.0)
+	if is_click:
+		face = Color(1.0, 0.55, 0.28)
+		inner_col = Color(1.0, 0.76, 0.52)
 	if hold_started:
 		# warm while held, cold while dropped, so the state is obvious
 		face = Color(1.0, 0.86, 0.70) if hold_active else Color(0.70, 0.66, 0.68)
@@ -84,6 +91,8 @@ func _draw() -> void:
 	draw_polyline(PackedVector2Array([
 		Vector2(0, -q), Vector2(q, 0), Vector2(0, q), Vector2(-q, 0), Vector2(0, -q)
 	]), Color(0.88, 0.14, 0.16, 0.75), 2.2, true)
+	if is_click:
+		_draw_click_ring()
 	if hold_started:
 		_draw_hold_ring()
 
@@ -105,6 +114,19 @@ func _draw_hold_body() -> void:
 		var rect := Rect2(-s, -s, s * 2.0, s * 2.0)
 		G.draw_rounded_rect(self, rect, s * 0.24, Color(0.86, 0.84, 0.86, a))
 		G.draw_rounded_outline(self, rect, s * 0.24, Color(1.0, 0.55, 0.45, a * 0.8), 1.6)
+
+
+## Target ring that marks a cube you have to press.
+func _draw_click_ring() -> void:
+	var r := half * 1.28
+	var pulse := 0.5 + 0.5 * sin(_t * 7.0)
+	draw_arc(Vector2.ZERO, r, 0, TAU, 36,
+		Color(1.0, 0.45, 0.22, 0.55 + 0.35 * pulse), 3.0, true)
+	for i in 4:
+		var a := PI * 0.25 + PI * 0.5 * float(i)
+		var d := Vector2(cos(a), sin(a))
+		draw_line(d * (r * 0.78), d * (r * 1.18),
+			Color(1.0, 0.62, 0.35, 0.9), 2.4)
 
 
 ## Radial timer around a hold that is currently being held.

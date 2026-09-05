@@ -65,6 +65,10 @@ var _is_tutorial := false
 var _replay: Replay = null
 var _play_rate := 1.0
 var _elapsed := 0.0
+## Set by input for exactly one frame: a click note resolves on the press, not
+## on the cursor merely being in the right place.
+var _click_edge := false
+var _prev_time := 0.0
 ## Centre of the playfield in canvas units. On anything that is not 16:9 the
 ## canvas is bigger than the design, so this is not DESIGN / 2.
 var field_center := G.DESIGN / 2.0
@@ -106,6 +110,7 @@ func _ready() -> void:
 # ---------------------------------------------------------------- data
 func _load_notes(raw: Array, seek: float) -> void:
 	var mirror: bool = "mirror" in G.active_mods
+	var clicky: bool = "clicky" in G.active_mods
 	for nd in raw:
 		var t := float(nd.get("t", 0.0))
 		if t < seek + 0.2:
@@ -118,9 +123,10 @@ func _load_notes(raw: Array, seek: float) -> void:
 		if mirror:
 			cell = G.mirror_cell(cell)
 		var hold := maxf(float(nd.get("h", 0.0)), 0.0)
+		var click: bool = bool(nd.get("c", false)) or clicky
 		var hit := G.cell_pos(cell)
 		notes.append({
-			"t": t, "cell": cell, "d": d, "s": s, "h": hold,
+			"t": t, "cell": cell, "d": d, "s": s, "h": hold, "click": click,
 			"half": 52.0 * s,
 			"hit": hit,
 			"spawn": hit * (0.10 + 0.22 * d),
@@ -363,8 +369,11 @@ func _process(delta: float) -> void:
 
 	if G.autoplay:
 		_autoplay(delta)
+		_click_edge = true          # autoplay presses whenever it is in place
 	elif G.replay_mode and G.replay != null:
 		UICursor.pos = G.replay.pos_at(st)
+		_click_edge = G.replay.clicked_between(_prev_time, st)
+	_prev_time = st
 
 	while idx < notes.size() and notes[idx].t - APPROACH <= st:
 		_spawn(notes[idx])
@@ -382,6 +391,8 @@ func _process(delta: float) -> void:
 
 	if _replay != null:
 		_replay.capture(st, UICursor.pos)
+		if _click_edge:
+			_replay.click(st)
 
 	UICursor.hover_boost = 0.0
 
@@ -414,10 +425,16 @@ func _process(delta: float) -> void:
 				if p > float(n.get("best_p", -1.0)):
 					n["best_p"] = p
 					n["best_dt"] = dt
-				if p >= Judge.P_PERFECT:
+				if bool(n.get("click", false)):
+					# a click note waits for the press
+					if _click_edge:
+						_resolve(n, dt, cursor_local, p)
+				elif p >= Judge.P_PERFECT:
 					_resolve(n, dt, cursor_local, p)
 		else:
-			if float(n.get("best_p", -1.0)) >= 0.0:
+			# a click note that was never pressed is a miss, however good the
+			# cursor position was
+			if not bool(n.get("click", false)) and float(n.get("best_p", -1.0)) >= 0.0:
 				_resolve_best(n)
 			else:
 				_resolve_miss(n)
@@ -429,6 +446,7 @@ func _process(delta: float) -> void:
 	_update_fx(delta)
 	_update_hud(delta)
 	_check_end()
+	_click_edge = false
 
 
 # future targets shown as pulsing red outlines so the player can aim early
@@ -483,6 +501,7 @@ func _spawn(n: Dictionary) -> void:
 	var v := NoteView.new()
 	v.half = n.half
 	v.hold_total = float(n.h)
+	v.is_click = bool(n.get("click", false))
 	v.set_color(n.color)
 	v.position = n.spawn
 	v.scale = Vector2.ONE * 0.30
@@ -784,17 +803,21 @@ func _finish() -> void:
 	G.results["unlocked"] = Achievements.check_results(G.results)
 	if OS.get_environment("OR_DEBUG") != "":
 		print("[DBG] result ", G.results)
-	# story mode: only offer "next" when THIS song is the current story step
-	if not G.story_playlist.is_empty() and G.story_idx < G.story_playlist.size() \
-			and str(song.get("id", "")) == str(G.story_playlist[G.story_idx]):
-		var next_idx: int = G.story_idx + 1
-		if next_idx < G.story_playlist.size():
-			G.results["story_next_id"] = str(G.story_playlist[next_idx])
-			G.results["story_diff"] = G.story_diff
-		else:
-			G.results["story_complete"] = true
-	G.story_playlist = []
-	G.story_idx = 0
+	# Story mode: find where this song sits in the playlist rather than trusting
+	# a counter, so a retry does not lose the thread. The playlist is kept until
+	# the story ends or the player leaves it - clearing it here used to kill the
+	# "continue" button after the second song.
+	if not G.story_playlist.is_empty():
+		var pos: int = G.story_playlist.find(str(song.get("id", "")))
+		if pos >= 0:
+			G.story_idx = pos
+			if pos + 1 < G.story_playlist.size():
+				G.results["story_next_id"] = str(G.story_playlist[pos + 1])
+				G.results["story_diff"] = G.story_diff
+			else:
+				G.results["story_complete"] = true
+				G.story_playlist = []
+				G.story_idx = 0
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.6)
 	await tw.finished
@@ -814,8 +837,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed(Binds.PAUSE):
 		_toggle_pause()
-	elif event.is_action_pressed(Binds.RESTART) and not paused:
+		return
+	if event.is_action_pressed(Binds.RESTART) and not paused:
 		_retry()
+		return
+	if paused or G.autoplay or G.replay_mode:
+		return
+	# any press counts as a click: mouse, finger or gamepad
+	if event is InputEventMouseButton and event.pressed:
+		_click_edge = true
+	elif event is InputEventScreenTouch and event.pressed:
+		_click_edge = true
+	elif event.is_action_pressed(Binds.HIT):
+		_click_edge = true
 
 
 func _toggle_pause() -> void:

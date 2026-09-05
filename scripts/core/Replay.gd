@@ -12,6 +12,8 @@ var meta := {}
 var times: PackedFloat32Array = PackedFloat32Array()
 var xs: PackedFloat32Array = PackedFloat32Array()
 var ys: PackedFloat32Array = PackedFloat32Array()
+## Song times at which the player clicked - click notes need them to replay.
+var clicks: PackedFloat32Array = PackedFloat32Array()
 
 var _next_sample := 0.0
 
@@ -28,6 +30,7 @@ func start(song: Dictionary, diff: String, mods: Array) -> void:
 	times.clear()
 	xs.clear()
 	ys.clear()
+	clicks.clear()
 	_next_sample = 0.0
 
 
@@ -38,6 +41,18 @@ func capture(t: float, pos: Vector2) -> void:
 	times.append(t)
 	xs.append(pos.x)
 	ys.append(pos.y)
+
+
+func click(t: float) -> void:
+	clicks.append(t)
+
+
+## True when a click was recorded inside the window that just elapsed.
+func clicked_between(a: float, b: float) -> bool:
+	for c in clicks:
+		if c >= a and c < b:
+			return true
+	return false
 
 
 func finish(results: Dictionary) -> void:
@@ -83,7 +98,10 @@ func save() -> String:
 		pts.append(snappedf(times[i], 0.001))
 		pts.append(roundi(xs[i]))
 		pts.append(roundi(ys[i]))
-	f.store_string(JSON.stringify({"meta": meta, "p": pts}))
+	var cl: Array = []
+	for c in clicks:
+		cl.append(snappedf(c, 0.001))
+	f.store_string(JSON.stringify({"meta": meta, "p": pts, "c": cl}))
 	f.close()
 	return path
 
@@ -96,6 +114,8 @@ static func load_file(path: String) -> Replay:
 		return null
 	var r := Replay.new()
 	r.meta = data.get("meta", {})
+	for c in data.get("c", []):
+		r.clicks.append(float(c))
 	var pts: Array = data.get("p", [])
 	var i := 0
 	while i + 2 < pts.size():
