@@ -82,9 +82,20 @@ func _enter_vr(xr: XRInterface) -> bool:
 	G.vr_active = true
 	G.dev_log("%s runtime up after %.1fs, starting in VR" % [xr.get_name(), _waited])
 	add_child(VR_STAGE.new())
+	_keep_engine_log()
 	return true
 
 
 func _go_flat(why: String) -> void:
 	G.dev_log("starting flat: %s" % why)
 	add_child(load("res://scenes/Main.tscn").instantiate())
+	_keep_engine_log()
+
+
+## The engine writes its startup errors before any of this runs, so the copy is
+## taken once things have settled and again a few seconds later, by which point
+## anything with something to say has said it.
+func _keep_engine_log() -> void:
+	G.copy_engine_log()
+	await get_tree().create_timer(6.0).timeout
+	G.copy_engine_log()

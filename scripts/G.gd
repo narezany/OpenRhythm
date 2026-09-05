@@ -169,6 +169,27 @@ func dev_log(line: String) -> void:
 	_dev_log.flush()
 
 
+## Put the engine's own log next to ours where it can be read.
+##
+## Why OpenXR refused is written by the engine, not by the game, and on a
+## headset there is no console to read it in. This copies what the engine has
+## written so far into the songs folder, which any file manager can open.
+func copy_engine_log() -> void:
+	if not OS.has_feature("android"):
+		return
+	var src := "user://logs/godot.log"
+	if not FileAccess.file_exists(src):
+		return
+	var data := FileAccess.get_file_as_bytes(src)
+	if data.is_empty():
+		return
+	var dst := RhythmMap.user_songs_dir().get_base_dir() + "/engine.log"
+	var f := FileAccess.open(dst, FileAccess.WRITE)
+	if f != null:
+		f.store_buffer(data)
+		f.close()
+
+
 func aspect_ratio() -> float:
 	return view_w / maxf(view_h, 1.0)
 

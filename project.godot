@@ -39,6 +39,13 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=0
 
+[debug]
+
+# The engine's own log, kept on disk. When a headset shows nothing there is no
+# console to read, and the reason OpenXR refused is written by the engine, not
+# by the game - this is the only way to get at it without a working cable.
+file_logging/enable_file_logging=true
+
 [xr]
 
 # On everywhere the engine has it. The desktop build then finds a runtime when
@@ -56,6 +63,14 @@ shaders/enabled=true
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+# Headsets get Vulkan. OpenXR on Android binds to the graphics API to create
+# its session, and the OpenGL ES binding is not the one that works there: the
+# interface is found, the session is never created, and the headset sits on its
+# loading screen while the game runs behind it. These two lines come after the
+# .mobile one on purpose - the later matching feature wins, so a Quest or Pico
+# package overrides the phone's renderer while the phone keeps it.
+renderer/rendering_method.quest="mobile"
+renderer/rendering_method.pico="mobile"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=2
 viewport/transparent_background=false
