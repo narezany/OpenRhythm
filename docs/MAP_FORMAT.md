@@ -64,7 +64,7 @@ The exact path is printed on the **Songs** screen, with a *Copy path* button.
 | `cell` | — | Grid cell, `0..8`, left to right then top to bottom. `0` is top-left, `4` is the centre, `8` is bottom-right. |
 | `s` | `1.0` | Size multiplier of the cube, `0.4..`. Bigger cubes are easier. |
 | `h` | `0` | Hold length in seconds. `0` (or absent) is a normal note. |
-| `c` | `false` | Click note: the cube must be **pressed**, not just covered. |
+| `c` | `false` | Marks a click note. Off unless the player turns CLICKS on. |
 
 ### Hold notes
 
@@ -83,18 +83,42 @@ same.
 
 ### Click notes
 
-A note with `"c": true` has to be *clicked* - mouse button, tap or the gamepad
+A note with `"c": true` is *marked* as a click note, but it plays as a normal
+cube unless the player switches them on. Clicking is not for everyone, so a
+chart never forces it and never costs anything for leaving it off - a run
+without clicks scores the usual 100%.
+
+Two modifiers control them:
+
+* **CLICKS** (+15%) turns the chart's own click notes on. It only appears in
+  the modifier list when the chosen difficulty actually has some.
+* **CLICKY** (+40%) turns *every* note into a click note, on any chart.
+
+An active click note has to be pressed - mouse button, tap or the gamepad
 button - while the cursor is on it. Covering it is not enough, and the catch
 window ends in a miss if no press arrives. They are drawn as ember cubes inside
 a target ring.
-
-The CLICKY modifier turns every note in a chart into a click note for +35%
-score.
 
 ### Legacy fields
 
 Older maps used an `a` field (an angle in degrees) instead of `cell`. It still
 loads — the angle is snapped to the nearest cell. New maps should write `cell`.
+
+## Rebuilding a chart
+
+`tools/rechart.py` rebuilds the difficulties of any song from the note times
+already in its `map.json`. Those times came from the audio, so they are worth
+keeping; what gets rebuilt is the placement, the difficulty spread and the
+holds.
+
+```bash
+python3 tools/rechart.py songs/my_song
+python3 tools/rechart.py --all      # everything except the OST and the tutorial
+```
+
+It snaps the notes to the beat grid first, working out the grid phase from the
+notes themselves so a track whose first beat is not at zero does not get
+dragged onto the wrong beat.
 
 ## Importing from other games
 

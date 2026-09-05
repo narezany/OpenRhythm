@@ -279,9 +279,11 @@ class MenuCard extends Control:
 	var slot_x := 0.0
 	var hover := 0.0
 
+	## draw_string does not auto-translate the way a Label does, so the card
+	## text is translated here, once, when it is set.
 	func setup(t: String, s: String, c: Callable, center: bool) -> void:
-		title = t
-		sub = s
+		title = tr(t)
+		sub = tr(s)
 		cb = c
 		is_center = center
 		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND

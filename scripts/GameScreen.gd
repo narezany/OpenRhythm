@@ -110,7 +110,10 @@ func _ready() -> void:
 # ---------------------------------------------------------------- data
 func _load_notes(raw: Array, seek: float) -> void:
 	var mirror: bool = "mirror" in G.active_mods
+	# Click notes are opt-in: a chart may carry them, but they only come alive
+	# with the CLICKS modifier. Playing without it costs nothing.
 	var clicky: bool = "clicky" in G.active_mods
+	var use_marked: bool = "clicks_on" in G.active_mods
 	for nd in raw:
 		var t := float(nd.get("t", 0.0))
 		if t < seek + 0.2:
@@ -123,7 +126,7 @@ func _load_notes(raw: Array, seek: float) -> void:
 		if mirror:
 			cell = G.mirror_cell(cell)
 		var hold := maxf(float(nd.get("h", 0.0)), 0.0)
-		var click: bool = bool(nd.get("c", false)) or clicky
+		var click: bool = clicky or (use_marked and bool(nd.get("c", false)))
 		var hit := G.cell_pos(cell)
 		notes.append({
 			"t": t, "cell": cell, "d": d, "s": s, "h": hold, "click": click,
@@ -421,6 +424,13 @@ func _process(delta: float) -> void:
 			pass
 		elif dt <= Judge.LAND_GRACE:
 			if near:
+				# The hitsound belongs to the music, not to the bookkeeping: it
+				# fires the moment the cube lands under the cursor. Judgement
+				# can still resolve up to LAND_GRACE later, and playing the
+				# sound then is what made it drift off the beat.
+				if not bool(n.get("sounded", false)):
+					n["sounded"] = true
+					_play_hit_on_beat(dt)
 				var p := Judge.pos_acc(cursor_local, n.hit, n.half)
 				if p > float(n.get("best_p", -1.0)):
 					n["best_p"] = p
@@ -529,7 +539,6 @@ func _resolve(n: Dictionary, dt: float, cursor_local: Vector2, p_acc_in := -1.0)
 		if n.node != null and is_instance_valid(n.node):
 			n.node.hold_started = true
 		frame_view.hit_glow = minf(1.0, frame_view.hit_glow + 0.3)
-		_play_hit_on_beat(dt)
 		return
 	n.done = true
 	_award(n, acc, lbl)
@@ -580,8 +589,6 @@ func _award(n: Dictionary, acc: float, lbl: String) -> void:
 	trauma += (0.10 if lbl == "PERFECT" else 0.06) * G.motion()
 	flash += (0.10 if lbl == "PERFECT" else 0.05) * G.flashes()
 	frame_view.hit_glow = minf(1.0, frame_view.hit_glow + 0.4)
-	if float(n.h) <= 0.0:
-		_play_hit_on_beat(0.0)
 	combo_scale = 1.30
 	if n.node != null and is_instance_valid(n.node):
 		n.node.die()

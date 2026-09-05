@@ -127,7 +127,16 @@ add("SPEED UP", "УСКОРЕНИЕ", "加速", "SCHNELLER", "SNELLER", "MÁS R�
 add("SLOW DOWN", "ЗАМЕДЛЕНИЕ", "减速", "LANGSAMER", "LANGZAMER", "MÁS LENTO")
 add("MIRROR", "ЗЕРКАЛО", "镜像", "SPIEGEL", "SPIEGEL", "ESPEJO")
 add("HIDDEN", "СКРЫТЫЙ", "隐藏", "VERSTECKT", "VERBORGEN", "OCULTO")
-add("CLICKY", "КЛИКИ", "点击模式", "KLICKIG", "KLIKKEN", "CLICS")
+add("CLICKY", "ВСЁ КЛИКОМ", "全部点击", "ALLES KLICKEN", "ALLES KLIKKEN", "TODO CLIC")
+add("CLICKS", "КЛИКИ", "点击音符", "KLICKS", "KLIKS", "CLICS")
+add("Play the click notes the mapper put in this chart. +15% score.",
+    "Играть кликабельные ноты, которые заложил автор карты. +15% очков.",
+    "启用作者在这张谱面里放置的点击音符。分数 +15%。",
+    "Spiele die Klick-Noten, die der Mapper eingebaut hat. +15% Punkte.",
+    "Speel de kliknoten die de mapper erin heeft gezet. +15% score.",
+    "Juega las notas de clic que puso el autor del mapa. +15% de puntos.")
+add("waveform: .wav only", "волна: только .wav", "波形：仅限 .wav",
+    "Wellenform: nur .wav", "golfvorm: alleen .wav", "onda: solo .wav")
 add("Highlights the nearest upcoming note and switches the highlight to it after each hit. -20% score.",
     "Подсвечивает ближайшую ноту и переключается на следующую после попадания. -20% очков.",
     "高亮最近的下一个音符，每次命中后切换到下一个。分数 -20%。",
@@ -170,12 +179,12 @@ add("No outline guides for upcoming notes. +20% score.",
     "Keine Umriss-Hinweise für kommende Noten. +20% Punkte.",
     "Geen omtrekhulp voor komende noten. +20% score.",
     "Sin contornos guía para las notas siguientes. +20% de puntos.")
-add("Every cube has to be clicked, not just covered. +35% score.",
-    "Каждый куб нужно кликнуть, а не просто накрыть. +35% очков.",
-    "每个方块都必须点击，而不只是覆盖。分数 +35%。",
-    "Jeder Würfel muss geklickt werden, nicht nur überdeckt. +35% Punkte.",
-    "Elke kubus moet geklikt worden, niet alleen bedekt. +35% score.",
-    "Cada cubo hay que clicarlo, no solo cubrirlo. +35% de puntos.")
+add("Every cube has to be clicked, not just covered. +40% score.",
+    "Каждый куб нужно кликнуть, а не просто накрыть. +40% очков.",
+    "每个方块都必须点击，而不只是覆盖。分数 +40%。",
+    "Jeder Würfel muss geklickt werden, nicht nur überdeckt. +40% Punkte.",
+    "Elke kubus moet geklikt worden, niet alleen bedekt. +40% score.",
+    "Cada cubo hay que clicarlo, no solo cubrirlo. +40% de puntos.")
 
 # ---------------------------------------------------------------- settings
 add("Master volume", "Общая громкость", "主音量", "Gesamtlautstärke", "Hoofdvolume", "Volumen general")

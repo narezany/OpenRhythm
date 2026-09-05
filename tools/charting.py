@@ -1,71 +1,123 @@
 #!/usr/bin/env python3
-"""Chart builder shared by the OST generators.
+"""Chart builder shared by the OST generators and the re-charter.
 
-The old builder walked a fixed four-cell cycle, which produced the same
-top-middle-bottom snake in every song. This one works in phrases: every two
-bars it picks a movement pattern, walks it, and lets melody notes take their
-row from pitch, so two tracks never look alike and the chart follows the music.
+Two rules drive everything here.
 
-Difficulty is a density curve plus a minimum gap between notes. There is one
-cursor, so the gap is the real difficulty knob - it decides how far you have to
-travel and how fast.
+*Reachability.* There is one cursor. How far the next cube may sit from the
+last one is decided by how much time there is to get there: notes 0.15 s apart
+land next door, notes half a second apart can be anywhere. Ignoring this is
+what turns a dense chart into a pile of cubes nobody enjoys dragging a mouse
+across.
+
+*Phrasing.* A movement pattern is chosen per two bars and seeded per song, so a
+chart sweeps and circles instead of jittering, and no two tracks share a shape.
+
+Holds sit at phrase ends and own the cursor for their whole length - nothing
+else is charted while one runs.
 """
 import hashlib
 
 # Cell ids on the 3x3 grid: row * 3 + col, 0 = top-left, 4 = centre.
-# Each pattern is a walk; a phrase picks one and steps through it.
 PATTERNS = {
-    "row_top":  [0, 1, 2, 1],
-    "row_mid":  [3, 4, 5, 4],
-    "row_bot":  [6, 7, 8, 7],
-    "col_left": [0, 3, 6, 3],
-    "col_mid":  [1, 4, 7, 4],
+    "row_top":   [0, 1, 2, 1],
+    "row_mid":   [3, 4, 5, 4],
+    "row_bot":   [6, 7, 8, 7],
+    "col_left":  [0, 3, 6, 3],
+    "col_mid":   [1, 4, 7, 4],
     "col_right": [2, 5, 8, 5],
-    "diag_a":   [0, 4, 8, 4],
-    "diag_b":   [2, 4, 6, 4],
-    "corners":  [0, 2, 8, 6],
-    "star":     [4, 0, 4, 8, 4, 2, 4, 6],
-    "edges":    [1, 5, 7, 3],
-    "box":      [0, 1, 2, 5, 8, 7, 6, 3],
-    "zigzag":   [0, 5, 1, 8, 3, 7, 2, 6],
-    "wide":     [0, 8, 2, 6],
-    "bounce":   [3, 5, 3, 5, 0, 8],
-    "spiral":   [0, 1, 2, 5, 8, 7, 6, 3, 4],
+    "diag_a":    [0, 4, 8, 4],
+    "diag_b":    [2, 4, 6, 4],
+    "corners":   [0, 2, 8, 6],
+    "star":      [4, 0, 4, 8, 4, 2, 4, 6],
+    "edges":     [1, 5, 7, 3],
+    "box":       [0, 1, 2, 5, 8, 7, 6, 3],
+    "snake":     [0, 1, 2, 5, 4, 3, 6, 7, 8],
+    "wide":      [0, 8, 2, 6],
+    "bounce":    [3, 4, 5, 4],
+    "spiral":    [0, 1, 2, 5, 8, 7, 6, 3, 4],
+    "vee":       [0, 4, 2, 5, 8, 4, 6, 3],
 }
 
-# Which patterns a difficulty is allowed to use. Easy stays close to the
-# centre, Hyper gets the ones with long jumps.
 POOLS = {
     0: ["row_mid", "col_mid", "diag_a", "diag_b", "row_top", "row_bot", "edges"],
     1: ["row_top", "row_mid", "row_bot", "col_left", "col_mid", "col_right",
-        "diag_a", "diag_b", "corners", "edges", "box", "star"],
-    2: ["corners", "star", "box", "zigzag", "wide", "bounce", "spiral",
-        "diag_a", "diag_b", "col_left", "col_right", "row_top", "row_bot"],
+        "diag_a", "diag_b", "corners", "edges", "box", "star", "snake"],
+    2: ["snake", "box", "spiral", "vee", "star", "corners", "row_top", "row_bot",
+        "col_left", "col_right", "diag_a", "diag_b", "wide", "bounce"],
 }
 
-# Per level: minimum gap in beats, an absolute floor in seconds, note size.
-# The floor matters more than the beat fraction: without it a 174 BPM track
-# turns Normal into a wall, which is exactly what happened to Hyper Drive.
-GAP_BEATS = [1.00, 0.55, 0.28]
-GAP_FLOOR = [0.55, 0.30, 0.16]
-SIZE_MUL = [1.25, 1.05, 0.88]
+# Minimum gap between notes: beats, and an absolute floor in seconds. The floor
+# is what stops a fast track from turning Normal into a wall.
+GAP_BEATS = [1.00, 0.55, 0.30]
+GAP_FLOOR = [0.55, 0.30, 0.17]
+SIZE_MUL = [1.25, 1.05, 0.92]
 
-# Hold length in beats per level, and the gap left after one ends. Nothing else
-# is placed while a hold runs - there is one cursor, so a note flying in during
-# a hold is a note you cannot take.
-HOLD_BEATS = [1.5, 1.25, 1.0]
-HOLD_TAIL = 0.35          # beats of breathing room after a hold releases
-HOLD_EVERY = [5, 4, 3]    # one in N eligible bass notes becomes a hold
+# How far the next cube may be, by how much time there is to travel. Grid
+# distance is manhattan, so 4 is corner to opposite corner.
+REACH = [(0.18, 1), (0.28, 2), (0.45, 3)]   # above the last threshold: 4
 
-# One in N strong hits becomes a click note. Easy gets none.
-CLICK_EVERY = [0, 6, 4]
+# One hold per this many bars, and how long it runs, in beats.
+HOLD_BARS = [8, 8, 12]
+HOLD_LEN_BEATS = [2.0, 2.0, 1.5]
+HOLD_TAIL = 0.5            # beats of room after a hold releases
 
-# which event kinds each level keeps
+# One in N strong hits carries a click marker. Easy carries none. They only
+# come alive if the player turns the CLICKS modifier on.
+CLICK_EVERY = [0, 6, 5]
+
 KINDS = [
     {"kick", "snare", "clap"},
-    {"kick", "snare", "clap", "lead", "bass"},
-    {"kick", "snare", "clap", "lead", "bass", "hat"},
+    {"kick", "snare", "clap", "lead"},
+    {"kick", "snare", "clap", "lead", "hat"},
 ]
+
+
+def _dist(a, b):
+    return abs(a // 3 - b // 3) + abs(a % 3 - b % 3)
+
+
+def _reach_for(gap):
+    for limit, d in REACH:
+        if gap < limit:
+            return d
+    return 4
+
+
+def _pick_cell(target, prev, gap):
+    """Nearest cell to `target` that the cursor can actually get to in `gap`."""
+    if prev < 0:
+        return target
+    max_d = _reach_for(gap)
+    if _dist(target, prev) <= max_d and target != prev:
+        return target
+    best = None
+    best_key = None
+    for c in range(9):
+        if c == prev:
+            continue
+        d = _dist(c, prev)
+        if d > max_d:
+            continue
+        # closest to where the pattern wanted to go, then the bigger move -
+        # a chart that always takes the smallest step feels limp
+        key = (_dist(c, target), -d)
+        if best_key is None or key < best_key:
+            best_key = key
+            best = c
+    return best if best is not None else prev
+
+
+def _phrase_pattern(level, song_key, phrase):
+    pool = POOLS[level]
+    h = hashlib.sha1(("%s|%d|%d" % (song_key, level, phrase)).encode()).digest()
+    return PATTERNS[pool[h[0] % len(pool)]], h[1]
+
+
+def _pitch_row(midi, lo, hi):
+    if hi <= lo:
+        return 1
+    f = (midi - lo) / float(hi - lo)
+    return 2 - min(2, max(0, int(f * 3.0)))
 
 
 def _inside(windows, t):
@@ -77,112 +129,68 @@ def _inside(windows, t):
     return False
 
 
-def _place_holds(events, level, beat, enabled):
-    """Pick the hold notes and the windows they own. Returns (notes, windows).
-
-    Sustained bass is the natural source; a track without any gets its holds
-    from bar-start kicks instead, so every chart has a few.
-    """
-    if not enabled or HOLD_EVERY[level] <= 0:
+def _place_holds(events, level, beat, enabled, song_key):
+    """One hold per phrase boundary, on a sustained note if there is one."""
+    if not enabled:
         return [], []
-    hold_len = beat * HOLD_BEATS[level]
     bars = beat * 4.0
-    cands = [(t, m) for (t, k, m, _v) in events if k == "bass"]
-    if not cands:
-        cands = [(t, 0) for (t, k, _m, _v) in events if k == "kick"
-                 and abs((t / bars) - round(t / bars)) < 0.02]
-    if not cands:
+    every = HOLD_BARS[level] * bars
+    hold_len = beat * HOLD_LEN_BEATS[level]
+    if not events:
         return [], []
-    cands.sort()
-    out = []
-    windows = []
-    last_end = -9.0
-    step = max(HOLD_EVERY[level], 1)
-    # spread them out: one every `step` candidates and never back to back
-    for i, (t, midi) in enumerate(cands):
-        if i % step:
-            continue
-        if t < last_end + bars * 1.5:
-            continue
-        cell = 4 if midi <= 0 else (1 + (i // step) % 3) + 3 * ((i // step) % 3)
-        cell = int(min(max(cell, 0), 8))
-        out.append({"t": round(float(t), 3), "cell": cell,
-                    "s": round(SIZE_MUL[level] * 1.15, 2),
+    end = max(t for (t, _k, _m, _v) in events)
+    # candidates near each phrase boundary, preferring a bass note
+    bass = sorted(t for (t, k, _m, _v) in events if k == "bass")
+    strong = sorted(t for (t, k, _m, _v) in events if k in ("kick", "snare"))
+    out, windows = [], []
+    mark = every
+    i = 0
+    while mark < end - hold_len - bars:
+        pool = bass if bass else strong
+        near = min(pool, key=lambda t: abs(t - mark)) if pool else mark
+        if abs(near - mark) > bars:
+            near = mark
+        h = hashlib.sha1(("%s|hold|%d" % (song_key, i)).encode()).digest()
+        cell = [4, 1, 3, 5, 7][h[0] % 5]
+        out.append({"t": round(float(near), 3), "cell": cell,
+                    "s": round(SIZE_MUL[level] * 1.2, 2),
                     "h": round(hold_len, 3)})
-        last_end = t + hold_len
-        windows.append((t - beat * 0.35, last_end + beat * HOLD_TAIL))
+        windows.append((near - beat * 0.4, near + hold_len + beat * HOLD_TAIL))
+        mark += every
+        i += 1
     return out, windows
-
-
-def _phrase_pattern(level, song_key, phrase):
-    """Deterministic per-song, per-phrase pattern pick - no two songs match."""
-    pool = POOLS[level]
-    h = hashlib.sha1(("%s|%d|%d" % (song_key, level, phrase)).encode()).digest()
-    return PATTERNS[pool[h[0] % len(pool)]], h[1]
-
-
-def _pitch_row(midi, lo, hi):
-    """Low notes at the bottom of the grid, high notes at the top."""
-    if hi <= lo:
-        return 1
-    f = (midi - lo) / float(hi - lo)
-    return 2 - min(2, max(0, int(f * 3.0)))
-
-
-def _dist(a, b):
-    return abs(a // 3 - b // 3) + abs(a % 3 - b % 3)
 
 
 def build_chart(events, level, beat, song_key, holds=True, clicks=True,
                 bars_per_phrase=2):
-    """Build one difficulty.
-
-    events: [(t, kind, midi, vel)]. level: 0 easy, 1 normal, 2 hyper.
-    holds:  place hold notes on sustained bass, blocking the cursor while they
-            run. clicks: mark some strong hits as click notes.
-    """
+    """Build one difficulty. events: [(t, kind, midi, vel)]."""
     keep = KINDS[level]
-    pitches = [m for (_, k, m, _) in events if k == "lead" and m > 0]
+    pitches = [m for (_t, k, m, _v) in events if k == "lead" and m > 0]
     lo = min(pitches) if pitches else 48
     hi = max(pitches) if pitches else 84
     min_gap = max(GAP_FLOOR[level], beat * GAP_BEATS[level])
     phrase_len = beat * 4 * bars_per_phrase
+    click_every = CLICK_EVERY[level] if clicks else 0
 
-    # Holds are placed first. A bass event usually lands on the same beat as a
-    # kick, so if it went through the normal gap filter it would always lose
-    # and no hold would ever survive.
-    hold_notes, blocked = _place_holds(events, level, beat, holds)
-
+    hold_notes, blocked = _place_holds(events, level, beat, holds, song_key)
     notes = list(hold_notes)
+
     last_t = -9.0
     prev_cell = -1
-    cell_last = {}
     step = 0
     cur_phrase = -1
     pattern = PATTERNS["row_mid"]
-    salt = 0
-    hat_i = 0
     strong_i = 0
-    click_every = CLICK_EVERY[level] if clicks else 0
 
     for (t, kind, midi, vel) in sorted(events, key=lambda e: e[0]):
-        if kind not in keep:
+        if kind not in keep or _inside(blocked, t):
             continue
-        # a hold owns the cursor until it releases
-        if _inside(blocked, t):
+        gap = t - last_t
+        if gap < min_gap:
             continue
-        # Easy only wants the strong half of the drums
-        if level == 0 and kind == "kick" and int(round(t / beat)) % 2 == 1:
+        # hats are filler: only where the groove has actually left a hole
+        if kind == "hat" and gap < min_gap * 1.4:
             continue
-        # hats are the filler that makes Hyper genuinely dense on tracks whose
-        # drums alone are sparse
-        if kind == "hat":
-            hat_i += 1
-            if vel < 0.55:
-                continue
-        if t - last_t < min_gap:
-            continue
-
         phrase = int(t / phrase_len) if phrase_len > 0 else 0
         if phrase != cur_phrase:
             cur_phrase = phrase
@@ -190,46 +198,47 @@ def build_chart(events, level, beat, song_key, holds=True, clicks=True,
             step = salt % len(pattern)
 
         if kind == "lead" and midi > 0:
-            row = _pitch_row(midi, lo, hi)
-            col = pattern[step % len(pattern)] % 3
-            cell = row * 3 + col
+            target = _pitch_row(midi, lo, hi) * 3 + pattern[step % len(pattern)] % 3
         else:
-            cell = pattern[step % len(pattern)]
+            target = pattern[step % len(pattern)]
         step += 1
 
-        # never twice in a row in the same place, and give hyper real travel
-        if cell == prev_cell or (level == 2 and prev_cell >= 0
-                                 and _dist(cell, prev_cell) < 1):
-            cell = (cell + 4) % 9
-        if t - cell_last.get(cell, -9.0) < min_gap * 1.4:
-            alt = (cell + 5) % 9
-            if t - cell_last.get(alt, -9.0) >= min_gap * 1.4:
-                cell = alt
-
-        size = SIZE_MUL[level]
-        if kind == "kick":
-            size *= 1.08
-        elif kind == "hat":
-            size *= 0.9
+        cell = _pick_cell(int(target), prev_cell, gap)
+        size = SIZE_MUL[level] * (1.08 if kind == "kick" else
+                                  0.92 if kind == "hat" else 1.0)
         note = {"t": round(float(t), 3), "cell": int(cell), "s": round(size, 2)}
-
-        # Click notes land on the strong hits, where a press feels natural.
         if click_every and kind in ("kick", "snare", "clap"):
             strong_i += 1
             if strong_i % click_every == 0:
                 note["c"] = True
-
         notes.append(note)
-        cell_last[cell] = t
         prev_cell = cell
         last_t = t
 
     notes.sort(key=lambda n: n["t"])
+    return _enforce_reach(notes)
+
+
+def _enforce_reach(notes):
+    """Final pass over the merged list, holds included.
+
+    Holds are placed in their own pass, so the note before and after one never
+    went through the reach check. Walking the finished chart once catches those
+    and any other pair that ended up further apart than the gap allows.
+    """
+    prev = -1
+    prev_end = -9.0
+    for n in notes:
+        gap = n["t"] - prev_end
+        cell = _pick_cell(n["cell"], prev, gap) if prev >= 0 else n["cell"]
+        n["cell"] = int(cell)
+        prev = n["cell"]
+        prev_end = n["t"] + float(n.get("h", 0) or 0)
     return notes
 
 
 def describe(notes, length):
-    """A quick sanity read: density, holds, clicks and how varied the cells are."""
+    """Density, holds, clicks, cell coverage and the worst travel demand."""
     if not notes or length <= 0:
         return "0 notes"
     holds = sum(1 for n in notes if n.get("h"))
@@ -239,5 +248,12 @@ def describe(notes, length):
     for i in range(len(notes) - 3):
         runs.add(tuple(notes[j]["cell"] for j in range(i, i + 4)))
     variety = len(runs) / max(len(notes) - 3, 1)
-    return "%3d notes %.2f/s  holds %-3d clicks %-3d cells %d/9  variety %.2f" % (
-        len(notes), len(notes) / length, holds, clicks, cells, variety)
+    # the tightest "distance per second" the chart ever asks for
+    worst = 0.0
+    for a, b in zip(notes, notes[1:]):
+        gap = b["t"] - a["t"] - float(a.get("h", 0) or 0)
+        if gap > 0.02:
+            worst = max(worst, _dist(a["cell"], b["cell"]) / gap)
+    return ("%3d notes %.2f/s  holds %-3d clicks %-3d cells %d/9  variety %.2f  "
+            "peak %.1f cells/s" % (len(notes), len(notes) / length, holds, clicks,
+                                   cells, variety, worst))

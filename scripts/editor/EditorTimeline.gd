@@ -139,7 +139,7 @@ func _draw_waveform() -> void:
 	draw_rect(Rect2(0, y0, size.x, WAVE_H), Color(0, 0, 0, 0.25))
 	if peaks.is_empty():
 		draw_string(G.font_body, Vector2(8, y0 + WAVE_H - 10.0),
-			"waveform: .wav only", HORIZONTAL_ALIGNMENT_LEFT, -1, 12,
+			tr("waveform: .wav only"), HORIZONTAL_ALIGNMENT_LEFT, -1, 12,
 			Color(1, 1, 1, 0.25))
 		return
 	var rate: float = float(ed.wave_rate)

@@ -468,7 +468,10 @@ func apply_video() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	if not is_mobile():
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN \
+		# borderless fullscreen, not exclusive: an exclusive window owns the
+		# display, so a screenshot editor or a file manager opened on top of the
+		# game could not be reached
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN \
 			if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync \
 		else DisplayServer.VSYNC_DISABLED)
@@ -532,8 +535,10 @@ const MODS := [
 		"desc": "The grid is mirrored left to right. Same score."},
 	{"id": "hidden", "label": "HIDDEN", "mult": 1.20,
 		"desc": "No outline guides for upcoming notes. +20% score."},
-	{"id": "clicky", "label": "CLICKY", "mult": 1.35,
-		"desc": "Every cube has to be clicked, not just covered. +35% score."},
+	{"id": "clicks_on", "label": "CLICKS", "mult": 1.15, "needs_clicks": true,
+		"desc": "Play the click notes the mapper put in this chart. +15% score."},
+	{"id": "clicky", "label": "CLICKY", "mult": 1.40,
+		"desc": "Every cube has to be clicked, not just covered. +40% score."},
 ]
 
 ## SPEED UP and SLOW DOWN are mutually exclusive.

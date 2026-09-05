@@ -114,9 +114,13 @@ func _process(_delta: float) -> void:
 		pos += _pad_vec * G.gamepad_speed * _delta
 		var vis0 := _visible_rect()
 		pos = pos.clamp(vis0.position, vis0.end)
-	if not touch_mode and DisplayServer.get_name() != "headless" and _focused():
+	# At sensitivity 1.0 the drawn cursor already sits exactly on the system
+	# pointer, so there is nothing to correct and no reason to touch it at all.
+	var needs_warp := absf(G.mouse_sens - 1.0) > 0.01
+	if needs_warp and not touch_mode and DisplayServer.get_name() != "headless" \
+			and _focused():
 		# keep the hidden system pointer under the drawn cursor, otherwise GUI
-		# clicks miss; at sensitivity 1.0 the warp is a no-op
+		# clicks miss
 		if _os_expected == Vector2.INF or pos.distance_to(_os_expected) > 0.5:
 			_os_expected = pos
 			Input.warp_mouse(get_viewport().get_final_transform() * pos)
@@ -139,11 +143,12 @@ func jump_to(p: Vector2) -> void:
 ## the mouse back into the game and makes the other window unusable, so the
 ## cursor lets go the moment focus leaves.
 func _focused() -> bool:
-	if not _has_focus:
-		return false
+	# Polled, not remembered: focus notifications are not delivered reliably on
+	# every window manager, and getting this wrong means the game keeps yanking
+	# the pointer out of whatever window is on top.
 	if DisplayServer.has_method("window_is_focused"):
 		return DisplayServer.window_is_focused()
-	return true
+	return _has_focus
 
 
 ## Release the OS cursor when focus is lost and take it back on return.

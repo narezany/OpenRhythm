@@ -9,6 +9,7 @@ var mode := "play"
 var _pick_song: Dictionary = {}
 var _pick_diff := 0
 var _mods_layer: CanvasLayer
+var _mod_rows: VBoxContainer
 var _mod_checks: Dictionary = {}
 
 var _new_layer: CanvasLayer
@@ -182,6 +183,8 @@ func _difficulty_picked(song: Dictionary, i: int) -> void:
 	elif mode == "play":
 		_pick_song = song
 		_pick_diff = i
+		G.active_mods.clear()
+		_fill_mods(_chart_has_clicks(song, i))
 		_mods_layer.visible = true
 	else:
 		Conductor.stop_music()
@@ -220,29 +223,9 @@ func _build_mods_layer() -> void:
 	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(st)
 
-	_mod_checks.clear()
-	for md in G.MODS:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 14)
-		var chk := CheckButton.new()
-		var mid := str(md.id)
-		chk.button_pressed = false
-		chk.add_theme_font_override("font", G.font_bold)
-		chk.add_theme_font_size_override("font_size", 22)
-		chk.add_theme_color_override("font_color", G.C_EMBER)
-		chk.toggled.connect(func(on): _mod_toggled(mid, on))
-		_mod_checks[md.id] = chk
-		row.add_child(chk)
-		var lbl := G.label("%s  (%+d%%)" % [md.label,
-			roundi((float(md.mult) - 1.0) * 100.0)], 22, G.C_EMBER)
-		lbl.custom_minimum_size = Vector2(190, 0)
-		row.add_child(lbl)
-		var d := G.label(str(md.desc), 16, G.C_MUTED)
-		d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		d.custom_minimum_size = Vector2(360, 0)
-		row.add_child(d)
-		vb.add_child(row)
+	_mod_rows = VBoxContainer.new()
+	_mod_rows.add_theme_constant_override("separation", 10)
+	vb.add_child(_mod_rows)
 
 	vb.add_child(HSpacer.new(6))
 
@@ -254,6 +237,50 @@ func _build_mods_layer() -> void:
 	start.custom_minimum_size = Vector2(200, 0)
 	hb.add_child(start)
 	hb.add_child(G.button("Cancel", func(): _mods_layer.visible = false, 22))
+
+
+## Rebuild the modifier list for one chart. A modifier that only makes sense
+## for a chart that has click notes is left out of the list entirely, so nobody
+## turns on something the map cannot use.
+func _fill_mods(has_clicks: bool) -> void:
+	for c in _mod_rows.get_children():
+		c.queue_free()
+	_mod_checks.clear()
+	for md in G.MODS:
+		if bool(md.get("needs_clicks", false)) and not has_clicks:
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		var chk := CheckButton.new()
+		var mid := str(md.id)
+		chk.button_pressed = mid in G.active_mods
+		chk.add_theme_font_override("font", G.font_bold)
+		chk.add_theme_font_size_override("font_size", 22)
+		chk.add_theme_color_override("font_color", G.C_EMBER)
+		chk.toggled.connect(func(on): _mod_toggled(mid, on))
+		_mod_checks[md.id] = chk
+		row.add_child(chk)
+		var lbl := G.label("%s  (%+d%%)" % [tr(str(md.label)),
+			roundi((float(md.mult) - 1.0) * 100.0)], 22, G.C_EMBER)
+		lbl.custom_minimum_size = Vector2(190, 0)
+		row.add_child(lbl)
+		var d := G.label(str(md.desc), 16, G.C_MUTED)
+		d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(360, 0)
+		row.add_child(d)
+		_mod_rows.add_child(row)
+
+
+## True when the chosen difficulty actually carries click notes.
+static func _chart_has_clicks(song: Dictionary, diff_idx: int) -> bool:
+	var diffs := RhythmMap.diffs_of(song)
+	if diff_idx < 0 or diff_idx >= diffs.size():
+		return false
+	for n in diffs[diff_idx].get("notes", []):
+		if bool(n.get("c", false)):
+			return true
+	return false
 
 
 ## Mutually exclusive modifiers switch each other off instead of stacking.
