@@ -187,6 +187,10 @@ func _test_updater() -> void:
 
 func _test_offset() -> void:
 	print("== conductor offset ==")
+	# Informational: how far behind the audio device is on this machine. Every
+	# hitsound is handed over that early, so if this is large and the sound
+	# still lands late, the compensation is not being applied.
+	print("      output latency here: %.1f ms" % (AudioServer.get_output_latency() * 1000.0))
 	G.audio_offset = 0.0
 	Conductor.song_time = 10.0
 	ok(is_equal_approx(Conductor.play_time(), 10.0), "no offset means play time is song time")

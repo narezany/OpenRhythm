@@ -37,3 +37,6 @@ songs/be_my_friend/
 
 # Godot imports every image it finds; the README art is not game content
 docs/img/*.import
+
+# Python bytecode from the chart tools
+__pycache__/

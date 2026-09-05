@@ -69,6 +69,10 @@ var _elapsed := 0.0
 ## Set by input for exactly one frame: a click note resolves on the press, not
 ## on the cursor merely being in the right place.
 var _click_edge := false
+## How far the audio device is behind us. A sound handed to it now is heard
+## this much later, so every hitsound has to be handed over that early or the
+## game ends up tapping just behind its own music.
+var _out_lat := 0.0
 var _prev_time := 0.0
 var _had_focus := false
 ## Centre of the playfield in canvas units. On anything that is not 16:9 the
@@ -89,6 +93,9 @@ var _hints: Array = []
 
 
 func _ready() -> void:
+	# clamped: a broken driver can report an absurd figure, and a hitsound half
+	# a second early is worse than one slightly late
+	_out_lat = clampf(AudioServer.get_output_latency(), 0.0, 0.12)
 	if G.custom_test.is_empty():
 		song = G.selected_song
 		var diffs := RhythmMap.diffs_of(song)
@@ -447,6 +454,14 @@ func _process(delta: float) -> void:
 		n.hover = near
 		if near:
 			UICursor.hover_boost = 1.0
+		# Hand the hitsound over one output latency before the cube lands, so
+		# what comes out of the speakers lands on the beat instead of just
+		# behind it. If the cursor leaves in those few milliseconds the sound
+		# was already gone - a far smaller error than being late every time.
+		if near and not is_click and dt >= -_out_lat and dt < 0.0 \
+				and not bool(n.get("sounded", false)):
+			n["sounded"] = true
+			_play_hit_on_beat(dt)
 		# The rank uses the BEST cursor position across the whole catch window,
 		# not the first touch: brushing the edge early is fine as long as you
 		# reach the centre by the time the cube lands.
@@ -685,9 +700,10 @@ func _resolve_miss(n: Dictionary, has_node := true) -> void:
 func _play_hit_on_beat(dt: float) -> void:
 	if not G.hitsound:
 		return
-	var delay := -dt / maxf(_play_rate, 0.1)
+	# -dt is how long until the cube lands; the device eats _out_lat of that
+	var delay := (-dt - _out_lat) / maxf(_play_rate, 0.1)
 	var vol := -8.0
-	if delay <= 0.02:
+	if delay <= 0.005:
 		G.play_sfx("hit", 1.0, vol)
 	else:
 		var t := get_tree().create_timer(delay, true)
