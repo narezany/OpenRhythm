@@ -806,8 +806,7 @@ func _analyze_wav(path: String) -> Dictionary:
 
 func _compute_waveform() -> void:
 	wave_peaks = PackedFloat32Array()
-	# A song may ship a precomputed waveform: ogg and mp3 cannot be decoded
-	# from GDScript, so that file is the only way they get one.
+	# A song may ship a precomputed waveform; it is used as-is when present.
 	var wpath := str(song.get("dir", "")) + "/waveform.json"
 	if FileAccess.file_exists(wpath):
 		var data = JSON.parse_string(FileAccess.get_file_as_string(wpath))
@@ -820,6 +819,10 @@ func _compute_waveform() -> void:
 			return
 	var path := RhythmMap.audio_path(song)
 	if not FileAccess.file_exists(path) or path.get_extension().to_lower() != "wav":
+		# Anything that is not a plain wav is decoded through the audio stream,
+		# so an ogg or an mp3 gets a waveform to map against like everything
+		# else. It used to get an empty strip.
+		_waveform_from_stream()
 		return
 	var a := _analyze_wav(path)
 	if a.is_empty():
@@ -838,110 +841,68 @@ func _compute_waveform() -> void:
 		timeline.queue_redraw()
 
 
-func _flux_of(energies: Array) -> Array:
-	var mx := 0.0
-	for e in energies:
-		mx = maxf(mx, e)
-	if mx <= 0.0:
-		return []
-	var fl: Array = []
-	for i in range(1, energies.size()):
-		var dv: float = energies[i] - energies[i - 1]
-		fl.append(maxf(dv, 0.0) / mx)
-	return fl
-
-
-## Comb filter: sum the flux at beat positions across 60..200 BPM.
-func _detect_bpm(flux: Array, frame: float) -> float:
-	var best := 120.0
-	var best_s := -1.0
-	var b := 60.0
-	while b <= 200.0:
-		var L := int(round(60.0 / b / frame))
-		if L < 2:
-			break
-		var s := 0.0
-		var c := 0
-		var t := 0
-		while t < flux.size():
-			s += flux[t]
-			c += 1
-			t += L
-		s /= maxf(c, 1)
-		if s > best_s:
-			best_s = s
-			best = b
-		b += 1.0
-	return best
-
 
 func _auto_build() -> void:
-	var path := RhythmMap.audio_path(song)
-	var use_bpm := bpm
-	var onsets: Array = []
-	if FileAccess.file_exists(path) and path.get_extension().to_lower() == "wav":
-		var en := _analyze_wav(path)
-		if not en.is_empty():
-			var fl := _flux_of(en["e"])
-			if absf(bpm - 120.0) < 0.01 and not fl.is_empty():
-				use_bpm = snappedf(_detect_bpm(fl, en["frame"]), 0.1)
-			var frame: float = en["frame"]
-			var last := -10.0
-			for i in fl.size():
-				var t := i * frame
-				if fl[i] > 0.18 and t - last >= 0.11:
-					onsets.append(t)
-					last = t
-	else:
-		onsets = _grid_onsets(use_bpm)
-	if onsets.is_empty():
-		_show_toast("Auto: no audio or too quiet")
+	var stream := RhythmMap.audio_stream(song)
+	if stream == null:
+		_show_toast("Auto: attach the audio first")
 		return
-	var pct := auto_dense.value / 100.0
-	var step := maxi(1, roundi(1.0 / maxf(pct, 0.1)))
-	var notes_out: Array = []
-	var cycle := [4, 1, 5, 7, 3, 0, 2, 8, 6]
-	var spb := 60.0 / use_bpm
-	var min_gap := spb * 0.5
-	var last_t := -10.0
-	var i2 := 0
-	for t in onsets:
-		if i2 % step == 0:
-			if notes_out.is_empty() or t - last_t >= min_gap - 0.001:
-				var cell: int = cycle[i2 % cycle.size()]
-				var sz := 1.0 + 0.15 * sin(float(i2) * 0.7)
-				notes_out.append({"t": snappedf(t, 0.001), "cell": cell, "s": sz})
-				last_t = t
-		i2 += 1
-	if notes_out.size() < 8:
-		_show_toast("Auto: too few notes (%d)" % notes_out.size())
+	_show_toast("Auto: listening to the track...")
+	# Same analysis the shipped charts are built with: the tempo is measured
+	# from the audio rather than taken from the map, and each bar is charted at
+	# one subdivision so the result reads as a rhythm instead of a stutter.
+	var b := Beat.of_stream(stream, bpm)
+	if not b.ok:
+		_show_toast("Auto: could not find a beat in this track")
 		return
-	notes_out = _auto_decorate(notes_out, spb)
+	var level := _auto_level()
+	var picked := b.select(level)
+	if picked.size() < 12:
+		picked = b.select(level, Beat.FLOOR * 0.45)   # a quiet track: listen harder
+	if picked.size() < 8:
+		_show_toast("Auto: too quiet to chart (%d attacks)" % picked.size())
+		return
+	var want_holds: bool = auto_holds != null and auto_holds.button_pressed
+	var want_clicks: bool = auto_clicks != null and auto_clicks.button_pressed
+	var built := Charter.build(picked, level, 60.0 / b.bpm,
+		str(song.get("id", "map")), want_holds, want_clicks)
+	if built.size() < 8:
+		_show_toast("Auto: too few notes (%d)" % built.size())
+		return
+
 	push_history("auto-generate")
 	for n in notes:
 		if n.get("node") != null and is_instance_valid(n.node):
 			n.node.queue_free()
 	notes.clear()
-	for nd in notes_out:
-		var n := {"t": float(nd.t), "s": float(nd.s), "cell": int(nd.cell),
+	for nd in built:
+		var n := {"t": float(nd["t"]), "s": float(nd["s"]), "cell": int(nd["cell"]),
 			"h": float(nd.get("h", 0.0)), "c": bool(nd.get("c", false)),
 			"node": null}
 		recalc(n)
 		notes.append(n)
-	bpm = use_bpm
-	song["bpm"] = use_bpm
+	bpm = snappedf(b.bpm, 0.01)
+	song["bpm"] = bpm
 	if bpm_label != null:
-		bpm_label.text = "%.1f" % use_bpm
+		bpm_label.text = "%.1f" % bpm
 	timeline.selection.clear()
 	notes_changed()
 	_save()
-	_show_toast("Auto: %d notes @ %.1f BPM" % [notes.size(), use_bpm])
-	G.play_sfx("click")
+	_show_toast("Auto: %d notes, %s, %.1f BPM" % [notes.size(), _auto_level_name(level), bpm])
 
 
-## Turn some of the generated notes into holds and click notes, per the two
-## checkboxes. Nothing is placed while a hold runs - there is one cursor, so a
-## note flying in during a hold is a note you cannot take.
+## The density slider picks which of the three difficulty shapes to build.
+func _auto_level() -> int:
+	var pct: float = auto_dense.value if auto_dense != null else 60.0
+	if pct <= 40.0:
+		return 0
+	return 1 if pct <= 75.0 else 2
+
+
+func _auto_level_name(level: int) -> String:
+	return ["sparse", "medium", "dense"][clampi(level, 0, 2)]
+
+
 func _auto_decorate(raw: Array, spb: float) -> Array:
 	var want_holds: bool = auto_holds != null and auto_holds.button_pressed
 	var want_clicks: bool = auto_clicks != null and auto_clicks.button_pressed
@@ -968,21 +929,6 @@ func _auto_decorate(raw: Array, spb: float) -> Array:
 		out.append(e)
 	return out
 
-
-## Ogg/mp3: an even half-beat grid; a hash picks which subdivisions survive so
-## the pattern is not perfectly uniform.
-func _grid_onsets(use_bpm: float) -> Array:
-	var stream := RhythmMap.audio_stream(song)
-	var dur := stream.get_length() if stream != null else 60.0
-	var out: Array = []
-	var spb := 60.0 / use_bpm
-	var t := spb
-	while t < dur - 1.0:
-		var h := float((int(t * 97.0) * 2654435761) % 1000) / 1000.0
-		if h > 0.18:
-			out.append(t)
-		t += spb * 0.5
-	return out
 
 
 func _show_toast(text: String) -> void:
@@ -1317,3 +1263,35 @@ func _playfield_touch(st: InputEventScreenTouch) -> void:
 func go_back() -> void:
 	_save()
 	G.main.goto_select("edit")
+
+
+## Waveform for a format we cannot parse by hand: decode the stream itself.
+func _waveform_from_stream() -> void:
+	var stream := RhythmMap.audio_stream(song)
+	if stream == null:
+		return
+	var b := Beat.new()
+	var mono := b._decode(stream)
+	if mono.is_empty():
+		return
+	var per := int(b.rate / WAVE_RATE)
+	if per < 1:
+		return
+	var peaks := PackedFloat32Array()
+	var mx := 0.0
+	var i := 0
+	while i < mono.size():
+		var pk := 0.0
+		for j in range(i, mini(i + per, mono.size())):
+			pk = maxf(pk, absf(mono[j]))
+		peaks.append(pk)
+		mx = maxf(mx, pk)
+		i += per
+	if mx <= 0.0001:
+		return
+	for k in peaks.size():
+		peaks[k] = peaks[k] / mx
+	wave_peaks = peaks
+	wave_rate = WAVE_RATE
+	if timeline != null:
+		timeline.queue_redraw()
