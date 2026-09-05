@@ -51,6 +51,13 @@ static func compare(a: String, b: String) -> int:
 
 ## Which release asset suits the machine we are running on.
 static func platform_key() -> String:
+	# The headset packages are Android too, and offering one of them the phone
+	# build would replace a working game with one that has no VR in it. Each is
+	# exported with its own feature tag so it can ask for itself.
+	if OS.has_feature("quest"):
+		return "quest"
+	if OS.has_feature("pico"):
+		return "pico"
 	if OS.has_feature("android"):
 		return "android"
 	if OS.has_feature("windows"):
@@ -88,20 +95,44 @@ func _on_check(result: int, code: int, _h: PackedStringArray, body: PackedByteAr
 		return
 	latest = str(data.get("tag_name", "")).trim_prefix("v")
 	notes = str(data.get("body", ""))
+	_pick_asset(data, platform_key())
+	var newer := latest != "" and compare(latest, G.VERSION) > 0
+	check_done.emit(newer and asset_url != "", latest)
+
+
+## Which file in the release belongs on this machine.
+func _pick_asset(data: Dictionary, key: String) -> void:
 	asset_url = ""
 	asset_name = ""
-	var key := platform_key()
+	var fallback_url := ""
+	var fallback_name := ""
 	for a in data.get("assets", []):
 		var name := str(a.get("name", "")).to_lower()
-		if key == "android":
-			if name.ends_with(".apk"):
+		if key == "quest" or key == "pico":
+			if name.ends_with(".apk") and name.contains(key):
 				asset_url = str(a.get("browser_download_url", ""))
 				asset_name = str(a.get("name", ""))
+			continue
+		if key == "android":
+			if not name.ends_with(".apk"):
+				continue
+			# A release also carries the headset packages, and they are .apk
+			# too. Handing one of those to a phone would install a build that
+			# expects a headset, so the name has to say which device it is for.
+			if name.contains("quest") or name.contains("pico"):
+				continue
+			if name.contains("android"):
+				asset_url = str(a.get("browser_download_url", ""))
+				asset_name = str(a.get("name", ""))
+			elif fallback_url == "":
+				fallback_url = str(a.get("browser_download_url", ""))
+				fallback_name = str(a.get("name", ""))
 		elif name.contains(key) and name.ends_with(".zip"):
 			asset_url = str(a.get("browser_download_url", ""))
 			asset_name = str(a.get("name", ""))
-	var newer := latest != "" and compare(latest, G.VERSION) > 0
-	check_done.emit(newer and asset_url != "", latest)
+	if asset_url == "" and fallback_url != "":
+		asset_url = fallback_url
+		asset_name = fallback_name
 
 
 func download() -> void:

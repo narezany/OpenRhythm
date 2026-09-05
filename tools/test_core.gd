@@ -202,6 +202,28 @@ func _test_updater() -> void:
 	ok(Updater.compare("0.2.9", "0.3.0") < 0, "an older release is not offered")
 	ok(Updater.compare("0.3", "0.3.0") == 0, "a missing patch counts as zero")
 	ok(G.VERSION.split(".").size() == 3, "the game version is semantic (%s)" % G.VERSION)
+	# a release carries three .apk files now; a phone must not be offered a
+	# headset build just because it also ends in .apk
+	var up := Updater.new()
+	add_child(up)
+	var names := ["OpenRhythm-v0.3.1-quest.apk", "OpenRhythm-v0.3.1-android.apk",
+		"OpenRhythm-v0.3.1-pico.apk", "OpenRhythm-v0.3.1-linux.zip"]
+	var assets: Array = []
+	for n in names:
+		assets.append({"name": n, "browser_download_url": "https://x/" + n})
+	up._pick_asset({"tag_name": "v9.9.9", "assets": assets}, "android")
+	ok(up.asset_name == "OpenRhythm-v0.3.1-android.apk",
+		"the phone is offered the phone package (%s)" % up.asset_name)
+	up._pick_asset({"tag_name": "v9.9.9", "assets": assets}, "linux")
+	ok(up.asset_name == "OpenRhythm-v0.3.1-linux.zip",
+		"and the desktop its own archive (%s)" % up.asset_name)
+	up._pick_asset({"tag_name": "v9.9.9", "assets": assets}, "quest")
+	ok(up.asset_name == "OpenRhythm-v0.3.1-quest.apk",
+		"a headset is offered its own build, not the phone one (%s)" % up.asset_name)
+	up._pick_asset({"tag_name": "v9.9.9", "assets": assets}, "pico")
+	ok(up.asset_name == "OpenRhythm-v0.3.1-pico.apk",
+		"and so is the other one (%s)" % up.asset_name)
+	up.free()
 
 
 func _test_offset() -> void:
