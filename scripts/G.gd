@@ -7,7 +7,7 @@ const CELL := 166.0            # spacing of the 3x3 note grid
 const SAVE_PATH := "user://save.json"
 ## Semantic version, matched against the tag of a GitHub release by the
 ## updater. Bump it in the same commit as the tag.
-const VERSION := "0.3.0"
+const VERSION := "0.3.1"
 const REPO := "narezany/OpenRhythm"
 
 # --- heavy black & blood-red palette ---
@@ -95,6 +95,16 @@ var mouse_sens := 1.0
 var relative_touch := false      # Android: the finger moves the cursor relatively
 var touch_zone := false          # true while in the game or the editor
 var disabled_songs: Array = []
+
+# --- VR: the same build runs flat or in a headset, whichever is there ---
+## Extra delay on the hitsound, seconds. The game already hands the sound over
+## one audio-device latency early, but a phone's driver often under-reports how
+## far behind it really is, and no measurement here can see that. Positive
+## values fire the hitsound earlier.
+var hit_offset := 0.0
+var vr_start := "auto"           # "auto" enters VR when a runtime is up, "off" never
+var vr_style := "pointer"        # "pointer" aims a laser, "saber" cuts with a blade
+var vr_active := false           # true once a headset has actually taken over
 
 # --- Melly: per-body-part colours, chosen from presets in the settings ---
 var melly_colors := {
@@ -402,6 +412,9 @@ func _load_save() -> void:
 				mouse_sens = float(data.get("mouse_sens", 1.0))
 				relative_touch = bool(data.get("relative_touch", false))
 				disabled_songs = data.get("disabled_songs", [])
+				hit_offset = float(data.get("hit_offset", 0.0))
+				vr_start = str(data.get("vr_start", "auto"))
+				vr_style = str(data.get("vr_style", "pointer"))
 				master_vol = float(data.get("master_vol", master_vol))
 				music_vol = float(data.get("music_vol", music_vol))
 				sfx_vol = float(data.get("sfx_vol", sfx_vol))
@@ -449,6 +462,8 @@ func save_all() -> void:
 			"best": best, "total_score": total_score,
 			"mouse_sens": mouse_sens, "relative_touch": relative_touch,
 			"disabled_songs": disabled_songs,
+			"hit_offset": hit_offset,
+			"vr_start": vr_start, "vr_style": vr_style,
 			"melly_colors": mc,
 			"master_vol": master_vol, "music_vol": music_vol, "sfx_vol": sfx_vol,
 			"hitsound": hitsound, "audio_offset": audio_offset,

@@ -18,6 +18,8 @@ func _ready() -> void:
 	_test_updater()
 	_test_offset()
 	_test_fork_audio()
+	_test_beat()
+	_test_editor_roundtrip()
 	await _test_back_button()
 	_test_touch_cursor()
 	print("--- failures: %d" % fails)
@@ -236,21 +238,33 @@ func _test_back_button() -> void:
 	ok(main.current is SettingsScreen,
 		"back does not tear the screen down inside the notification")
 	await get_tree().process_frame
+	await get_tree().process_frame
 	ok(is_instance_valid(main) and main.current is MenuScreen,
 		"a frame later back has returned to the menu")
 
-	# and again, from a screen that has a panel to close first
+	# a repeat of the same press is swallowed rather than acted on twice
+	main._back_at = Time.get_ticks_msec()
 	main.goto_songs()
 	await get_tree().process_frame
 	main.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
 	await get_tree().process_frame
-	ok(is_instance_valid(main) and main.current is MenuScreen, "back works from the song list")
+	await get_tree().process_frame
+	ok(main.current is SongsScreen, "a second press within a moment is ignored")
 
-	# on the menu itself one press only warns, two leave
+	# and again, from a screen that has a panel to close first
+	main._back_at = -100000
 	main.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
 	await get_tree().process_frame
+	await get_tree().process_frame
+	ok(is_instance_valid(main) and main.current is MenuScreen, "back works from the song list")
+
+	# the menu is the end of the line: back does nothing and never closes the game
+	main._back_at = -100000
+	main.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	await get_tree().process_frame
+	await get_tree().process_frame
 	ok(is_instance_valid(main) and main.current is MenuScreen,
-		"one press on the menu does not quit the game")
+		"back on the menu leaves the game alone")
 	main.free()
 
 
@@ -351,3 +365,137 @@ func _wipe(dir: String) -> void:
 		f = d.get_next()
 	d.list_dir_end()
 	DirAccess.remove_absolute(dir)
+
+
+## The beat analyser the editor's auto button uses.
+##
+## Everything it produces rests on its timing being right, so the timing is
+## measured against a click track at times we already know rather than assumed.
+func _test_beat() -> void:
+	print("== beat analysis ==")
+	var bpm := 128.0
+	var dur := 24.0
+	var sr := 22050
+	var truth: Array[float] = []
+	var t := 0.0
+	while t < dur - 0.5:
+		truth.append(t)
+		t += 60.0 / bpm / 2.0
+	var n := int(dur * sr)
+	var pcm := PackedByteArray()
+	pcm.resize(n * 2)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	for i in truth.size():
+		var at := int(truth[i] * sr)
+		var loud := 0.8 if i % 2 == 0 else 0.36
+		for j in int(0.02 * sr):
+			if at + j >= n:
+				break
+			var shape: float = exp(-float(j) / (0.004 * sr))
+			var tone: float = sin(TAU * 180.0 * float(j) / sr) + 0.6 * rng.randfn(0.0, 1.0)
+			buf[at + j] += shape * tone * loud
+	for i in n:
+		var v := int(clampf(buf[i] * 0.5, -1.0, 1.0) * 32767.0)
+		pcm.encode_s16(i * 2, v)
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sr
+	wav.stereo = false
+	wav.data = pcm
+
+	var b := Beat.of_stream(wav, 0.0)
+	ok(b.ok, "the analyser read the stream")
+	if not b.ok:
+		return
+	var ons := b.onsets()
+	var d: Array[float] = []
+	for o in ons:
+		var near: float = truth[0]
+		for x in truth:
+			if absf(x - o) < absf(near - o):
+				near = x
+		d.append(o - near)
+	d.sort()
+	var bias: float = d[d.size() / 2] if d.size() > 0 else 99.0
+	print("      onsets %d for %d clicks, bias %+.1f ms" % [ons.size(), truth.size(), bias * 1000.0])
+	ok(absf(bias) < 0.008, "attacks are found within 8 ms of the sound (%+.1f ms)" % (bias * 1000.0))
+	ok(absf(b.bpm - bpm) < 0.5, "the tempo is measured, not guessed (%.2f BPM)" % b.bpm)
+	var period := 60.0 / bpm
+	var phase: float = fposmod(b.first + period * 0.5, period) - period * 0.5
+	ok(absf(phase) < 0.015, "the first beat is where it really is (%+.1f ms)" % (phase * 1000.0))
+
+	# and the chart it builds has to be rhythmically regular: every gap a whole
+	# number of the subdivision the bar was charted at
+	b.length = dur
+	var picked := b.select(2)
+	ok(picked.size() > 20, "it picked enough notes to chart (%d)" % picked.size())
+	var notes := Charter.build(picked, 2, 60.0 / b.bpm, "selftest")
+	var sixteenth := 60.0 / b.bpm / 4.0
+	var odd := 0
+	for i in range(1, notes.size()):
+		var gap: float = float(notes[i]["t"]) - float(notes[i - 1]["t"])
+		var q: float = gap / sixteenth
+		if absf(q - roundf(q)) > 0.12 or int(roundf(q)) % 2 != 0:
+			odd += 1
+	ok(odd == 0, "every gap is a whole eighth (%d notes, %d odd)" % [notes.size(), odd])
+
+
+## Saving from the editor, and forking a song to edit it.
+##
+## Both of these lose work when they go wrong, and the way they went wrong was
+## quiet: a fork carried all three difficulties, so the copy was saved into
+## whichever index was being edited while the editor reopened it at another,
+## and the notes - click markers and all - looked like they had never been
+## saved.
+func _test_editor_roundtrip() -> void:
+	print("== editor save and fork ==")
+	var song := RhythmMap.create_new_song("Roundtrip Test")
+	song["difficulties"] = [
+		{"name": "Easy", "notes": []},
+		{"name": "Normal", "notes": []},
+		{"name": "Hyper", "notes": []},
+	]
+	var notes := [
+		{"t": 1.0, "cell": 4, "s": 1.0},
+		{"t": 2.0, "cell": 1, "s": 1.0, "c": true},
+		{"t": 3.0, "cell": 7, "s": 1.0, "h": 0.5, "c": true},
+	]
+	RhythmMap.save_custom(song, notes, 1)
+	var back := {}
+	for x in RhythmMap.load_songs():
+		if str(x.get("id", "")) == str(song.get("id", "")):
+			back = x
+	ok(not back.is_empty(), "the saved song is in the library")
+	if back.is_empty():
+		return
+	var diffs := RhythmMap.diffs_of(back)
+	ok(diffs.size() == 3, "it still has its three difficulties")
+	var got: Array = diffs[1].get("notes", [])
+	ok(got.size() == 3, "the notes landed in the difficulty that was edited")
+	var clicks := 0
+	var holds := 0
+	for n in got:
+		if bool(n.get("c", false)):
+			clicks += 1
+		if float(n.get("h", 0.0)) > 0.0:
+			holds += 1
+	ok(clicks == 2, "click notes survived the save (%d of 2)" % clicks)
+	ok(holds == 1, "so did the hold")
+
+	var fork := RhythmMap.fork_song(back, "Roundtrip Fork", 1)
+	var fdiffs: Array = fork.get("difficulties", [])
+	ok(fdiffs.size() == 1, "forking one difficulty copies one, not all three (%d)"
+		% fdiffs.size())
+	if fdiffs.size() == 1:
+		ok(str(fdiffs[0].get("name", "")) == "Normal",
+			"and it is the one that was picked")
+		var fclicks := 0
+		for n in fdiffs[0].get("notes", []):
+			if bool(n.get("c", false)):
+				fclicks += 1
+		ok(fclicks == 2, "the copy kept its click notes")
+	_wipe(str(song["dir"]))
+	_wipe(str(fork.get("dir", "")))

@@ -21,6 +21,121 @@ static func user_songs_dir() -> String:
 	return ProjectSettings.globalize_path(USER_SONGS)
 
 
+## Write the how-to next to the songs folder, so someone who finds the folder
+## in a file manager can work out what to put in it without going looking for
+## the project on the web. Rewritten whenever this text changes.
+const README_VERSION := 1
+
+static func write_library_readme() -> void:
+	var songs := user_songs_dir()
+	var root := songs.get_base_dir()
+	var path := root + "/README.txt"
+	if FileAccess.file_exists(path):
+		var head := FileAccess.get_file_as_string(path)
+		if head.contains("format v%d" % README_VERSION):
+			return
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(LIBRARY_README % [README_VERSION, songs])
+	f.close()
+
+
+const LIBRARY_README := """OPEN RHYTHM - your own songs        (format v%d)
+=================================================
+
+Songs go in:
+  %s
+
+One folder per song. Drop a .zip in there instead and the game unpacks it on
+the next scan. Press RESCAN on the Songs screen after adding anything.
+
+  my_song/
+    map.json      required - the chart
+    audio.ogg     .ogg, .mp3 or .wav
+    video.ogv     optional - plays behind the playfield
+    events.json   optional - see below
+    note.png      optional - your own cube sprite
+
+
+map.json
+--------
+{
+  "id": "my_song",
+  "title": "My Song",
+  "artist": "Someone",
+  "bpm": 128,
+  "preview_start": 40.0,
+  "hue": 0.985,
+  "audio": "audio.ogg",
+  "difficulties": [
+    { "name": "Normal", "notes": [
+        { "t": 1.5, "cell": 4, "s": 1.0 },
+        { "t": 2.0, "cell": 1, "s": 1.0, "h": 0.5 },
+        { "t": 2.5, "cell": 7, "s": 1.0, "c": true }
+    ] }
+  ]
+}
+
+  t     when the cube lands, in seconds from the start of the audio
+  cell  where on the 3x3 grid: 0 is top-left, 4 the centre, 8 bottom-right
+  s     size, 1.0 is normal
+  h     hold length in seconds - carry the cursor to the end of it
+  c     true makes it a click note (only live with the CLICKS modifier on)
+  hue   background colour, 0..1 around the colour wheel
+  preview_start  where the song list starts playing the preview
+
+
+A video behind the playfield
+---------------------------
+The game plays Ogg Theora. Convert anything else first:
+
+  ffmpeg -i clip.mp4 -c:v libtheora -q:v 7 -an video.ogv
+
+Name it video.ogv and put it in the song folder - nothing else to set. Drop
+the audio track (-an); the song's own audio is what plays.
+
+
+Your own cube sprite, pictures, colours
+---------------------------------------
+Put an events.json in the song folder. Events are plain data on a timeline -
+{"t": seconds, "do": command, ...} - so a map you downloaded cannot run code
+on your machine.
+
+[
+  { "t": 0.0,  "do": "note_skin",  "file": "note.png" },
+  { "t": 0.0,  "do": "bg_color",   "hue": 0.62, "fade": 2.0 },
+  { "t": 12.0, "do": "bg_image",   "file": "city.png", "fade": 1.0, "dim": 0.7 },
+  { "t": 30.0, "do": "note_scale", "value": 1.6 },
+  { "t": 48.0, "do": "flash",      "value": 0.8 },
+  { "t": 48.0, "do": "shake",      "value": 0.5 },
+  { "t": 60.0, "do": "zoom",       "value": 1.15, "fade": 0.5 },
+  { "t": 64.0, "do": "text",       "value": "DROP" }
+]
+
+  note_skin   swaps the cube for your own image (png or jpg, up to 4096 px)
+  note_scale  resizes every cube from here on, 1.0 is normal
+  bg_color    hue 0..1, fade in seconds
+  bg_image    a picture behind the playfield; dim 0..1 darkens it
+  flash       one-off screen flash, 0..1
+  shake       one-off camera shake, 0..1
+  zoom        camera zoom, 1.0 is normal
+  text        a word across the screen
+
+Both note_skin and bg_image read files from the song's own folder.
+
+
+Maps from other games
+---------------------
+The Songs screen imports .sspm maps (Rhythia / Sound Space Plus) directly,
+audio and cover art included.
+
+
+Please keep the music you own. If you are sharing a map of someone else's
+song, share the folder without the audio file.
+"""
+
+
 ## Public roots scanned for songs on Android. Both the folder the Songs screen
 ## advertises and the OpenRhythm root itself work, so a song dropped in either
 ## place is found.
@@ -393,7 +508,11 @@ static func write_map(song: Dictionary) -> String:
 ## A res:// song lives inside the exported binary and cannot be written to, so
 ## editing one has to fork it: the audio, the video and the metadata are copied
 ## into a fresh folder and the editor carries on there.
-static func fork_song(song: Dictionary, title := "") -> Dictionary:
+## keep_diff picks which difficulty to carry over; -1 copies them all. Forking
+## from the song list is asking to edit ONE difficulty, and handing back a copy
+## with three of them - two of which the player never chose and cannot tell
+## apart - is not what was asked for.
+static func fork_song(song: Dictionary, title := "", keep_diff := -1) -> Dictionary:
 	var src := str(song.get("dir", ""))
 	if src == "":
 		return {}
@@ -425,7 +544,11 @@ static func fork_song(song: Dictionary, title := "") -> Dictionary:
 	copy["forked_from"] = str(song.get("id", ""))
 	copy["hue"] = float(song.get("hue", 0.985))
 	var diffs: Array = []
-	for d in song.get("difficulties", []):
+	var src_diffs: Array = diffs_of(song)
+	for i in src_diffs.size():
+		if keep_diff >= 0 and i != keep_diff:
+			continue
+		var d: Dictionary = src_diffs[i]
 		diffs.append({"name": str(d.get("name", CUSTOM_NAME)),
 			"notes": (d.get("notes", []) as Array).duplicate(true)})
 	if diffs.is_empty():

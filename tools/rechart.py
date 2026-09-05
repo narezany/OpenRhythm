@@ -23,7 +23,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from charting import build_chart, describe   # noqa: E402
+from charting import build_chart, describe, GAP_BEATS, GAP_FLOOR   # noqa: E402
 import beatgrid as bg                        # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,30 +37,11 @@ SNAP = 0.40
 # An attack has to be at least this strong, relative to the loudest in the
 # track, to be worth a cube.
 FLOOR = 0.10
-
-
-def bands(x: np.ndarray):
-    """Onset strength split into low, mid and high, for telling a kick from a
-    hat. Cheap, and enough to keep the drums and the top end apart."""
-    n = 1 + (len(x) - bg.NFFT) // bg.HOP
-    if n < 4:
-        z = np.zeros(1)
-        return z, z, z
-    win = np.hanning(bg.NFFT).astype(np.float32)
-    frames = np.lib.stride_tricks.as_strided(
-        x, shape=(n, bg.NFFT), strides=(x.strides[0] * bg.HOP, x.strides[0])) * win
-    mag = np.abs(np.fft.rfft(frames, axis=1))
-    logmag = np.log1p(mag * 8.0)
-    flux = np.maximum(np.diff(logmag, axis=0), 0.0)
-    hz = bg.SR / bg.NFFT
-    lo = flux[:, :int(150 / hz)].sum(axis=1)
-    mid = flux[:, int(150 / hz):int(2000 / hz)].sum(axis=1)
-    hi = flux[:, int(2000 / hz):].sum(axis=1)
-    out = []
-    for b in (lo, mid, hi):
-        peak = b.max()
-        out.append(b / peak if peak > 0 else b)
-    return out[0], out[1], out[2]
+# How full a subdivision has to be before a bar is charted at it. Higher means
+# steadier chart and fewer notes: at eighths, a bar that clears this bar gives
+# gaps of two sixteenths with the occasional four, which is what a stream of
+# eighth notes feels like under the cursor.
+COVER = 0.50
 
 
 def measure(path: str, claimed: float):
@@ -110,75 +91,83 @@ def phase_from_onsets(env, bpm: float, first: float) -> float:
     return first % (60.0 / bpm)
 
 
-def events_from_audio(x, env, bpm: float, first: float):
-    """Turn the attacks in the music into chart events on the measured grid.
+def slot_grid(env, bpm: float, first: float, length: float, floor: float = FLOOR):
+    """Onset strength on every sixteenth of the song, 0 where nothing happens.
 
-    The kind decides which difficulties see a note: Easy takes only what is on
-    a beat, Normal adds the eighths, Hyper the rest. That is the same shape a
-    listener hears in the music, so the difficulties differ by how much of the
-    groove they ask for rather than by an arbitrary thinning.
+    Everything downstream works on this grid rather than on loose onset times,
+    because what makes a chart feel like the music is not only landing on the
+    attacks but landing on a regular subdivision of the bar.
     """
-    lo, mid, hi = bands(x)
-    beat = 60.0 / bpm
-    step = beat / 4.0
-    peaks = bg.onset_times(env, thresh=FLOOR)
-    best = {}
-    for t in peaks:
-        k = round((t - first) / step)
-        if k < 0:
+    step = 60.0 / bpm / 4.0
+    n = max(1, int((length - first) / step) + 2)
+    slots = np.zeros(n)
+    for t in bg.onset_times(env, thresh=floor):
+        k = int(round((t - first) / step))
+        if k < 0 or k >= n:
             continue
-        q = first + k * step
-        if abs(q - t) > step * SNAP:
-            continue                      # the grid does not explain this one
+        if abs(first + k * step - t) > step * SNAP:
+            continue                     # the grid does not explain this one
         i = int(round((t - bg.ONSET_LAG) * bg.FPS))
         i = min(max(i, 0), len(env) - 1)
-        strength = float(env[i])
-        if k not in best or strength > best[k][0]:
-            best[k] = (strength, float(lo[min(i, len(lo) - 1)]),
-                       float(mid[min(i, len(mid) - 1)]),
-                       float(hi[min(i, len(hi) - 1)]))
-    on_beat, off_beat = [], []
-    for k in sorted(best):
-        strength, l, m, h = best[k]
-        t = first + k * step
-        beat_in_bar = (k // 4) % 4
-        if k % 4 == 0:
-            kind = "snare" if beat_in_bar in (1, 3) and (m + h) > l else "kick"
-            on_beat.append((round(t, 3), kind, 0, round(min(1.0, 0.5 + strength), 2)))
+        slots[k] = max(slots[k], float(env[i]))
+    return slots
+
+
+def select_times(slots, level: int, bpm: float, first: float):
+    """Pick the note times for one difficulty, a bar at a time.
+
+    A bar is charted at ONE subdivision - sixteenths, eighths, quarters or
+    every other beat - chosen as the fastest the difficulty allows that the
+    music actually fills. Notes then go on the slots of that subdivision which
+    have an attack.
+
+    This is the part that decides whether a chart feels like music or like
+    noise. Picking every attack that happens to clear a minimum gap leaves
+    dotted, three-sixteenth stutters between the notes that survive, and that
+    is exactly what an unplayable mess sounds like. Committing to one
+    subdivision per bar means every gap is a whole number of that subdivision.
+    """
+    step = 60.0 / bpm / 4.0
+    min_gap = max(GAP_FLOOR[level], (60.0 / bpm) * GAP_BEATS[level])
+    allowed = [d for d in (1, 2, 4, 8) if d * step >= min_gap - 1e-6] or [8]
+    times = []
+    for bar in range(0, len(slots), 16):
+        window = slots[bar:bar + 16]
+        if not window.any():
+            continue
+        pick = allowed[-1]
+        for d in allowed:
+            hits = window[::d]
+            if len(hits) and float((hits > 0).mean()) >= COVER:
+                pick = d
+                break
+        for j in range(0, len(window), pick):
+            if window[j] > 0:
+                times.append((first + (bar + j) * step, float(window[j]),
+                              (bar + j) % 16))
+    return times
+
+
+def to_events(times):
+    """Chart events for one difficulty.
+
+    Everything selected is already the right density for the level, so it is
+    all tagged as something every difficulty accepts - the thinning happened
+    when the subdivision was chosen, and letting the builder thin it again by
+    kind would put the stutter straight back.
+    """
+    events = []
+    for (t, strength, slot) in times:
+        beat_in_bar = slot // 4
+        if slot % 4:
+            # off the beat. Only Hyper ever gets these, and tagging them apart
+            # keeps the click markers on the beats, where a player expects to
+            # be asked to press something
+            kind = "lead"
         else:
-            off_beat.append((round(t, 3), strength))
-    # Which offbeats a difficulty sees is decided by how loud they are, not by
-    # where they happen to fall: the loudest ones are the ones a player hears
-    # and expects to hit. Roughly as many are promoted as there are on-beat
-    # notes, which is what makes Normal about twice the work of Easy while
-    # Hyper picks up the rest.
-    off_beat.sort(key=lambda e: -e[1])
-    promote = len(on_beat)
-    events = list(on_beat)
-    for i, (t, strength) in enumerate(off_beat):
-        kind = "lead" if i < promote else "hat"
-        events.append((t, kind, 0, round(min(1.0, 0.5 + strength), 2)))
-    events.sort(key=lambda e: e[0])
-    return events, beat
-
-
-def ensure_skeleton(events, env, bpm, first, length):
-    """If the attacks left Easy with almost nothing, put a note on the beats
-    that do carry energy. A quiet track still has a pulse to follow."""
-    strong = [e for e in events if e[1] in ("kick", "snare", "clap")]
-    if len(strong) >= 24:
-        return events
-    beat = 60.0 / bpm
-    have = {round(t, 3) for (t, _k, _m, _v) in events}
-    extra = []
-    k = 0
-    while first + k * beat < length:
-        t = round(first + k * beat, 3)
-        i = int(round((t - bg.ONSET_LAG) * bg.FPS))
-        if 0 <= i < len(env) and t not in have and float(env[i]) > FLOOR * 0.5:
-            extra.append((t, "kick", 0, 0.8))
-        k += 1
-    return sorted(events + extra, key=lambda e: e[0])
+            kind = "snare" if beat_in_bar in (1, 3) else "kick"
+        events.append((round(t, 3), kind, 0, round(min(1.0, 0.5 + strength), 2)))
+    return events
 
 
 def rechart(song_dir: str, dry: bool = False) -> bool:
@@ -196,27 +185,36 @@ def rechart(song_dir: str, dry: bool = False) -> bool:
         return False
 
     claimed = float(data.get("bpm", 120.0))
-    x = bg.decode(audio)
+    length = float(data.get("length", 0.0))
     env, bpm, first, spread = measure(audio, claimed)
-    length = float(data.get("length", 0.0)) or len(x) / bg.SR
-    events, beat = events_from_audio(x, env, bpm, first)
-    events = ensure_skeleton(events, env, bpm, first, length)
+    if length <= 0.0:
+        length = len(env) / bg.FPS
+    slots = slot_grid(env, bpm, first, length)
+    quiet = slot_grid(env, bpm, first, length, floor=FLOOR * 0.45)
 
     note = "" if abs(bpm - claimed) < 0.01 else "  (chart said %.2f)" % claimed
-    print("  %-16s %.2f BPM, first beat %+.3f s, hold %.3f s%s, %d attacks"
-          % (sid, bpm, first, spread, note, len(events)))
+    print("  %-16s %.2f BPM, first beat %+.3f s, hold %.3f s%s, %d filled slots"
+          % (sid, bpm, first, spread, note, int((slots > 0).sum())))
     if dry:
         return False
 
     data["bpm"] = round(bpm, 3)
     out = []
     for name, level in (("Easy", 0), ("Normal", 1), ("Hyper", 2)):
-        notes = build_chart(events, level, beat, sid)
+        times = select_times(slots, level, bpm, first)
+        if len(times) < 16:
+            # a quiet track: listen harder rather than ship an empty chart
+            times = select_times(quiet, level, bpm, first)
+        notes = build_chart(to_events(times), level, beat_of(bpm), sid)
         out.append({"name": name, "notes": notes})
         print("    %-7s %s" % (name, describe(notes, length)))
     data["difficulties"] = out
     json.dump(data, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return True
+
+
+def beat_of(bpm: float) -> float:
+    return 60.0 / bpm
 
 
 def main(argv):

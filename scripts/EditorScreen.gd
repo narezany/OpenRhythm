@@ -556,7 +556,12 @@ func _relayout() -> void:
 func _update_note_view(n: Dictionary) -> void:
 	if n.get("node") == null or not is_instance_valid(n.node):
 		return
-	var near: bool = absf(float(n.t) - cur_time) <= (APPROACH if playing else 0.35)
+	# While playing, a cube shows up shortly before its time and is gone almost
+	# at once after it: leaving it on screen for the whole approach buries the
+	# playhead under old notes and there is no room to place the next one.
+	var dt: float = float(n.t) - cur_time
+	var near: bool = (dt <= 0.30 and dt >= -0.10) if playing \
+		else absf(dt) <= 0.35
 	n.node.visible = near
 	if not near:
 		return
@@ -703,12 +708,15 @@ func _save() -> String:
 	# first save forks it into the player's library and the editor carries on
 	# in the copy - the same as if the map had been created from scratch.
 	if not RhythmMap.is_user_song(song):
-		var copy := RhythmMap.fork_song(song)
+		var copy := RhythmMap.fork_song(song, "", diff_idx)
 		if copy.is_empty():
 			_show_toast("Could not copy this song into your library")
 			return ""
 		song = copy
+		# the copy carries only the difficulty that was being edited
+		diff_idx = 0
 		G.editor_song = song
+		G.editor_diff = 0
 		_show_toast("Copied to your library: %s" % str(song.get("dir", "")))
 	var path := RhythmMap.save_custom(song, _serialize(), diff_idx)
 	if path != "":

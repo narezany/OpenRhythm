@@ -260,9 +260,19 @@ add("press a key…", "нажми клавишу…", "请按一个键…", "Tas
 
 # ---------------------------------------------------------------- gameplay
 add("PAUSED", "ПАУЗА", "已暂停", "PAUSE", "GEPAUZEERD", "EN PAUSA")
-add("PRESS BACK AGAIN TO EXIT", "НАЖМИТЕ НАЗАД ЕЩЁ РАЗ ДЛЯ ВЫХОДА", "再按一次返回键退出",
-    "ZUM BEENDEN ERNEUT ZURÜCK DRÜCKEN", "DRUK NOGMAALS OP TERUG OM AF TE SLUITEN",
-    "PULSA ATRÁS OTRA VEZ PARA SALIR")
+add("Hitsound offset", "Смещение хитсаунда", "打击音偏移", "Hitsound-Versatz",
+    "Hitsound-offset", "Desfase del hitsound")
+add("Only the hitsound, not the judging. Phones often play sound later than they admit to; raise this until the tap sits on the beat.",
+    "Только хитсаунд, оценка не меняется. Телефоны часто играют звук позже, чем сообщают; поднимай, пока щелчок не сядет в бит.",
+    "仅影响打击音，不影响判定。手机播放声音常比其报告的更晚；调高它直到打击声落在节拍上。",
+    "Nur der Hitsound, nicht die Bewertung. Handys spielen Ton oft später als angegeben; erhöhe den Wert, bis der Schlag auf dem Beat sitzt.",
+    "Alleen de hitsound, niet de beoordeling. Telefoons spelen geluid vaak later af dan ze toegeven; verhoog dit tot de tik op de beat valt.",
+    "Solo el hitsound, no la valoracion. Los moviles suelen reproducir el sonido mas tarde de lo que dicen; sube esto hasta que el golpe caiga en el ritmo.")
+add("VERSUS  ·  BETA", "ВЕРСУС  ·  БЕТА", "对战  ·  测试版", "VERSUS  ·  BETA",
+    "VERSUS  ·  BÈTA", "VERSUS  ·  BETA")
+add("BETA · two players\\none chart", "БЕТА · два игрока\\nодна карта",
+    "测试版 · 两名玩家\\n一张谱面", "BETA · zwei Spieler\\nein Chart",
+    "BÈTA · twee spelers\\néén map", "BETA · dos jugadores\\nun mapa")
 add("ESC — pause", "ESC — пауза", "ESC — 暂停", "ESC — Pause", "ESC — pauze", "ESC — pausa")
 add("RESULTS", "РЕЗУЛЬТАТЫ", "成绩", "ERGEBNIS", "RESULTAAT", "RESULTADOS")
 add("Retry", "Ещё раз", "重试", "Nochmal", "Opnieuw", "Reintentar")

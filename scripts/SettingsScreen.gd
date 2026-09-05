@@ -117,6 +117,23 @@ func _build_audio() -> void:
 		G.main.goto_calibration(), 22)
 	cal.custom_minimum_size = Vector2(240, 0)
 	_body.add_child(cal)
+	_body.add_child(_sep())
+
+	var hit_lbl := G.label("", 17, G.C_MUTED)
+	var hit_upd := func():
+		hit_lbl.text = "%+d ms" % roundi(G.hit_offset * 1000.0)
+	_body.add_child(_slider("Hitsound offset", G.hit_offset * 1000.0, -200.0, 200.0, 1.0,
+		func(v):
+			G.hit_offset = float(v) / 1000.0
+			hit_upd.call()
+			G.save_all()))
+	hit_upd.call()
+	_body.add_child(hit_lbl)
+	var hit_hint := G.label("Only the hitsound, not the judging. Phones often play sound later than they admit to; raise this until the tap sits on the beat.",
+		15, Color(1, 1, 1, 0.45))
+	hit_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hit_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(hit_hint)
 
 
 func _build_video() -> void:

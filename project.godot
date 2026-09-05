@@ -8,10 +8,11 @@ config_version=5
 
 config/name="Open Rhythm"
 config/description="Rhythm game collection. Open maps, any audio."
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/Boot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
-# Android «назад» не завершает приложение — Main конвертирует его в ESC
+# The Android back button is handled by Main, which turns it into Esc rather
+# than letting the system close the game.
 config/quit_on_go_back=false
 
 [autoload]
@@ -37,6 +38,19 @@ window/stretch/mode="canvas_items"
 ; 19.5:9 or 20:9, so that was visible on almost every device.
 window/stretch/aspect="expand"
 window/handheld/orientation=0
+
+[xr]
+
+# Off until the VR mode is finished. With it on, every launch - including on a
+# phone, which has no runtime - starts by trying to open OpenXR and logging the
+# failure. Boot falls back to a flat window either way, so leaving it off costs
+# nothing and keeps an unproven code path out of a shipping build.
+openxr/enabled=false
+# No alert box when there is no headset: most players are on a flat screen and
+# a runtime that is simply not running is not an error worth interrupting them
+# with. Boot falls back to a window on its own.
+openxr/startup_alert=false
+shaders/enabled=true
 
 [rendering]
 

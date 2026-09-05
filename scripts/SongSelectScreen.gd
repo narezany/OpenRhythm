@@ -408,13 +408,13 @@ func _create_new_map() -> void:
 		_title_input.grab_focus()
 		return
 	if not _fork_song.is_empty():
-		var forked := RhythmMap.fork_song(_fork_song, title)
+		var forked := RhythmMap.fork_song(_fork_song, title, _fork_diff)
 		_new_layer.visible = false
 		_fork_song = {}
 		if forked.is_empty():
 			return
 		G.play_sfx("click")
-		G.main.open_editor(forked, _fork_diff)
+		G.main.open_editor(forked, 0)   # the copy has only the one difficulty
 		return
 	var song := RhythmMap.create_new_song(title)
 	_new_layer.visible = false

@@ -458,7 +458,7 @@ func _process(delta: float) -> void:
 		# what comes out of the speakers lands on the beat instead of just
 		# behind it. If the cursor leaves in those few milliseconds the sound
 		# was already gone - a far smaller error than being late every time.
-		if near and not is_click and dt >= -_out_lat and dt < 0.0 \
+		if near and not is_click and dt >= -(_out_lat + G.hit_offset) and dt < 0.0 \
 				and not bool(n.get("sounded", false)):
 			n["sounded"] = true
 			_play_hit_on_beat(dt)
@@ -700,8 +700,9 @@ func _resolve_miss(n: Dictionary, has_node := true) -> void:
 func _play_hit_on_beat(dt: float) -> void:
 	if not G.hitsound:
 		return
-	# -dt is how long until the cube lands; the device eats _out_lat of that
-	var delay := (-dt - _out_lat) / maxf(_play_rate, 0.1)
+	# -dt is how long until the cube lands; the device eats _out_lat of that,
+	# and G.hit_offset is whatever the player had to add on top by ear
+	var delay := (-dt - _out_lat - G.hit_offset) / maxf(_play_rate, 0.1)
 	var vol := -8.0
 	if delay <= 0.005:
 		G.play_sfx("hit", 1.0, vol)

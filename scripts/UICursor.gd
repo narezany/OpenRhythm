@@ -102,9 +102,15 @@ func _touch_input(event: InputEvent) -> void:
 		_fingers[dr.index] = dr.position
 		if dr.index != _cursor_finger:
 			return                      # a second finger never steers
-		# Both modes move by the finger's delta, scaled by sensitivity; they
-		# differ only in where the cursor starts from when the finger lands.
-		pos += (dr.position - prev) * G.mouse_sens
+		if G.relative_touch and G.touch_zone:
+			# the finger is a stick: it pushes the cursor, and sensitivity says
+			# how hard
+			pos += (dr.position - prev) * G.mouse_sens
+		else:
+			# the cursor is under the finger and stays there. Sensitivity is a
+			# mouse setting; scaling a touch drag makes the cursor outrun the
+			# finger it is supposed to be sitting on.
+			pos += dr.position - prev
 		var vis := _visible_rect()
 		pos = pos.clamp(vis.position, vis.end)
 

@@ -7,11 +7,17 @@ var current: Node = null
 # not at zero: msec since launch is small, and zero would read as "just pressed"
 # for the first couple of seconds a player is on the menu.
 var _back_at := -100000
-var _back_hint: Label = null
+## Raised by the back-button notification, acted on in _process.
+var _back_flag := false
 
 
 func _ready() -> void:
 	G.main = self
+	# belt and braces: the project setting says the same thing, but a build
+	# where this slipped would close on the first back press
+	get_tree().quit_on_go_back = false
+	# leave a how-to next to the songs folder for whoever opens it
+	RhythmMap.write_library_readme()
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	get_viewport().size_changed.connect(_update_view)
 	_update_view()
@@ -85,63 +91,51 @@ func switch_to(node: Node) -> void:
 
 
 ## Android "back" behaves like Esc: it pauses, closes a panel or steps back a
-## screen, and never quits the game out from under the player.
+## screen, and never closes the game.
 ##
-## It is called deferred, and it calls a method on the screen directly instead
-## of synthesising an input event. Going back usually swaps screens, which frees
-## one node and adds another; doing that while the engine is still delivering
-## the notification - or, as an injected event did, while it is walking the
-## input tree - destroys the node the engine is in the middle of using, and
-## Android takes the whole process down with it.
+## The notification does nothing except raise a flag. It does not walk the
+## tree, it does not swap screens, it does not even read anything: the back
+## press does not necessarily arrive on the thread the game runs on, and
+## everything this game does in response - freeing a screen, adding another,
+## pausing the tree - is only safe from the main loop. Two earlier attempts,
+## one injecting an input event and one deferring a call, both still took the
+## app down on a device. A flag that _process picks up cannot.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		go_back.call_deferred()
+		_back_flag = true
 
 
-## Back button, one frame later, on whatever screen is up. A screen that does
-## not define go_back() has nowhere to go back to (the first-launch notice) and
-## is left alone.
+func _process(_delta: float) -> void:
+	if not _back_flag:
+		return
+	_back_flag = false
+	# a press can arrive more than once for one tap; ignore the echo
+	var now := Time.get_ticks_msec()
+	if now - _back_at < 350:
+		return
+	_back_at = now
+	go_back()
+
+
+## Back, on whatever screen is up. A screen that does not define go_back() has
+## nowhere to go back to - the first-launch notice, and the main menu, where
+## Esc does nothing either - and is left alone. Back never quits the game: on
+## Android that is what the home button and the task switcher are for, and a
+## game that can close itself on a stray touch is worse than one that cannot be
+## closed from the inside.
 func go_back() -> void:
 	if not is_instance_valid(current):
 		return
 	if current.has_method("go_back"):
 		current.go_back()
-	elif current is MenuScreen:
-		_back_to_exit()
-
-
-## On the main menu there is no screen left to return to, so back leaves the
-## game - but only if it is pressed twice, so a stray press does not close it.
-func _back_to_exit() -> void:
-	var now := Time.get_ticks_msec()
-	if now - _back_at < 2500:
-		get_tree().quit()
-		return
-	_back_at = now
-	_show_back_hint()
-
-
-func _show_back_hint() -> void:
-	if _back_hint == null:
-		var layer := CanvasLayer.new()
-		layer.layer = 90
-		add_child(layer)
-		_back_hint = Label.new()
-		_back_hint.add_theme_font_size_override("font_size", 26)
-		_back_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_back_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		layer.add_child(_back_hint)
-		G.anchor_bottom_wide(_back_hint, 120.0, 46.0)
-	_back_hint.text = "PRESS BACK AGAIN TO EXIT"
-	_back_hint.modulate = Color(1, 1, 1, 1)
-	var tw := create_tween()
-	tw.tween_interval(1.6)
-	tw.tween_property(_back_hint, "modulate:a", 0.0, 0.7)
 
 
 ## Real visible window aspect, for the adaptive layout.
 func _update_view() -> void:
-	var sz := DisplayServer.window_get_size()
+	# In VR the whole game runs inside a SubViewport, so the window size is the
+	# headset's, not the game's - ask whatever viewport we are actually in.
+	var vp := get_viewport()
+	var sz := (vp as SubViewport).size if vp is SubViewport else DisplayServer.window_get_size()
 	if sz.x > 0 and sz.y > 0:
 		G.view_w = float(sz.x)
 		G.view_h = float(sz.y)
@@ -222,6 +216,11 @@ func goto_credits() -> void:
 
 
 func start_game() -> void:
+	if G.custom_test.is_empty():
+		# only a run started from the editor goes back to the editor. Left set,
+		# it followed the player into freeplay and offered to return them to an
+		# editor they never opened.
+		G.return_screen = ""
 	Conductor.stop_music()
 	G.touch_zone = true
 	switch_to(GameScreen.new())

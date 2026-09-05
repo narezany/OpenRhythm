@@ -21,7 +21,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(BackgroundFX.new(true))
 
-	var title := G.label("VERSUS", 46, G.C_TEXT, true)
+	var title := G.label("VERSUS  ·  BETA", 46, G.C_TEXT, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
 	G.anchor_top_wide(title, 30, 60)
