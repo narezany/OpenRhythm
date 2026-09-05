@@ -17,6 +17,12 @@ var _fingers := {}
 var _cursor_finger := -1
 var _draw_node: Node2D
 var _os_expected := Vector2.INF   # where we believe the system pointer is
+## Warping is only used to keep the system pointer under a cursor moving at a
+## different speed. Some platforms refuse to move the pointer at all, so the
+## request is checked rather than assumed.
+var _warp_ok := true
+var _warp_want := Vector2.INF
+var _warp_miss := 0
 var relay_node: Node
 var _pad_vec := Vector2.ZERO
 var _has_focus := true
@@ -36,9 +42,28 @@ func _ready() -> void:
 	get_tree().root.call_deferred("add_child", relay_node)
 
 
-## Visible window area in design coordinates (aspect=fill can crop).
+## Visible area in design coordinates.
+##
+## Taken from the viewport itself rather than from the cached window size: that
+## cache is only refreshed when the window reports a resize, and a stale one
+## makes this rect smaller than the screen really is. The cursor then stops at
+## an edge that is not there while the system pointer carries on past it, and
+## because motion was being accumulated it never found its way back - which is
+## what "the cursor drifts off to the left and the real one is over on the
+## right" was.
 func _visible_rect() -> Rect2:
+	var vp := get_viewport()
+	if vp != null:
+		var r := vp.get_visible_rect()
+		if r.size.x > 16.0 and r.size.y > 16.0:
+			return r
 	return G.visible_rect_design()
+
+
+## True while the drawn cursor is being kept apart from the system pointer.
+## Only sensitivity does that, and only where warping actually works.
+func _warping() -> bool:
+	return _warp_ok and absf(G.mouse_sens - 1.0) > 0.01
 
 
 func _input(event: InputEvent) -> void:
@@ -52,6 +77,34 @@ func _input(event: InputEvent) -> void:
 		# once as mouse motion. Counting both moved the cursor at double speed.
 		return
 	var mm := event as InputEventMouseMotion
+	if not _warping():
+		# The drawn cursor IS the system pointer, so take its position rather
+		# than adding up movements. Accumulating cannot survive a single
+		# clamped or dropped event: the error stays for good, and every click
+		# after it lands somewhere the player is not looking.
+		pos = mm.position
+		var vis0 := _visible_rect()
+		pos = pos.clamp(vis0.position, vis0.end)
+		_os_expected = mm.position
+		touch_mode = false
+		return
+	if _warp_want != Vector2.INF:
+		# did the warp we asked for actually happen?
+		if mm.position.distance_to(_warp_want) > 96.0:
+			_warp_miss += 1
+			if _warp_miss >= 3:
+				# The platform is ignoring warp requests - Wayland does unless
+				# the pointer is locked. Carrying on would drag the drawn
+				# cursor further from the real one with every movement, so
+				# sensitivity is dropped and the two are pinned together.
+				_warp_ok = false
+				_os_expected = Vector2.INF
+				push_warning("cursor: mouse warp does not work here, "
+					+ "sensitivity disabled to keep the pointer under the cursor")
+				return
+		else:
+			_warp_miss = 0
+		_warp_want = Vector2.INF
 	if _os_expected == Vector2.INF:
 		# first event: initial sync, sensitivity not applied
 		_os_expected = mm.position
@@ -141,13 +194,13 @@ func _process(_delta: float) -> void:
 		pos = pos.clamp(vis0.position, vis0.end)
 	# At sensitivity 1.0 the drawn cursor already sits exactly on the system
 	# pointer, so there is nothing to correct and no reason to touch it at all.
-	var needs_warp := absf(G.mouse_sens - 1.0) > 0.01
-	if needs_warp and not touch_mode and DisplayServer.get_name() != "headless" \
+	if _warping() and not touch_mode and DisplayServer.get_name() != "headless" \
 			and _focused():
 		# keep the hidden system pointer under the drawn cursor, otherwise GUI
 		# clicks miss
 		if _os_expected == Vector2.INF or pos.distance_to(_os_expected) > 0.5:
 			_os_expected = pos
+			_warp_want = pos
 			Input.warp_mouse(get_viewport().get_final_transform() * pos)
 	var vis := _visible_rect()
 	pos = pos.clamp(vis.position, vis.end)

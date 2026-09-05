@@ -22,6 +22,7 @@ func _ready() -> void:
 	_test_editor_roundtrip()
 	await _test_back_button()
 	_test_touch_cursor()
+	_test_mouse_cursor()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
 
@@ -499,3 +500,42 @@ func _test_editor_roundtrip() -> void:
 		ok(fclicks == 2, "the copy kept its click notes")
 	_wipe(str(song["dir"]))
 	_wipe(str(fork.get("dir", "")))
+
+
+## The drawn cursor must never end up somewhere the system pointer is not.
+##
+## It used to add movements together, so one clamped or dropped event left a
+## gap that stayed for the rest of the session: players saw the cursor drift
+## off to one side while their clicks landed somewhere else entirely, and only
+## alt-tabbing put it back.
+func _test_mouse_cursor() -> void:
+	print("== mouse cursor ==")
+	G.mouse_sens = 1.0
+	var c := UICursor
+	c._fingers.clear()
+	c._cursor_finger = -1
+	c._os_expected = Vector2.INF
+	var rect := c._visible_rect()
+	ok(rect.size.x > 16.0 and rect.size.y > 16.0,
+		"the visible area is real (%.0fx%.0f)" % [rect.size.x, rect.size.y])
+
+	c._input(_motion(Vector2(400, 300)))
+	ok(c.pos.is_equal_approx(Vector2(400, 300)), "the cursor sits on the pointer")
+	# shove it far outside, the way a pointer at the edge of the screen does
+	c._input(_motion(rect.end + Vector2(500, 500)))
+	c._input(_motion(Vector2(640, 360)))
+	ok(c.pos.is_equal_approx(Vector2(640, 360)),
+		"and finds its way back after being pushed past the edge")
+	var drift := 0.0
+	for i in 40:
+		var p := Vector2(200.0 + float(i) * 11.0, 240.0 + float(i % 7) * 9.0)
+		c._input(_motion(p))
+		drift = maxf(drift, c.pos.distance_to(p))
+	ok(drift < 0.01, "and never drifts away from it (worst %.2f px)" % drift)
+
+
+func _motion(at: Vector2) -> InputEventMouseMotion:
+	var e := InputEventMouseMotion.new()
+	e.position = at
+	e.global_position = at
+	return e
