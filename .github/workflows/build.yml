@@ -219,6 +219,11 @@ jobs:
           if [ -f dist/android/OpenRhythm.apk ]; then
             cp dist/android/OpenRhythm.apk "out/OpenRhythm-${tag}-android.apk"
           fi
+          # the headset packages, named for the store each one is sideloaded to
+          for h in quest pico; do
+            [ -f "dist/android/OpenRhythm-${h}.apk" ] || continue
+            cp "dist/android/OpenRhythm-${h}.apk" "out/OpenRhythm-${tag}-${h}.apk"
+          done
           ls -la out
 
       - uses: softprops/action-gh-release@v2
