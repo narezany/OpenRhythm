@@ -41,11 +41,7 @@ const STORIES := [
 		"songs": ["bass_rush", "crimson_step", "afterburner"],
 		"pick_diff": true,
 		"needs": "midnight_pulse",
-		"dialog": [
-			"So you survived the night drive. Cute.",
-			"This one hits harder. Faster drums, wobblier bass, no mercy.",
-			"Hands on the cursor. Try to keep up with me.",
-		],
+		"dialog": ["Shall we continue?"],
 	},
 ]
 
@@ -196,6 +192,10 @@ func _build_novel() -> void:
 	_name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vb.add_child(_name_lbl)
 	_text_lbl = G.label("", 22, G.C_TEXT)
+	# the label is filled character by character, and half a sentence is not a
+	# translation key - so the line is translated up front and typed out from
+	# the translated text instead
+	_text_lbl.auto_translate_mode = Control.AUTO_TRANSLATE_MODE_DISABLED
 	_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text_lbl.custom_minimum_size = Vector2(0, 74)
 	_text_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -216,7 +216,7 @@ func _start_line() -> void:
 func _process(delta: float) -> void:
 	if _novel_layer == null or not _typing:
 		return
-	var full: String = str(_lines[_li])
+	var full := _line_text()
 	if _shown < full.length():
 		var prev := int(_shown)
 		_shown = minf(_shown + delta * 38.0, float(full.length()))
@@ -230,10 +230,15 @@ func _process(delta: float) -> void:
 		_text_lbl.text = full
 
 
+## The current line, already translated.
+func _line_text() -> String:
+	return tr(str(_lines[_li])) if _li < _lines.size() else ""
+
+
 func _advance() -> void:
 	if _novel_layer == null:
 		return
-	var full: String = str(_lines[_li])
+	var full := _line_text()
 	if _typing:
 		_shown = float(full.length())   # finish the line instantly
 		_text_lbl.text = full

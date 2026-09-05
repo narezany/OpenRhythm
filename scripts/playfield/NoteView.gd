@@ -19,6 +19,10 @@ var hold_started := false
 ## ember cube ringed by a target.
 var is_click := false
 
+## Optional cube art from the song folder. Drawn in place of the cube face, so
+## a map can bring its own look without touching the game.
+var skin: Texture2D = null
+
 var _halo: Node2D
 var _t := 0.0
 
@@ -73,6 +77,16 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var r := half
 	var rect := Rect2(-r, -r, r * 2.0, r * 2.0)
+	if skin != null:
+		var tint := Color(1, 1, 1, 1)
+		if hold_started:
+			tint = Color(1.0, 0.86, 0.70) if hold_active else Color(0.70, 0.66, 0.68)
+		draw_texture_rect(skin, rect, false, tint)
+		if is_click:
+			_draw_click_ring()
+		if hold_started:
+			_draw_hold_ring()
+		return
 	var face := Color(0.92, 0.90, 0.89, 1.0)
 	var inner_col := Color(1.0, 0.99, 0.98, 1.0)
 	if is_click:

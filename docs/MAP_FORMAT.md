@@ -52,6 +52,7 @@ The exact path is printed on the **Songs** screen, with a *Copy path* button.
 | `audio` | File name inside the folder. Empty means "no audio yet". |
 | `difficulties` | Ordered list. Each has a `name` and a `notes` array. |
 | `hue` | Optional background colour, `0..1` around the colour wheel. Songs without a video use it so each one looks like itself. |
+| `events` | Optional script timeline; see [Map scripting](#map-scripting). Can also live in `events.json`. |
 | `hints` | Optional teaching text: `[{"t": 12.0, "text": "..."}]`. Shown for five seconds each; the tutorial uses them. |
 
 ## Notes
@@ -67,6 +68,7 @@ The exact path is printed on the **Songs** screen, with a *Copy path* button.
 | `s` | `1.0` | Size multiplier of the cube, `0.4..`. Bigger cubes are easier. |
 | `h` | `0` | Hold length in seconds. `0` (or absent) is a normal note. |
 | `c` | `false` | Marks a click note. Off unless the player turns CLICKS on. |
+| `tex` | — | Image in the song folder to draw this cube with. |
 
 ### Hold notes
 
@@ -128,6 +130,49 @@ python3 tools/rechart.py --all      # everything except the OST and the tutorial
 It snaps the notes to the beat grid first, working out the grid phase from the
 notes themselves so a track whose first beat is not at zero does not get
 dragged onto the wrong beat.
+
+## Map scripting
+
+A song can bring a timeline of events and its own art. Put them in
+`events.json` in the song folder, or inline under `"events"` in `map.json`:
+
+```json
+[
+  { "t": 0.0,  "do": "bg_color",   "hue": 0.62, "fade": 2.0 },
+  { "t": 12.0, "do": "bg_image",   "file": "city.png", "fade": 1.0, "dim": 0.7 },
+  { "t": 24.0, "do": "note_skin",  "file": "cube.png" },
+  { "t": 36.0, "do": "note_scale", "value": 1.6 },
+  { "t": 48.0, "do": "flash",      "value": 0.8 },
+  { "t": 48.0, "do": "shake",      "value": 0.5 },
+  { "t": 60.0, "do": "zoom",       "value": 1.15, "fade": 0.5 },
+  { "t": 64.0, "do": "text",       "value": "DROP" }
+]
+```
+
+| Command | Arguments | Effect |
+|---|---|---|
+| `bg_color` | `hue` 0..1, `fade` | Background colour, optionally faded into. |
+| `bg_image` | `file`, `fade`, `dim` | Picture behind the playfield. A later `bg_image` replaces it; an empty `file` clears it. |
+| `note_skin` | `file` | Every cube from here on is drawn with this image. |
+| `note_scale` | `value` 0.2..6 | Multiplies the size of every cube from here on — the catch zone grows with it. |
+| `flash` | `value` 0..1 | One screen flash. Respects *reduce flashes*. |
+| `shake` | `value` 0..1 | One camera kick. Respects *reduce motion*. |
+| `zoom` | `value` 0.6..2, `fade` | Camera zoom. |
+| `text` | `value` | A word thrown across the playfield. |
+
+A single cube can be huge on its own — `"s": 3.5` — and can carry its own
+image with `"tex"`. Images live in the song folder next to `map.json`; any
+path in `file` is stripped to its name, so a map cannot reach outside its own
+folder.
+
+### Why events and not Lua
+
+Events are **data, not code**. A map pack is something you download from a
+stranger, and running a real script out of it would hand that stranger your
+machine. Every command here is a fixed name with numeric arguments and images
+from the song's own folder, which covers what a storyboard is for without that
+risk — and it works the same on Android and in the browser, where a native
+scripting extension would not.
 
 ## Versus
 

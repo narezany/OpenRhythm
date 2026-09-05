@@ -28,6 +28,10 @@ imports their maps.
 * **Imports `.sspm`** (Rhythia / Sound Space Plus, v1 and v2) and the legacy
   Sound Space map string.
 * **Any audio** — `.wav`, `.ogg`, `.mp3`. Song folders or `.zip` packs.
+* **Map scripting** — a song can bring a timeline that changes the background
+  colour, throws its own pictures up behind the playfield, reskins the cubes,
+  makes them huge, and shakes the camera. Events are data, not code, so a map
+  pack from a stranger stays safe to open.
 * **Offset calibration** — tap along with a metronome and the game works out
   your audio delay for you.
 * **Versus** — two players, one chart, higher score wins. A direct

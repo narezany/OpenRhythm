@@ -74,6 +74,14 @@ var _prev_time := 0.0
 ## canvas is bigger than the design, so this is not DESIGN / 2.
 var field_center := G.DESIGN / 2.0
 
+## Map scripting: a timeline of events the song brings with it.
+var script_: SongScript = null
+var script_layer: CanvasLayer
+var script_image: TextureRect
+var _note_skin: Texture2D = null
+var _note_scale := 1.0
+var _zoom_extra := 1.0
+
 ## Teaching hints come from the song's own map.json, so their timing cannot
 ## drift away from the chart they explain.
 var _hints: Array = []
@@ -122,11 +130,13 @@ func _load_notes(raw: Array, seek: float) -> void:
 		if mirror:
 			cell = G.mirror_cell(cell)
 		var hold := maxf(float(nd.get("h", 0.0)), 0.0)
+		var tex := str(nd.get("tex", ""))
 		var click: bool = clicky or (use_marked and bool(nd.get("c", false)))
 		var hit := G.cell_pos(cell)
 		notes.append({
 			"t": t, "cell": cell, "d": d, "s": s, "h": hold, "click": click,
-			"half": 52.0 * s,
+			"tex": tex,
+			"half": 52.0 * s, "base_half": 52.0 * s,
 			"hit": hit,
 			"spawn": hit * (0.10 + 0.22 * d),
 			"color": Color.WHITE,
@@ -148,6 +158,19 @@ func _build() -> void:
 	bg = BackgroundFX.new()
 	bg.base_hue = float(song.get("hue", 0.985))
 	add_child(bg)
+
+	script_ = SongScript.load_for(song)
+	if not script_.is_empty():
+		script_layer = CanvasLayer.new()
+		script_layer.layer = 1
+		add_child(script_layer)
+		script_image = TextureRect.new()
+		script_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		script_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		script_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		script_image.modulate.a = 0.0
+		script_layer.add_child(script_image)
+		G.anchor_full(script_image)
 
 	if not G.disable_song_video:
 		video = SongVideo.new(song)
@@ -462,6 +485,7 @@ func _process(delta: float) -> void:
 	_update_guide(st)
 	ghost_layer.items = active + _guide_items
 
+	_run_script(st)
 	_update_fx(delta)
 	_update_hud(delta)
 	_check_end()
@@ -518,9 +542,14 @@ func _spawn(n: Dictionary) -> void:
 		_resolve_miss(n, false)
 		return
 	var v := NoteView.new()
+	# a script may have resized the notes since the chart was loaded
+	n["half"] = float(n.get("base_half", n.half)) * _note_scale
 	v.half = n.half
 	v.hold_total = float(n.h)
 	v.is_click = bool(n.get("click", false))
+	if script_ != null:
+		var tex := str(n.get("tex", ""))
+		v.skin = script_.texture(tex) if tex != "" else _note_skin
 	v.set_color(n.color)
 	v.position = n.spawn
 	v.scale = Vector2.ONE * 0.30
@@ -689,6 +718,50 @@ func _autoplay(delta: float) -> void:
 	UICursor.pos += Vector2(sin(tms * 2.1), cos(tms * 1.7)) * 2.5
 
 
+## Apply whatever the song's event timeline has queued up by now.
+func _run_script(t: float) -> void:
+	if script_ == null or script_.is_empty():
+		return
+	for e in script_.advance(t):
+		match str(e.get("do", "")):
+			"bg_color":
+				var hue := float(e.get("hue", bg.base_hue))
+				var fade := float(e.get("fade", 0.0))
+				if fade <= 0.0:
+					bg.base_hue = hue
+				else:
+					create_tween().tween_property(bg, "base_hue", hue, fade)
+			"bg_image":
+				if script_image == null:
+					continue
+				var tex := script_.texture(str(e.get("file", "")))
+				script_image.texture = tex
+				var dim: float = clampf(1.0 - float(e.get("dim", 0.6)), 0.0, 1.0)
+				var target: float = 0.0 if tex == null else dim
+				var f := float(e.get("fade", 0.5))
+				if f <= 0.0:
+					script_image.modulate.a = target
+				else:
+					create_tween().tween_property(script_image, "modulate:a", target, f)
+			"note_skin":
+				_note_skin = script_.texture(str(e.get("file", "")))
+			"note_scale":
+				_note_scale = clampf(float(e.get("value", 1.0)), 0.2, 6.0)
+			"flash":
+				flash = maxf(flash, clampf(float(e.get("value", 0.5)), 0.0, 1.0) * G.flashes())
+			"shake":
+				trauma = maxf(trauma, clampf(float(e.get("value", 0.5)), 0.0, 1.0) * G.motion())
+			"zoom":
+				var z := clampf(float(e.get("value", 1.0)), 0.6, 2.0)
+				var zf := float(e.get("fade", 0.0))
+				if zf <= 0.0:
+					_zoom_extra = z
+				else:
+					create_tween().tween_property(self, "_zoom_extra", z, zf)
+			"text":
+				texts.spawn(Vector2.ZERO, str(e.get("value", "")), G.C_PRIMARY)
+
+
 # ---------------------------------------------------------------- fx/hud
 func _update_fx(delta: float) -> void:
 	trauma = maxf(0.0, trauma - 2.4 * delta)
@@ -714,7 +787,7 @@ func _update_fx(delta: float) -> void:
 	cam.rotation = (randf_range(-1, 1) * 0.035 * tr \
 		+ sin(Conductor.play_time() * 0.6) * 0.006 \
 		+ kick_env * 0.005 * alt_sign) * mo
-	cam.zoom = Vector2.ONE * (1.0 + (kick_env * 0.010 + milestone * 0.045) * mo)
+	cam.zoom = Vector2.ONE * _zoom_extra * (1.0 + (kick_env * 0.010 + milestone * 0.045) * mo)
 
 	frame_view.pulse = kick_env
 	frame_view.accent = G.C_PRIMARY

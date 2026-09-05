@@ -235,7 +235,7 @@ func react_miss() -> void:
 
 
 func react_win() -> void:
-	set_mood("very", 0.0)   # held until she leaves the screen
+	set_mood("very", 0.0)   # held until they leave the screen
 
 
 ## Kick the springs when the mood changes - a reaction, not a clip switch.
@@ -305,7 +305,7 @@ func _sim(dt: float) -> void:
 			bounce = 0.018
 			t_arms = 0.12
 
-	# breathing and sway - she is never completely still
+	# breathing and sway - they are never completely still
 	var breath := sin(ft * 2.1) * 0.5 + 0.5
 	var hop := absf(sin(ft * (3.4 + bounce * 9.0))) * bounce
 
@@ -345,7 +345,7 @@ func _sim(dt: float) -> void:
 	var hr := _spring(head_roll, head_rv, clampf(t_roll, -HEAD_TILT_MAX, HEAD_TILT_MAX), 40.0, 6.0, dt)
 	head_roll = hr[0]; head_rv = hr[1]
 
-	# a gentle left-right torso rotation to keep her alive
+	# a gentle left-right torso rotation to keep them alive
 	sway = sin(ft * 0.6) * 0.10 + (sin(ft * 9.0) * 0.04 if mood == "very" else 0.0)
 
 
