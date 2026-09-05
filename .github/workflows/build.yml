@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.7-stable"
+  # must match an actual godot-builds release tag, and the engine the
+  # project is developed against
+  GODOT_VERSION: "4.7.2-stable"
 
 jobs:
   # Cheap guard: release signing credentials must never reach the repository.
