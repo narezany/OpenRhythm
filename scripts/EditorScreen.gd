@@ -668,7 +668,7 @@ func _set_snap(div: float) -> void:
 
 func _update_snap_label() -> void:
 	if snap_label != null:
-		snap_label.text = "grid 1/%d   •   step %.3f s" % [int(snap_div), _snap_step()]
+		snap_label.text = tr("grid 1/%d   •   step %.3f s") % [int(snap_div), _snap_step()]
 
 
 func _cycle_size() -> void:
@@ -965,7 +965,7 @@ func _set_status() -> void:
 		return
 	var beat := cur_time * bpm / 60.0
 	var sel := timeline.selection.size() if timeline != null else 0
-	info_label.text = "Bar %d.%d   •   %02d:%04.1f   •   notes: %d   •   selected: %d" % [
+	info_label.text = tr("Bar %d.%d   •   %02d:%04.1f   •   notes: %d   •   selected: %d") % [
 		int(beat / 4.0) + 1, int(fposmod(beat, 4.0)) + 1,
 		int(cur_time) / 60, fposmod(cur_time, 60.0), notes.size(), sel]
 

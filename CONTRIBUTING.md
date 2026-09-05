@@ -40,9 +40,28 @@ House style, matching what is already there:
 
 ## Adding a language
 
-`scripts/Loc.gd` holds one dictionary per language, keyed by the English
-string. Add your language to `LANGS`, add a table, register it in `_ready()`.
-Untranslated keys fall back to English on their own.
+`scripts/Loc.gd` is **generated** - edit `tools/gen_loc.py` instead. Every
+string is one `add()` call with the English source and the five translations,
+and the script rewrites `Loc.gd`:
+
+```bash
+python3 tools/gen_loc.py
+```
+
+It also prints every UI string it found in the scripts that has no entry yet,
+so coverage cannot rot quietly. Keys are the English source strings, so Godot
+translates any Control automatically and untranslated keys fall back to
+English on their own.
+
+To add a language, add it to `LANGS` in the script and give every `add()` call
+one more argument.
+
+## Charts
+
+`tools/charting.py` builds the difficulties for the bundled OST from the
+generator's own note events. It works in phrases - a movement pattern every two
+bars, seeded per song - so no two tracks end up with the same shape, and it
+places holds first because a hold owns the cursor for its whole length.
 
 ## Tests
 
