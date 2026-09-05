@@ -58,6 +58,7 @@ var _tip_have := [false, false]
 var _cut_cool := [0.0, 0.0]
 var _trigger_was := false
 var _btn_cool := 0.0
+var _frames := 0
 var _cursor_design := G.DESIGN * 0.5
 
 
@@ -68,6 +69,11 @@ func _ready() -> void:
 	_build_screen()
 	_build_field()
 	_build_pointer()
+	# One line in the device log saying the room was built and by whom. A
+	# headset that shows nothing gives no other clue as to how far this got.
+	print("[OR] VR stage up: camera=%s origin=%s hands=%d, interface=%s" % [
+		camera.current, origin.current, hands.size(),
+		XRServer.primary_interface.get_name() if XRServer.primary_interface else "none"])
 
 
 # ---------------------------------------------------------------- the room
@@ -93,10 +99,16 @@ func _build_world() -> void:
 
 func _build_rig() -> void:
 	origin = XROrigin3D.new()
+	# Both have to say they are the ones in use. With no current camera the
+	# viewport has no 3D view to render, so nothing is handed to the headset's
+	# compositor at all - which a headset shows as a loading spinner that never
+	# ends, while the game carries on running and playing its music behind it.
+	origin.current = true
 	add_child(origin)
 	camera = XRCamera3D.new()
 	camera.near = 0.05
 	camera.far = 60.0
+	camera.current = true
 	origin.add_child(camera)
 	for i in 2:
 		var c := XRController3D.new()
@@ -190,6 +202,13 @@ func _build_pointer() -> void:
 
 # ---------------------------------------------------------------- per frame
 func _process(delta: float) -> void:
+	if _frames < 121:
+		# Two lines in the device log: one when the room is up, one once frames
+		# are actually going out. A headset that shows only its own loading
+		# screen gives no other way to tell which of the two never happened.
+		_frames += 1
+		if _frames == 120:
+			print("[OR] VR rendering: 120 frames out, head at %v" % camera.global_position)
 	_layout_field()
 	_track_screen()
 	var saber := G.vr_style == "saber" and _gs != null
