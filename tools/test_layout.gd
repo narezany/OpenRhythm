@@ -62,6 +62,28 @@ func _run_case(sz: Vector2i) -> void:
 			print("         %s" % b)
 	sel.queue_free()
 	await get_tree().process_frame
+
+	# Every settings tab, not just the one that opens first. A tab is only built
+	# when it is opened, so an unopened one is never laid out and never run at
+	# all - which is how a crash in the VR tab shipped without a test noticing.
+	var st := SettingsScreen.new()
+	add_child(st)
+	await get_tree().process_frame
+	for tab in SettingsScreen.TABS.size():
+		st._switch(tab)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var tab_bad: Array = []
+		_walk(st, canvas, tab_bad)
+		if tab_bad.is_empty():
+			print("  ok   settings: %s" % SettingsScreen.TABS[tab])
+		else:
+			fails += tab_bad.size()
+			print("  BAD  settings: %s" % SettingsScreen.TABS[tab])
+			for b in tab_bad:
+				print("         %s" % b)
+	st.queue_free()
+	await get_tree().process_frame
 	var songs := RhythmMap.load_songs()
 	if not songs.is_empty():
 		var e := EditorScreen.new()
