@@ -436,22 +436,32 @@ func _load_fonts() -> void:
 ## draw. A browser has no system fonts to lend. The whole Russian translation
 ## came out of the web build as boxes with hex codes printed inside them.
 ##
-## So the fallback travels with the game rather than being hoped for. Exo 2 is
-## a close enough relative of Rajdhani to stand next to it without looking like
+## So the fallbacks travel with the game rather than being hoped for. Exo 2 is
+## a close enough relative of Rajdhani to stand beside it without looking like
 ## an accident, and it is set at the weight of whatever it is standing in for.
-##
-## Chinese is not covered and cannot be cheaply: a CJK face is megabytes even
-## subsetted, and it would be paid for by everyone downloading the game. On a
-## desktop or a phone the system still lends one; in a browser that translation
-## is boxes, and that is a known gap rather than a surprise.
+## Behind it goes ORFallback: Chinese, the arrows, the transport symbols, the
+## star and the eighth note, cut down by tools/gen_fontpack.py to the six
+## hundred characters the game actually uses. A whole CJK face would have been
+## 18 MB on a 21 MB download, paid for by everyone; this is 157 KB.
 func _carry_a_fallback() -> void:
+	var rest: Array[Font] = []
 	var exo: Font = load("res://assets/fonts/Exo2-Variable.ttf")
-	if exo == null:
+	var cut: Font = load("res://assets/fonts/ORFallback-Subset.ttf")
+	if exo != null:
+		rest.append(_at_weight(exo, 600))
+	if cut != null:
+		rest.append(cut)
+	if rest.is_empty():
 		return
-	font_body.fallbacks = [_at_weight(exo, 600)]
-	font_bold.fallbacks = [_at_weight(exo, 700)]
+	font_body.fallbacks = rest
+	# the bold face wants a bolder Exo behind it; the cut one has no weights,
+	# so Chinese does not go bolder in a heading - a fair price for the size
+	var heavy: Array[Font] = rest.duplicate()
+	if exo != null:
+		heavy[0] = _at_weight(exo, 700)
+	font_bold.fallbacks = heavy
 	if font_logo != font_bold:
-		font_logo.fallbacks = [_at_weight(exo, 800)]
+		font_logo.fallbacks = heavy
 
 
 func _at_weight(base: Font, wght: int) -> FontVariation:

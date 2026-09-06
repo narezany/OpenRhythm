@@ -824,8 +824,14 @@ func _test_fonts() -> void:
 				missing += char(c)
 		ok(missing == "", "%s is drawable by the fonts we ship%s"
 			% [lang, "" if missing == "" else " (missing %s)" % missing])
-	# and the one that is not, said out loud rather than found by a player: a
-	# CJK face is megabytes even subsetted, so Chinese still leans on a system
-	# font and has none to lean on in a browser
-	ok(not G.font_body.has_char("中".unicode_at(0)),
-		"Chinese is still borrowed from the system, and a browser has none")
+	# Chinese and the symbols come from the cut-down fallback, which is built
+	# from the game's own text - so this is really asking whether that build
+	# has been run since the text last changed.
+	for pair in [["中文", "Chinese"], ["← → ▶ ★ ♪ ⏸", "the symbols the interface uses"]]:
+		var gone := ""
+		for i in str(pair[0]).length():
+			var c: int = str(pair[0]).unicode_at(i)
+			if c > 0x20 and not G.font_body.has_char(c):
+				gone += char(c)
+		ok(gone == "", "%s can be drawn too%s"
+			% [pair[1], "" if gone == "" else " (missing %s - rerun tools/gen_fontpack.py)" % gone])
