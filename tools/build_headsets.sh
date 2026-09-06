@@ -40,6 +40,27 @@ grep -q "^${SETTING}=\"mobile\"" project.godot || {
 }
 echo "building the headset packages on the Mobile (Vulkan) renderer"
 
+# The OpenXR loader - the library that finds the runtime on the device - is not
+# in the vendor AARs and is not added by the build template either: the template
+# names a version for it and then never asks for it. Without it the interface
+# loads, xrCreateInstance has nothing to talk to, and the session is never
+# created, which is precisely what a headset stuck on its loading screen looks
+# like. So the dependency is added here, once, to the gradle build these two
+# packages use. The phone package does not go through gradle at all.
+GRADLE="android/build/build.gradle"
+if [ ! -f "$GRADLE" ]; then
+  echo "no Android build template - run Godot with --install-android-build-template first" >&2
+  exit 1
+fi
+if ! grep -q "openxr_loader_for_android" "$GRADLE"; then
+  sed -i 's|^\(\s*\)implementation "androidx.documentfile:documentfile:\$versions.documentfileVersion"|&\n\1// added by tools/build_headsets.sh: the runtime loader for OpenXR\n\1implementation "org.khronos.openxr:openxr_loader_for_android:$versions.openxrLoaderVersion"|' "$GRADLE"
+  grep -q "openxr_loader_for_android" "$GRADLE" || {
+    echo "could not add the OpenXR loader dependency to $GRADLE" >&2
+    exit 1
+  }
+  echo "added the OpenXR loader dependency to the gradle build"
+fi
+
 mkdir -p build
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
 "$GODOT" --headless --path . --export-release "Meta Quest" build/OpenRhythm-quest.apk
