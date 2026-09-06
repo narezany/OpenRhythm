@@ -764,9 +764,9 @@ func _test_vr_room() -> void:
 		"a click note keeps its hold - those have their own answer in VR")
 	gs.free()
 
-	# Melly can be picked up, and wherever she is let go of she ends on the
-	# floor - there is nothing to stand her on in mid-air.
-	ok(VRStage.GRAB_REACH > 0.0 and VRStage.DROP_GRAV > 0.0, "she can be picked up")
+	# Melly can be picked up, and wherever they are let go of they end on the
+	# floor - there is nothing to stand them on in mid-air.
+	ok(VRStage.GRAB_REACH > 0.0 and VRStage.DROP_GRAV > 0.0, "they can be picked up")
 	var rig := MellyRig.new()
 	rig.limp = true
 	rig.arm_l = 2.0
@@ -776,7 +776,7 @@ func _test_vr_room() -> void:
 	var before := rig.arm_l
 	rig.shake(3.0)
 	ok(absf(rig.arm_lv) > 0.0 and rig.arm_l == before,
-		"and shaking her moves the joints rather than teleporting them")
+		"and shaking them moves the joints rather than teleporting them")
 	rig.free()
 
 

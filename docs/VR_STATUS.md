@@ -73,12 +73,12 @@ blade passes through plain cubes and burns ringed ones. The tutorial has a
 second script - `hints_saber` in `songs/tutorial/map.json` - that teaches this,
 translated like every other string.
 
-Melly stands in the room. She can be patted (a hand moving across her head, or
-a cursor on a flat screen) and picked up with the grip, and while she is held
-the rig goes `limp`: the same springs that animate her, set slack with nothing
+Melly stands in the room. They can be patted (a hand moving across their head,
+or a cursor on a flat screen) and picked up with the grip, and while held
+the rig goes `limp`: the same springs that animate them, set slack with nothing
 driving them, kicked by how hard the hand moves. There is no ragdoll in the
 model - it has a skeleton and no physical bones - and this is the honest way to
-get a doll out of what is already there. Let go and she falls to the floor.
+get a doll out of what is already there. Let go and they fall to the floor.
 
 ## What does not
 

@@ -83,6 +83,20 @@ open(path, "w", encoding="utf-8").write(src)
 print("openxr loader dependency: %s" % version)
 PY
 
+# Godot writes this when it installs the build template, and a template
+# unpacked by hand has none - at which point the whole Android scaffolding is
+# scanned as game resources and packed into every export. It cost 307 files and
+# 2.4 MB of gradle inside the Linux build, and nothing said a word about it.
+: > "$(dirname "$GRADLE")/.gdignore"
+
+# Gradle's own output sits under the template and contains a second copy of
+# every addon, which the engine's scanner picks up as a second GDExtension
+# pointing at a file that is deleted on the next clean. That poisons unrelated
+# exports with "GDExtension dynamic library not found". A .gdignore keeps the
+# scanner out of build output, where it has no business anyway.
+mkdir -p "$(dirname "$GRADLE")/build"
+: > "$(dirname "$GRADLE")/build/.gdignore"
+
 mkdir -p build
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
 "$GODOT" --headless --path . --export-release "Meta Quest" build/OpenRhythm-quest.apk

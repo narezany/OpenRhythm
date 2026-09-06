@@ -21,8 +21,8 @@ const HEAD_TILT_MAX := 0.38
 const TORSO_LEAN_MAX := 0.22
 
 var mood := "idle"             # idle | happy | very | sad
-## Limp: nothing is driving her, every joint hangs, and the springs are the
-## only thing left moving. Set while she is being carried around a VR room by
+## Limp: nothing is driving them, every joint hangs, and the springs are the
+## only thing left moving. Set while they are being carried around a VR room by
 ## the scruff of the neck. It is not a mood - the face stays as it was.
 var limp := false
 var _mood_until_ms := 0
@@ -98,12 +98,12 @@ func _process(delta: float) -> void:
 	_apply_pose()
 
 
-## A finger or a cursor dragged across her head is a pat, on a flat screen the
-## same as it is in a headset. Dragged, not parked: a pointer sitting on her
+## A finger or a cursor dragged across their head is a pat, on a flat screen the
+## same as it is in a headset. Dragged, not parked: a pointer sitting on their
 ## head is somebody who left the mouse there, not somebody being kind.
 ##
 ## In a headset this is left alone - the room does it with real hands, and the
-## flat panel hanging behind everything would otherwise be patting her too.
+## flat panel hanging behind everything would otherwise be patting them too.
 func _pat_flat(delta: float) -> void:
 	_pat_cd = maxf(0.0, _pat_cd - delta)
 	if G.vr_active or _cam == null or _hearts == null or size.y <= 1.0:
@@ -118,19 +118,28 @@ func _pat_flat(delta: float) -> void:
 	if at.distance_to(head) > size.y * 0.17:
 		return
 	_pat_cd = 0.11
-	_hearts.pop(head + Vector2(randf_range(-11.0, 11.0), randf_range(-9.0, 4.0)))
+	# up off the top of the head, not out of it - screen y grows downwards
+	_hearts.pop(head + Vector2(randf_range(-13.0, 13.0), randf_range(-28.0, -13.0)))
 	set_mood("very", 1.4)
 
 
-## Where her head is on this screen: the head bone put through the little
-## camera she is drawn with, so it stays right at any panel size and follows
-## the model rather than a number somebody measured once.
+## Where their head is on this screen: a point near the top of the model, put
+## through the little camera they are drawn with, so it stays right at any
+## panel size and follows the model rather than a number measured once by hand.
+##
+## Taken from the mesh and not from the head bone. The head *joint* sits at the
+## neck - y 4.0 in a model 5.33 tall - which is where the hearts were coming
+## out of.
 func _head_at() -> Vector2:
-	if _skel != null and _skel.get_bone_count() > 1:
-		var world: Vector3 = _skel.global_transform \
-			* _skel.get_bone_global_pose(1).origin
-		return _cam.unproject_position(world + Vector3(0.0, 0.35, 0.0))
-	return _cam.unproject_position(Vector3(0.0, 4.6, 0.0))
+	return _cam.unproject_position(Vector3(0.0, _model_top() - 0.55, 0.0))
+
+
+## How tall the model is, so a new export cannot quietly move the head.
+func _model_top() -> float:
+	if _mi != null and _mi.mesh != null:
+		var b: AABB = _mi.get_aabb()
+		return b.position.y + b.size.y
+	return 5.33
 
 
 ## ---------------------------------------------------------------- world
@@ -345,7 +354,7 @@ func _sim_limp(dt: float) -> void:
 	sway *= maxf(0.0, 1.0 - dt * 4.0)
 
 
-## Throw some of how hard she was just moved into every joint. This is what
+## Throw some of how hard they were just moved into every joint. This is what
 ## turns being carried into being carried like a doll instead of like a statue:
 ## the swinging comes from the hand that is doing the swinging.
 func shake(amount: float) -> void:
@@ -471,7 +480,7 @@ static func heart_points(at: Vector2, size_px: float) -> PackedVector2Array:
 	return out
 
 
-## Hearts drifting up off her head, drawn over the top of her.
+## Hearts drifting up off their head, drawn over the top of them.
 class HeartLayer:
 	extends Node2D
 

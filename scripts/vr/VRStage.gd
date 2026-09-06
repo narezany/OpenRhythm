@@ -87,15 +87,15 @@ const C_BURN := Color(1.0, 0.74, 0.32)
 ## and turned towards whoever is looking.
 const MELLY_HEIGHT := 0.54
 const MELLY_SPOT := Vector3(-1.1, 0.0, -1.85)
-## Reach a hand up to her head and move it about and she gets patted. Both
-## conditions matter: a hand parked near her head is somebody resting, not
+## Reach a hand up to their head and move it about and they get patted. Both
+## conditions matter: a hand parked near their head is somebody resting, not
 ## somebody being kind.
 const PAT_REACH := 0.26
 const PAT_SPEED := 0.25           # m/s the hand has to be moving
 const HEART_LIFE := 1.5
-## Take hold of her with the grip and she goes limp in your hand. Let go and
-## she falls - there is no putting her down in mid-air, because there is
-## nothing up there to put her on.
+## Take hold of them with the grip and they go limp in your hand. Let go and
+## they fall - there is no putting them down in mid-air, because there is
+## nothing up there to put them on.
 const GRAB_REACH := 0.34
 const DROP_GRAV := 6.5
 ## How long a rank hangs in the air. Longer than the flat game gives it: on a
@@ -236,9 +236,9 @@ func _build_world() -> void:
 	add_child(we)
 
 	# Everything the room draws itself is unshaded, so these two light exactly
-	# one thing: Melly, once she is standing in here rather than on the screen.
-	# They are aimed the same way her own little world aims them, so she looks
-	# in VR the way she looks flat.
+	# one thing: Melly, once they are standing in here rather than on the screen.
+	# They are aimed the way Melly's own little world aims them, so they look
+	# in VR the way they look flat.
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42.0, 28.0, 0.0)
 	sun.light_energy = 1.3
@@ -522,7 +522,7 @@ func _buttons(delta: float) -> void:
 			continue
 		if c.is_button_pressed("menu_button") or c.is_button_pressed("by_button"):
 			back = true
-		# not while she is in that hand - grip is how you are holding her
+		# not while they are in that hand - grip is how you are holding them
 		if c.get_float("grip") > 0.8 and c.is_button_pressed("by_button") \
 				and _melly_state != "held":
 			recentre = true
@@ -768,7 +768,11 @@ func _try_cut(hand: int, prev: PackedVector3Array, now: PackedVector3Array) -> v
 		# settled here and now, on timing. Leaving it to land would mean
 		# judging it by where the cursor happens to be a moment later, and by
 		# then the blade is somewhere else entirely.
+		# the rank belongs where the cube was, so it is taken now rather than
+		# left for the sweep at the end of the frame to put on the plane
+		var where := node.position + Vector3(0.0, 0.0, 0.07)
 		_gs.cut_note(n)
+		_sync_texts(where)
 		if live:
 			_burn(node)
 		else:
@@ -1135,7 +1139,11 @@ func _release_all() -> void:
 ## is a screen several metres behind everything you are looking at - which is
 ## the last place to tell somebody how they did. So the 2D layer is hidden and
 ## its labels are mirrored out here instead, at the cell the cube landed in.
-func _sync_texts() -> void:
+## `at3` is where the cube actually was when it was taken - a saber meets it
+## out in the air, and putting the rank on the grid plane instead leaves it
+## floating on a surface the cube never touched. Anything the flat game settles
+## on its own has no such place, and those go on the plane as before.
+func _sync_texts(at3 = null) -> void:
 	if _gs == null or _gs.texts == null or not is_instance_valid(_gs.texts):
 		return
 	for it in _gs.texts.items:
@@ -1143,24 +1151,29 @@ func _sync_texts() -> void:
 		if id <= _last_text:
 			continue
 		_last_text = id
-		_put_rank(it)
+		_put_rank(it, at3)
 
 
-func _put_rank(it: Dictionary) -> void:
+func _put_rank(it: Dictionary, at3 = null) -> void:
 	var lab := Label3D.new()
 	lab.text = str(it.get("text", ""))
 	lab.font = G.font_bold
 	lab.font_size = 64
-	lab.outline_size = 20
+	lab.outline_size = 16
 	lab.outline_modulate = Color(0, 0, 0, 0.6)
 	lab.modulate = it.get("color", Color.WHITE)
 	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	# over the cubes rather than lost among them: a rank you have to look for
 	# is not telling you anything
 	lab.no_depth_test = true
-	lab.pixel_size = 0.0017
-	var at: Vector2 = it.get("pos", Vector2.ZERO)
-	lab.position = Vector3(at.x * field_mpp, -at.y * field_mpp, 0.12)
+	# a couple of metres away, so it wants to be a fraction of the size the
+	# same words are on a monitor an arm's length from your face
+	lab.pixel_size = 0.00075
+	if at3 != null:
+		lab.position = at3
+	else:
+		var at: Vector2 = it.get("pos", Vector2.ZERO)
+		lab.position = Vector3(at.x * field_mpp, -at.y * field_mpp, 0.12)
 	field.add_child(lab)
 	_labels.append({"node": lab, "life": TEXT_LIFE})
 
@@ -1187,11 +1200,11 @@ func _texts(delta: float) -> void:
 # ---------------------------------------------------------------- melly
 ## Melly, standing in the room instead of printed on the screen.
 ##
-## Nothing here rebuilds her. The rig already makes her as a real 3D model in a
+## Nothing here rebuilds them. The rig already makes Melly a real 3D model in a
 ## viewport of its own, so the model is simply lifted out of that viewport into
-## the room and handed back when the screen that owns it goes. Her animation
-## keeps running wherever she is parented: it drives the skeleton, not the
-## scene she happens to be in.
+## the room and handed back when the screen that owns it goes. The animation
+## keeps running wherever they are parented: it drives the skeleton, not the
+## scene they happen to be in.
 func _melly(delta: float) -> void:
 	var rig = G.melly
 	if rig == null or not is_instance_valid(rig):
@@ -1199,7 +1212,7 @@ func _melly(delta: float) -> void:
 	if rig != _melly_rig:
 		_return_melly()
 		_borrow_melly(rig)
-	# ours goes back to being pleased with herself once a reaction has run its
+	# ours goes back to being pleased with themselves once a reaction has run its
 	# course - the rig drops the pose back to idle but leaves the face where it
 	# was, and idle is the blank one
 	if _own_rig != null and rig == _own_rig and _own_rig.mood == "idle":
@@ -1224,13 +1237,13 @@ func _build_melly() -> void:
 	_own_rig.size = Vector2(256, 256)
 	add_child(_own_rig)
 	# set_mood rather than assigning mood: the face is a texture the rig swaps
-	# there, so setting the field alone leaves her standing about with the
+	# there, so setting the field alone leaves them standing about with the
 	# blank idle face on.
 	_own_rig.set_mood("happy", 0.0)
 	var own_vp = _own_rig.get("_vp")
 	if own_vp is SubViewport:
-		# her model gets lifted straight out into the room, so the little
-		# viewport she was built inside has nothing left to draw
+		# the model gets lifted straight out into the room, so the little
+		# viewport they were built inside has nothing left to draw
 		(own_vp as SubViewport).render_target_update_mode = SubViewport.UPDATE_DISABLED
 
 
@@ -1246,7 +1259,7 @@ func _borrow_melly(rig) -> void:
 	if _melly_home != null:
 		_melly_home.remove_child(model)
 	melly_root.add_child(model)
-	# She is modelled several units tall. Measured rather than guessed - a new
+	# Melly is modelled several units tall. Measured rather than guessed - a new
 	# export would otherwise arrive the size of a house - and stood on the
 	# floor off to one side, small enough to share the room rather than own it.
 	var box := _model_aabb(model)
@@ -1257,7 +1270,7 @@ func _borrow_melly(rig) -> void:
 		% [box.size.y, _melly_scale])
 
 
-## Where she is, which way up, and which way round. Everything that moves her -
+## Where they are, which way up, and which way round. Everything that moves them
 ## standing, carried, falling - sets the three numbers and calls this, so there
 ## is one place that knows how a position becomes a transform.
 func _place_melly() -> void:
@@ -1266,7 +1279,7 @@ func _place_melly() -> void:
 	var b := Basis(Vector3.UP, _melly_yaw)
 	var tilt := _melly_tilt.length()
 	if tilt > 0.0001:
-		# tip her the way she is being dragged, about the axis across it
+		# tip them the way they are being dragged, about the axis across it
 		var axis := Vector3(_melly_tilt.z, 0.0, -_melly_tilt.x).normalized()
 		b = Basis(axis, tilt) * b
 	_melly_model.transform = Transform3D(
@@ -1274,12 +1287,12 @@ func _place_melly() -> void:
 		_melly_pos + Vector3(0.0, -_melly_foot * _melly_scale, 0.0))
 
 
-## Picking her up, carrying her about and putting her down.
+## Picking them up, carrying them about and putting them down.
 ##
 ## There is no ragdoll in the model - it has a skeleton and no physics bones -
 ## so the doll is made where the doll already lives: the rig animates every
 ## joint on a spring, and going limp is that same spring set slack with nothing
-## driving it. Swinging her about throws the hand's speed into those springs,
+## driving it. Swinging them about throws the hand's speed into those springs,
 ## which is where the flopping comes from. The body itself is carried and
 ## dropped here.
 func _melly_carry(delta: float) -> void:
@@ -1330,10 +1343,10 @@ func _carry(delta: float) -> void:
 	var moved := at - _grab_prev
 	_grab_prev = at
 	_melly_vel = moved / maxf(delta, 0.0001)
-	# held by the scruff: the hand is up at her neck and the rest of her is
+	# held by the scruff: the hand is up at their neck and the rest of them is
 	# below it
 	_melly_pos = at - Vector3.UP * (MELLY_HEIGHT * 0.82)
-	# and she trails behind the hand, the way anything limp does
+	# and they trail behind the hand, the way anything limp does
 	var lag := Vector3(-_melly_vel.x, 0.0, -_melly_vel.z) * 0.09
 	_melly_tilt = _melly_tilt.lerp(lag.limit_length(0.55), minf(1.0, delta * 9.0))
 	_place_melly()
@@ -1349,8 +1362,8 @@ func _fall(delta: float) -> void:
 	_melly_pos.z = clampf(_melly_pos.z, -ROOM_REACH, ROOM_REACH)
 	_melly_tilt = _melly_tilt.lerp(Vector3.ZERO, minf(1.0, delta * 5.0))
 	if _melly_pos.y <= 0.0:
-		# the floor is the only place she can end up - there is nothing to
-		# stand her on in mid-air, so letting go anywhere means letting go here
+		# the floor is the only place they can end up - there is nothing to
+		# stand them on in mid-air, so letting go anywhere means letting go here
 		_melly_pos.y = 0.0
 		_melly_vel = Vector3.ZERO
 		_melly_tilt = Vector3.ZERO
@@ -1367,8 +1380,8 @@ func _set_limp(on: bool) -> void:
 		_melly_rig.limp = on
 
 
-## A hand up at her head, and moving: that is a pat. Both halves are needed -
-## a hand parked near her head is somebody resting it there.
+## A hand up at their head, and moving: that is a pat. Both halves are needed -
+## a hand parked near their head is somebody resting it there.
 func _pat(delta: float) -> void:
 	_pat_cool = maxf(0.0, _pat_cool - delta)
 	if preview or hands.size() < 2 or _melly_model == null \
@@ -1391,7 +1404,7 @@ func _pat(delta: float) -> void:
 		_haptic(i)
 
 
-## One heart, drifting up off her head and fading.
+## One heart, drifting up off their head and fading.
 func _heart(at: Vector3) -> void:
 	if _heart_mesh == null:
 		_heart_mesh = _make_heart()
@@ -1443,9 +1456,9 @@ func _make_heart() -> ArrayMesh:
 	return mesh
 
 
-## Turn her towards whoever is looking, and only about the upright axis - a
+## Turn them towards whoever is looking, and only about the upright axis - a
 ## Melly that tips over to follow your head is a puppet rather than a person.
-## Eased rather than snapped, so walking past her does not make her flick.
+## Eased rather than snapped, so walking past does not make them flick.
 func _face_melly(delta: float) -> void:
 	if _melly_model == null or not is_instance_valid(_melly_model) or camera == null:
 		return
@@ -1477,12 +1490,12 @@ func _return_melly() -> void:
 		model.transform = Transform3D.IDENTITY
 		home.add_child(model)
 	else:
-		# the screen that owned her has gone, and she is ours to let go of
+		# the screen that owned them has gone, and they are ours to let go of
 		model.queue_free()
 
 
 ## How big a model is, whatever it is made of, in its own space. Measured so
-## that standing her at human height is not a number that quietly stops being
+## that standing them at human height is not a number that quietly stops being
 ## right the next time the model is exported.
 func _model_aabb(root: Node3D) -> AABB:
 	var box := AABB()
@@ -1502,8 +1515,8 @@ func _model_aabb(root: Node3D) -> AABB:
 	return box
 
 
-## Whatever else happens, Melly goes back where she came from - the screen that
-## owns her will free her, and a model left parented here would be freed twice
+## Whatever else happens, Melly goes back where they came from - the screen
+## that owns them will free them, and a model left parented here would be freed
 ## or not at all.
 func _exit_tree() -> void:
 	_return_melly()
