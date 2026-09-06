@@ -52,14 +52,25 @@ if [ ! -f "$GRADLE" ]; then
   echo "no Android build template - run Godot with --install-android-build-template first" >&2
   exit 1
 fi
-if ! grep -q "openxr_loader_for_android" "$GRADLE"; then
-  sed -i 's|^\(\s*\)implementation "androidx.documentfile:documentfile:\$versions.documentfileVersion"|&\n\1// added by tools/build_headsets.sh: the runtime loader for OpenXR\n\1implementation "org.khronos.openxr:openxr_loader_for_android:$versions.openxrLoaderVersion"|' "$GRADLE"
-  grep -q "openxr_loader_for_android" "$GRADLE" || {
-    echo "could not add the OpenXR loader dependency to $GRADLE" >&2
-    exit 1
-  }
-  echo "added the OpenXR loader dependency to the gradle build"
-fi
+# Done in python rather than sed: the line goes inside the dependencies block
+# and carries quotes and a dollar sign, and getting that wrong silently writes
+# a broken build file that fails much later with an unrelated message.
+LOADER="${OPENXR_LOADER:-}" python3 - "$GRADLE" <<'PY'
+import os, re, sys
+path = sys.argv[1]
+src = open(path, encoding="utf-8").read()
+version = os.environ.get("LOADER") or "$versions.openxrLoaderVersion"
+line = '    implementation "org.khronos.openxr:openxr_loader_for_android:%s"' % version
+if "openxr_loader_for_android" in src:
+    src = re.sub(r'^\s*implementation "org\.khronos\.openxr:openxr_loader_for_android:[^"]*"$',
+                 line, src, count=1, flags=re.M)
+else:
+    marker = "dependencies {"
+    i = src.index(marker) + len(marker)
+    src = src[:i] + "\n    // added by tools/build_headsets.sh: the runtime loader for OpenXR\n" + line + src[i:]
+open(path, "w", encoding="utf-8").write(src)
+print("openxr loader dependency: %s" % version)
+PY
 
 mkdir -p build
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true

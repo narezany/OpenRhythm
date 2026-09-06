@@ -160,6 +160,16 @@ hash — neither changes what you play.
 
 <br>
 
+> **Headsets are not there yet.** The desktop side is built and the room draws,
+> but the Quest and Pico packages crash on startup inside the engine's own
+> OpenXR - on a Pico 4 they do not survive half a second. What has been ruled
+> out, and what it needs next, is written down in
+> [docs/VR_STATUS.md](docs/VR_STATUS.md). The desktop build's VR path has never
+> been run against a real runtime either, so treat it as untested.
+>
+> You can look at the whole thing without a headset: *Settings → VR → Look at
+> the VR room on this screen*.
+
 There is no VR build of the desktop game and no switch to flip. It looks for an
 OpenXR runtime at startup: SteamVR running and a headset awake means it opens in
 VR, nothing there means it opens in a window. *Settings → VR* can say no, and
