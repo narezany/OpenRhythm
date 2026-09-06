@@ -427,6 +427,38 @@ func _load_fonts() -> void:
 		font_bold = ThemeDB.fallback_font
 	if font_logo == null:
 		font_logo = font_bold
+	_carry_a_fallback()
+
+
+## Neither Rajdhani nor Orbitron has a single Cyrillic letter in it - they are
+## Latin and Devanagari - and on a desktop or a phone that never showed,
+## because the engine quietly borrows a system font for anything its own cannot
+## draw. A browser has no system fonts to lend. The whole Russian translation
+## came out of the web build as boxes with hex codes printed inside them.
+##
+## So the fallback travels with the game rather than being hoped for. Exo 2 is
+## a close enough relative of Rajdhani to stand next to it without looking like
+## an accident, and it is set at the weight of whatever it is standing in for.
+##
+## Chinese is not covered and cannot be cheaply: a CJK face is megabytes even
+## subsetted, and it would be paid for by everyone downloading the game. On a
+## desktop or a phone the system still lends one; in a browser that translation
+## is boxes, and that is a known gap rather than a surprise.
+func _carry_a_fallback() -> void:
+	var exo: Font = load("res://assets/fonts/Exo2-Variable.ttf")
+	if exo == null:
+		return
+	font_body.fallbacks = [_at_weight(exo, 600)]
+	font_bold.fallbacks = [_at_weight(exo, 700)]
+	if font_logo != font_bold:
+		font_logo.fallbacks = [_at_weight(exo, 800)]
+
+
+func _at_weight(base: Font, wght: int) -> FontVariation:
+	var fv := FontVariation.new()
+	fv.base_font = base
+	fv.variation_opentype = {"wght": wght}
+	return fv
 
 
 func _make_textures() -> void:

@@ -41,6 +41,7 @@ func _ready() -> void:
 	_test_touch_cursor()
 	_test_mouse_cursor()
 	_test_vr_room()
+	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
 
@@ -803,3 +804,28 @@ func _signed_volume(mesh: Mesh) -> float:
 		total += a.dot(b.cross(c))
 		i += 3
 	return total
+
+
+## The shipped fonts have to be able to draw the languages the game is
+## translated into, without borrowing anything from the machine it is running
+## on. A browser has nothing to lend, and the whole Russian translation came
+## out of the web build as boxes with hex codes in them.
+func _test_fonts() -> void:
+	_say("== fonts ==")
+	var sample := {
+		"English": "Rg", "Русский": "ЯжЁй", "Deutsch": "üßÄ",
+		"Español": "ñ¿á", "Nederlands": "ij",
+	}
+	for lang in sample:
+		var missing := ""
+		for i in str(sample[lang]).length():
+			var c: int = str(sample[lang]).unicode_at(i)
+			if not G.font_body.has_char(c) or not G.font_bold.has_char(c):
+				missing += char(c)
+		ok(missing == "", "%s is drawable by the fonts we ship%s"
+			% [lang, "" if missing == "" else " (missing %s)" % missing])
+	# and the one that is not, said out loud rather than found by a player: a
+	# CJK face is megabytes even subsetted, so Chinese still leans on a system
+	# font and has none to lean on in a browser
+	ok(not G.font_body.has_char("中".unicode_at(0)),
+		"Chinese is still borrowed from the system, and a browser has none")
