@@ -130,6 +130,20 @@ func go_back() -> void:
 		current.go_back()
 
 
+## Swap this whole screen out for the VR room, drawn on the monitor. The game
+## keeps running inside it, on the screen that hangs in front of you.
+func restart_into_preview() -> void:
+	if is_instance_valid(current):
+		current.queue_free()
+		current = null
+	var boot := get_parent()
+	var stage = load("res://scripts/vr/VRStage.gd").new()
+	stage.preview = true
+	if boot != null:
+		boot.add_child(stage)
+	queue_free()
+
+
 ## Real visible window aspect, for the adaptive layout.
 func _update_view() -> void:
 	# In VR the whole game runs inside a SubViewport, so the window size is the

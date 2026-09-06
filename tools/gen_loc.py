@@ -260,6 +260,15 @@ add("press a key…", "нажми клавишу…", "请按一个键…", "Tas
 
 # ---------------------------------------------------------------- gameplay
 add("PAUSED", "ПАУЗА", "已暂停", "PAUSE", "GEPAUZEERD", "EN PAUSA")
+add("Look at the VR room on this screen", "Посмотреть VR-комнату на этом экране",
+    "在此屏幕上查看 VR 房间", "Den VR-Raum auf diesem Bildschirm ansehen",
+    "Bekijk de VR-ruimte op dit scherm", "Ver la sala de RV en esta pantalla")
+add("The same room, on a monitor, with the mouse for a hand. No headset involved.",
+    "Та же комната, на мониторе, мышь вместо руки. Шлем не нужен.",
+    "同一个房间，显示在显示器上，用鼠标代替手。无需头显。",
+    "Derselbe Raum, auf einem Monitor, die Maus als Hand. Kein Headset notig.",
+    "Dezelfde ruimte, op een monitor, met de muis als hand. Geen headset nodig.",
+    "La misma sala, en un monitor, con el raton como mano. Sin gafas.")
 add("VR", "VR", "VR", "VR", "VR", "RV")
 add("In VR now.", "Сейчас в VR.", "当前处于 VR。", "Jetzt in VR.", "Nu in VR.", "Ahora en RV.")
 add("Flat. Start the game with a headset running and it opens in VR by itself.",

@@ -151,6 +151,19 @@ func _build_vr() -> void:
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_child(note)
+	if not G.vr_active:
+		_body.add_child(_sep())
+		var look := G.button("Look at the VR room on this screen", func():
+			G.play_sfx("click")
+			G.vr_preview = true
+			G.main.restart_into_preview(), 22)
+		look.custom_minimum_size = Vector2(420, 0)
+		_body.add_child(look)
+		var look_note := G.label("The same room, on a monitor, with the mouse for a hand. No headset involved.",
+			15, Color(1, 1, 1, 0.45))
+		look_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		look_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_body.add_child(look_note)
 
 
 func _build_audio() -> void:

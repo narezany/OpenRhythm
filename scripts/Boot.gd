@@ -53,6 +53,15 @@ var _xr: XRInterface = null
 
 
 func _ready() -> void:
+	# The VR room on an ordinary screen, mouse for a hand. Nothing to do with
+	# OpenXR, which is what makes it useful: the room can be worked on and
+	# looked at while the headset side is broken.
+	if OS.get_environment("OR_VR") == "preview" or G.vr_preview:
+		G.dev_log("VR preview on this screen")
+		var stage = VR_STAGE.new()
+		stage.preview = true
+		add_child(stage)
+		return
 	_pick_step()
 	if _step <= STEP_FLAT:
 		_go_flat("stepping back after a crash" if _survived < STEP_STAGE

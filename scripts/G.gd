@@ -104,7 +104,10 @@ var disabled_songs: Array = []
 var hit_offset := 0.0
 var vr_start := "auto"           # "auto" enters VR when a runtime is up, "off" never
 var vr_style := "pointer"        # "pointer" aims a laser, "saber" cuts with a blade
-var vr_active := false           # true once a headset has actually taken over
+var vr_active := false
+## Show the VR room on this screen instead of in a headset. A look, and a way
+## to work on it without one.
+var vr_preview := false           # true once a headset has actually taken over
 
 # --- Melly: per-body-part colours, chosen from presets in the settings ---
 var melly_colors := {

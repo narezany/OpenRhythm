@@ -72,8 +72,21 @@ mkdir -p build
 "$GODOT" --headless --path . --export-release "Pico (Khronos loader)" \
   build/OpenRhythm-pico-khronos.apk
 
-for f in quest pico pico-khronos; do
+# And one Pico package with the vendor plugin taken out of the project
+# altogether: nothing but the engine's own OpenXR and the Khronos loader. If
+# the plugin is what takes the app down before a single line of game code runs,
+# this is the one that survives.
+if [ -d addons/godotopenxrvendors ]; then
+  mv addons/godotopenxrvendors "$PWD/.godotopenxrvendors.aside"
+  "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
+  "$GODOT" --headless --path . --export-release "Pico (no vendor plugin)" \
+    build/OpenRhythm-pico-plain.apk || true
+  mv "$PWD/.godotopenxrvendors.aside" addons/godotopenxrvendors
+  "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
+fi
+
+for f in quest pico pico-khronos pico-plain; do
   apk="build/OpenRhythm-${f}.apk"
   printf '%-34s %s\n' "$apk" "$(unzip -l "$apk" 2>/dev/null | grep -c libopenxr_loader.so) loader"
 done
-ls -la build/OpenRhythm-quest.apk build/OpenRhythm-pico.apk build/OpenRhythm-pico-khronos.apk
+ls -la build/OpenRhythm-*.apk

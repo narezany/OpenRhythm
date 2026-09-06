@@ -39,8 +39,15 @@ var field_mpp := FIELD_W_POINT / (G.FRAME_HALF * 2.0)
 var panel_mpp := PANEL_W / G.DESIGN.x
 var _laid_out := ""
 
-var origin: XROrigin3D
-var camera: XRCamera3D
+## Preview mode: the same room on an ordinary screen, with the mouse doing the
+## pointing. No headset, no OpenXR - which is the point. It is the only way to
+## see whether the room itself is right when the trouble is somewhere in the
+## engine's XR startup, and it is a far quicker way to work on the room than
+## putting a headset on for every change.
+var preview := false
+
+var origin: Node3D
+var camera: Camera3D
 var hands: Array[XRController3D] = []
 var blades: Array[MeshInstance3D] = []
 var vp: SubViewport
@@ -106,6 +113,9 @@ func _build_world() -> void:
 
 
 func _build_rig() -> void:
+	if preview:
+		_build_preview_rig()
+		return
 	origin = XROrigin3D.new()
 	# Both have to say they are the ones in use. With no current camera the
 	# viewport has no 3D view to render, so nothing is handed to the headset's
@@ -132,6 +142,19 @@ func _build_rig() -> void:
 			G.C_EMBER if i == 1 else Color(0.55, 0.75, 1.0))
 		c.add_child(blade)
 		blades.append(blade)
+
+
+## The same rig without a headset: a plain camera where the head would be, and
+## no controllers - the mouse points instead.
+func _build_preview_rig() -> void:
+	origin = Node3D.new()
+	add_child(origin)
+	camera = Camera3D.new()
+	camera.near = 0.05
+	camera.far = 60.0
+	camera.position = Vector3(0, 1.6, 0)
+	camera.current = true
+	origin.add_child(camera)
 
 
 ## The flat game, rendered to a screen hanging in front of the player.
@@ -219,13 +242,13 @@ func _process(delta: float) -> void:
 			G.dev_log("rendering: 120 frames out, head at %v" % camera.global_position)
 	_layout_field()
 	_track_screen()
-	var saber := G.vr_style == "saber" and _gs != null
+	var saber := G.vr_style == "saber" and _gs != null and not preview
 	if saber:
 		_aim_saber(delta)
 	else:
 		_aim_pointer()
 	laser.visible = not saber
-	for i in 2:
+	for i in blades.size():
 		blades[i].visible = saber
 		_cut_cool[i] = maxf(0.0, _cut_cool[i] - delta)
 	_sync_notes()
@@ -236,6 +259,8 @@ func _process(delta: float) -> void:
 ## does on a keyboard, the other puts the room back in front of you when you
 ## have drifted or sat down.
 func _buttons(delta: float) -> void:
+	if preview:
+		return
 	_btn_cool = maxf(0.0, _btn_cool - delta)
 	if _btn_cool > 0.0:
 		return
@@ -280,6 +305,11 @@ func _track_screen() -> void:
 ## wins; with none the head does the pointing, so the game is still playable
 ## with a gamepad or nothing at all.
 func _ray() -> Array:
+	if preview:
+		# the mouse is the hand: aim through the pointer, from the eye
+		var vp := get_viewport()
+		var m := vp.get_mouse_position()
+		return [camera.project_ray_origin(m), camera.project_ray_normal(m)]
 	for i in [1, 0]:
 		var c := hands[i]
 		if c.get_has_tracking_data():
@@ -388,6 +418,8 @@ func _click(down: bool) -> void:
 
 
 func _trigger_down() -> bool:
+	if preview:
+		return Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	for c in hands:
 		if not c.get_has_tracking_data():
 			continue
