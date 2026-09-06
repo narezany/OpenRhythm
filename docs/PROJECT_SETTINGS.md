@@ -34,6 +34,15 @@ exported with XR mode off, so it has no OpenXR to try in the first place.
 Most players are on a flat screen, and a runtime that is simply not running is
 not worth an alert box. `Boot` falls back to a window on its own.
 
+### `rendering/renderer/rendering_method="gl_compatibility"`
+
+The desktop game runs on Compatibility, which is the right default for the
+hardware this game is aimed at. Desktop *VR* cannot: stereo on that renderer
+goes through `GL_OVR_multiview2`, which Mesa gives to GLES contexts and not to
+the desktop GL context Godot draws through, so every 3D shader fails to compile
+and the headset shows black while tracking works. `Boot._restart_on_vulkan()`
+restarts the game on Forward+ when a runtime is installed. See `docs/VR_STATUS.md`.
+
 ### `rendering/renderer/rendering_method.mobile="gl_compatibility"`
 
 The phone package runs on Compatibility. The headset packages need Vulkan -

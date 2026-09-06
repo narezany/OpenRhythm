@@ -21,6 +21,10 @@ const HEAD_TILT_MAX := 0.38
 const TORSO_LEAN_MAX := 0.22
 
 var mood := "idle"             # idle | happy | very | sad
+## Limp: nothing is driving her, every joint hangs, and the springs are the
+## only thing left moving. Set while she is being carried around a VR room by
+## the scruff of the neck. It is not a mood - the face stays as it was.
+var limp := false
 var _mood_until_ms := 0
 var _t := 0.0
 
@@ -52,6 +56,13 @@ var leg_rv := 0.0
 
 var _kick_cd := 0.0            # stops the spring being re-kicked every frame
 
+# --- being patted on a flat screen ---
+var _cam: Camera3D
+var _hearts: HeartLayer
+var _pat_at := Vector2.ZERO
+var _pat_seen := false
+var _pat_cd := 0.0
+
 
 func _init() -> void:
 	stretch = true
@@ -68,6 +79,8 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	_hearts = HeartLayer.new()
+	add_child(_hearts)
 	G.melly = self
 	tree_exiting.connect(func():
 		if G.melly == self:
@@ -80,13 +93,50 @@ func _process(delta: float) -> void:
 		mood = "idle"
 		_mood_until_ms = 0
 	_kick_cd = maxf(0.0, _kick_cd - delta)
+	_pat_flat(delta)
 	_sim(delta)
 	_apply_pose()
+
+
+## A finger or a cursor dragged across her head is a pat, on a flat screen the
+## same as it is in a headset. Dragged, not parked: a pointer sitting on her
+## head is somebody who left the mouse there, not somebody being kind.
+##
+## In a headset this is left alone - the room does it with real hands, and the
+## flat panel hanging behind everything would otherwise be patting her too.
+func _pat_flat(delta: float) -> void:
+	_pat_cd = maxf(0.0, _pat_cd - delta)
+	if G.vr_active or _cam == null or _hearts == null or size.y <= 1.0:
+		return
+	var at := get_local_mouse_position()
+	var moved := at.distance_to(_pat_at) if _pat_seen else 0.0
+	_pat_at = at
+	_pat_seen = true
+	if _pat_cd > 0.0 or moved < 2.0:
+		return
+	var head := _head_at()
+	if at.distance_to(head) > size.y * 0.17:
+		return
+	_pat_cd = 0.11
+	_hearts.pop(head + Vector2(randf_range(-11.0, 11.0), randf_range(-9.0, 4.0)))
+	set_mood("very", 1.4)
+
+
+## Where her head is on this screen: the head bone put through the little
+## camera she is drawn with, so it stays right at any panel size and follows
+## the model rather than a number somebody measured once.
+func _head_at() -> Vector2:
+	if _skel != null and _skel.get_bone_count() > 1:
+		var world: Vector3 = _skel.global_transform \
+			* _skel.get_bone_global_pose(1).origin
+		return _cam.unproject_position(world + Vector3(0.0, 0.35, 0.0))
+	return _cam.unproject_position(Vector3(0.0, 4.6, 0.0))
 
 
 ## ---------------------------------------------------------------- world
 func _build_world() -> void:
 	var cam := Camera3D.new()
+	_cam = cam
 	_vp.add_child(cam)
 	cam.current = true
 	cam.fov = 44.0
@@ -272,6 +322,46 @@ var head_rv := 0.0
 
 
 ## ---------------------------------------------------------------- physics
+## Hanging. Every target is slack and every spring is loosened: a doll swings
+## further and settles slower than somebody standing up under their own power,
+## and that difference is the whole of what makes being carried look right.
+func _sim_limp(dt: float) -> void:
+	var by := _spring(body_y, body_yv, 0.0, 26.0, 3.0, dt)
+	body_y = by[0]; body_yv = by[1]
+	var ln := _spring(lean, lean_v, 0.0, 13.0, 2.2, dt)
+	lean = clampf(ln[0], -TORSO_LEAN_MAX, TORSO_LEAN_MAX); lean_v = ln[1]
+	var al := _spring(arm_l, arm_lv, -ARM_DOWN_MAX, 17.0, 2.4, dt)
+	arm_l = clampf(al[0], -ARM_DOWN_MAX, ARM_UP_MAX); arm_lv = al[1]
+	var ar := _spring(arm_r, arm_rv, -ARM_DOWN_MAX, 17.0, 2.4, dt)
+	arm_r = clampf(ar[0], -ARM_DOWN_MAX, ARM_UP_MAX); arm_rv = ar[1]
+	var ll := _spring(leg_l, leg_lv, LEG_FWD_MAX * 0.15, 19.0, 2.6, dt)
+	leg_l = clampf(ll[0], -LEG_BACK_MAX, LEG_FWD_MAX); leg_lv = ll[1]
+	var lr := _spring(leg_r, leg_rv, LEG_FWD_MAX * 0.15, 19.0, 2.6, dt)
+	leg_r = clampf(lr[0], -LEG_BACK_MAX, LEG_FWD_MAX); leg_rv = lr[1]
+	var hp := _spring(head_pitch, head_pv, HEAD_TILT_MAX * 0.75, 15.0, 2.0, dt)
+	head_pitch = clampf(hp[0], -HEAD_TILT_MAX, HEAD_TILT_MAX); head_pv = hp[1]
+	var hr := _spring(head_roll, head_rv, 0.0, 15.0, 2.0, dt)
+	head_roll = clampf(hr[0], -HEAD_TILT_MAX, HEAD_TILT_MAX); head_rv = hr[1]
+	sway *= maxf(0.0, 1.0 - dt * 4.0)
+
+
+## Throw some of how hard she was just moved into every joint. This is what
+## turns being carried into being carried like a doll instead of like a statue:
+## the swinging comes from the hand that is doing the swinging.
+func shake(amount: float) -> void:
+	var k := clampf(amount, 0.0, 5.0)
+	if k <= 0.0:
+		return
+	arm_lv += randf_range(-1.0, 1.0) * k
+	arm_rv += randf_range(-1.0, 1.0) * k
+	leg_lv += randf_range(-1.0, 1.0) * k * 0.7
+	leg_rv += randf_range(-1.0, 1.0) * k * 0.7
+	head_pv += randf_range(-0.7, 0.7) * k
+	head_rv += randf_range(-0.7, 0.7) * k
+	lean_v += randf_range(-0.5, 0.5) * k
+	body_yv += randf_range(-0.3, 0.3) * k
+
+
 func _spring(v: float, vel: float, target: float, stiff: float, damp: float, dt: float) -> Array:
 	vel += (target - v) * stiff * dt
 	vel *= 1.0 - minf(damp * dt, 0.9)
@@ -280,6 +370,9 @@ func _spring(v: float, vel: float, target: float, stiff: float, damp: float, dt:
 
 
 func _sim(dt: float) -> void:
+	if limp:
+		_sim_limp(dt)
+		return
 	var ft := _t
 	# targets per mood
 	var t_lean := 0.0
@@ -363,3 +456,47 @@ func _apply_pose() -> void:
 	# 4/5 = LegL/LegR: rotate around X, forwards and backwards
 	_skel.set_bone_pose(4, Transform3D(Basis.from_euler(Vector3(leg_l, 0.0, 0.0)), _rest[4].origin))
 	_skel.set_bone_pose(5, Transform3D(Basis.from_euler(Vector3(leg_r, 0.0, 0.0)), _rest[5].origin))
+
+
+## The heart everyone draws, as a ring of points. Shared by the flat layer
+## below and by the VR room, which builds the same curve in 3D.
+static func heart_points(at: Vector2, size_px: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for i in 26:
+		var t := TAU * float(i) / 26.0
+		out.append(at + Vector2(
+			16.0 * pow(sin(t), 3.0),
+			-(13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t))
+		) * (size_px / 32.0))
+	return out
+
+
+## Hearts drifting up off her head, drawn over the top of her.
+class HeartLayer:
+	extends Node2D
+
+	const LIFE := 1.1
+
+	var items: Array = []
+
+	func pop(at: Vector2) -> void:
+		items.append({
+			"pos": at, "age": 0.0, "size": randf_range(10.0, 16.0),
+			"drift": Vector2(randf_range(-16.0, 16.0), -randf_range(40.0, 66.0)),
+		})
+
+	func _process(delta: float) -> void:
+		if items.is_empty():
+			return
+		for i in items:
+			i.age += delta
+		items = items.filter(func(i): return i.age < LIFE)
+		queue_redraw()
+
+	func _draw() -> void:
+		for i in items:
+			var t: float = i.age / LIFE
+			var p: Vector2 = i.pos + (i.drift as Vector2) * t
+			draw_colored_polygon(
+				MellyRig.heart_points(p, float(i.size) * (0.7 + 0.5 * t)),
+				Color(1.0, 0.36, 0.46, 1.0 - t * t))

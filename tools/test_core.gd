@@ -40,6 +40,7 @@ func _ready() -> void:
 	await _test_back_button()
 	_test_touch_cursor()
 	_test_mouse_cursor()
+	_test_vr_room()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
 
@@ -658,3 +659,147 @@ func _test_project_settings() -> void:
 			mangled.append(n.substr(0, 40))
 	ok(mangled.is_empty(), "no setting name has a comment folded into it (%s)"
 		% ("none" if mangled.is_empty() else str(mangled)))
+
+
+## The VR room, as far as it can be checked without a headset: the cubes are
+## the shape the flat game draws, and they are given long enough to be seen
+## coming.
+func _test_vr_room() -> void:
+	_say("== vr room ==")
+	var stage := VRStage.new()
+
+	# Rounded, and rounded by the same fraction the flat cards use. A sharp
+	# unit cube reaches sqrt(3)/2 from its middle; a rounded one cannot.
+	var mesh: ArrayMesh = stage._rounded_box(VRStage.CUBE_ROUND, 5)
+	var verts: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	ok(verts.size() >= 6 * 5 * 5 * 6, "the cube mesh is built (%d vertices)" % verts.size())
+	var far := 0.0
+	var out := 0.0
+	for v in verts:
+		far = maxf(far, v.length())
+		out = maxf(out, maxf(absf(v.x), maxf(absf(v.y), absf(v.z))))
+	var inner: float = 0.5 - VRStage.CUBE_ROUND
+	var corner: float = inner * sqrt(3.0) + VRStage.CUBE_ROUND
+	ok(absf(far - corner) < 0.01,
+		"its corners are rounded off, not square (%.3f, square would be %.3f)"
+		% [far, sqrt(3.0) * 0.5])
+	ok(out <= 0.5 + 0.001,
+		"and it still fits the cube it replaces, so nothing changes size")
+
+	# Wound the same way round as the engine's own box. The black outline is
+	# the cube drawn again, bigger and inside out, and inside out is only a
+	# thing you can ask for if the faces face the way the renderer expects.
+	ok(signf(_signed_volume(mesh)) == signf(_signed_volume(BoxMesh.new())),
+		"and is wound the way the engine winds its own box (%.3f against %.3f)"
+		% [_signed_volume(mesh), _signed_volume(BoxMesh.new())])
+
+	# A blade against a cube, in the cube's own space.
+	ok(stage._seg_box(Vector3(-2, 0, 0), Vector3(2, 0, 0)), "a sweep straight through cuts")
+	ok(stage._seg_box(Vector3(0, 0, 0), Vector3(0, 0, 0.2)), "so does one that starts inside")
+	ok(not stage._seg_box(Vector3(-2, 2, 0), Vector3(2, 2, 0)), "one passing over the top does not")
+	ok(not stage._seg_box(Vector3(-2, 0, 0), Vector3(-0.9, 0, 0)), "nor one that stops short")
+	ok(stage._seg_box(Vector3(-1, -1, -1), Vector3(1, 1, 1)), "a diagonal sweep cuts")
+	ok(not stage._seg_box(Vector3(-2, 0.6, 0), Vector3(2, 0.6, 0)), "a near miss is a miss")
+	ok(stage._seg_box(Vector3(-2, 0.6, 0), Vector3(2, 0.6, 0), Vector3.ONE * 0.15),
+		"and lands once the cube is given its slack")
+
+	# Long enough to see coming. The flat game's one second is a few hundred
+	# pixels; here it is seven metres, and at 7 m/s a cube is a speck and then
+	# it is on you.
+	ok(VRStage.VR_APPROACH > GameScreen.APPROACH,
+		"a cube is visible longer in VR than flat (%.1fs against %.1fs)"
+		% [VRStage.VR_APPROACH, GameScreen.APPROACH])
+	var speed: float = VRStage.FLIGHT / VRStage.VR_APPROACH
+	ok(speed < 5.0, "so it flies at a speed you can read (%.1f m/s)" % speed)
+
+	# And it grows into place rather than appearing at full size.
+	ok(stage._grow(0.0) < 0.35, "a cube starts its run small (%.2f)" % stage._grow(0.0))
+	ok(absf(stage._grow(VRStage.BIRTH) - 1.0) < 0.001, "and is full size once it is out")
+	ok(absf(stage._grow(1.0) - 1.0) < 0.001, "and stays that way all the way in")
+	var last := -1.0
+	var climbs := true
+	for i in 20:
+		var g: float = stage._grow(float(i) / 19.0 * VRStage.BIRTH)
+		climbs = climbs and g >= last
+		last = g
+	ok(climbs, "and never shrinks on the way")
+
+	# A cut is graded on when, not where. These numbers are the whole feel of
+	# saber play, so they are pinned rather than left to drift.
+	ok(absf(Judge.time_acc(0.0) - 1.0) < 0.001, "a cut on the beat is dead centre")
+	ok(Judge.label_for(0.0, Judge.time_acc(0.0)) == "PERFECT", "and reads PERFECT")
+	ok(Judge.label_for(0.03, Judge.time_acc(0.03)) == "PERFECT", "30 ms out is still PERFECT")
+	ok(Judge.label_for(-0.03, Judge.time_acc(-0.03)) == "PERFECT", "early or late alike")
+	ok(Judge.label_for(0.08, Judge.time_acc(0.08)) == "GREAT", "80 ms out is GREAT")
+	ok(Judge.label_for(0.10, Judge.time_acc(0.10)) == "GOOD", "100 ms out is GOOD")
+	ok(Judge.label_for(0.20, Judge.time_acc(0.20)) == "BULLSHIT", "200 ms out barely counts")
+	ok(VRStage.CUT_WINDOW > Judge.T_ZONE,
+		"and a cube can be reached a little before it can be graded well")
+
+	# Saber play has no long notes: they open out into a run of ordinary ones.
+	var gs := GameScreen.new()
+	gs.notes = [
+		{"t": 1.0, "h": 0.0, "click": false},
+		{"t": 2.0, "h": 0.64, "click": false},
+		{"t": 4.0, "h": 0.5, "click": true},
+	]
+	var was_active := G.vr_active
+	var was_style := G.vr_style
+	G.vr_active = true
+	G.vr_style = "saber"
+	gs._saber_chart()
+	G.vr_active = was_active
+	G.vr_style = was_style
+	var holds := 0
+	var in_order := true
+	for i in gs.notes.size():
+		if float(gs.notes[i].get("h", 0.0)) > 0.0 and not bool(gs.notes[i].get("click", false)):
+			holds += 1
+		if i > 0 and float(gs.notes[i].t) < float(gs.notes[i - 1].t):
+			in_order = false
+	ok(gs.notes.size() == 7, "a 0.64s hold becomes a run of cubes (%d notes now)" % gs.notes.size())
+	ok(holds == 0, "and no plain hold is left to park a blade in")
+	ok(in_order, "and the chart is still in time order")
+	ok(float(gs.notes[-1].h) > 0.0 and bool(gs.notes[-1].click),
+		"a click note keeps its hold - those have their own answer in VR")
+	gs.free()
+
+	# Melly can be picked up, and wherever she is let go of she ends on the
+	# floor - there is nothing to stand her on in mid-air.
+	ok(VRStage.GRAB_REACH > 0.0 and VRStage.DROP_GRAV > 0.0, "she can be picked up")
+	var rig := MellyRig.new()
+	rig.limp = true
+	rig.arm_l = 2.0
+	for _i in 240:
+		rig._sim(1.0 / 90.0)
+	ok(rig.arm_l < 0.0, "a limp arm hangs (%.2f rad)" % rig.arm_l)
+	var before := rig.arm_l
+	rig.shake(3.0)
+	ok(absf(rig.arm_lv) > 0.0 and rig.arm_l == before,
+		"and shaking her moves the joints rather than teleporting them")
+	rig.free()
+
+
+	# The room is placed under the player's eyes, not at a fixed height.
+	ok(VRStage.PANEL_DROP > 0.0 and VRStage.EYE_ASSUMED - VRStage.PANEL_DROP < 1.5,
+		"the screen hangs below eye level rather than above it")
+	stage.free()
+
+
+## Six times the volume a triangle soup encloses. Positive or negative says
+## which way its faces are wound; the number itself is only used for the log.
+func _signed_volume(mesh: Mesh) -> float:
+	var arr: Array = mesh.surface_get_arrays(0)
+	var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null \
+		else PackedInt32Array()
+	var total := 0.0
+	var count: int = idx.size() if idx.size() > 0 else v.size()
+	var i := 0
+	while i + 2 < count:
+		var a: Vector3 = v[idx[i]] if idx.size() > 0 else v[i]
+		var b: Vector3 = v[idx[i + 1]] if idx.size() > 0 else v[i + 1]
+		var c: Vector3 = v[idx[i + 2]] if idx.size() > 0 else v[i + 2]
+		total += a.dot(b.cross(c))
+		i += 3
+	return total

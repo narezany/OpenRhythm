@@ -48,6 +48,48 @@
    "text": "All three together now — good luck!"
   }
  ],
+ "hints_saber": [
+  {
+   "t": 1.0,
+   "text": "Welcome to the tutorial! Let's learn how to play with sabers."
+  },
+  {
+   "t": 5.0,
+   "text": "Watch the air in front of you: cubes fly straight at you."
+  },
+  {
+   "t": 8.8,
+   "text": "Swing a saber through a cube. Any part of the blade, any direction."
+  },
+  {
+   "t": 15.0,
+   "text": "On the beat = PERFECT. Early or late = GREAT, GOOD, or worse."
+  },
+  {
+   "t": 22.5,
+   "text": "Missed? No worries — try again, nobody's watching."
+  },
+  {
+   "t": 30.9,
+   "text": "A long note arrives as a burst in one spot: keep swinging to clear it."
+  },
+  {
+   "t": 37.5,
+   "text": "Do not stop halfway. Every cube in the burst counts on its own."
+  },
+  {
+   "t": 43.4,
+   "text": "A cube in a ring cannot be cut. Hold the trigger and the blade goes live."
+  },
+  {
+   "t": 50.0,
+   "text": "A live blade burns ringed cubes and passes straight through plain ones."
+  },
+  {
+   "t": 53.6,
+   "text": "All three together now — good luck!"
+  }
+ ],
  "difficulties": [
   {
    "name": "Easy",

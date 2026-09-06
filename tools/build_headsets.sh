@@ -28,8 +28,19 @@ BACKUP="$(mktemp)"
 cp project.godot "$BACKUP"
 restore() {
   cp "$BACKUP" project.godot
+  # Godot can still be writing project.godot as it shuts down, which has landed
+  # after this restore and left the setting on Vulkan. A phone package built
+  # that way is a black screen, and nothing anywhere would have said so - so
+  # the restore is checked rather than assumed.
+  sleep 1
+  if ! grep -q "^${SETTING}=\"gl_compatibility\"" project.godot; then
+    cp "$BACKUP" project.godot
+    echo "(the renderer had to be put back a second time)"
+  fi
   rm -f "$BACKUP"
-  echo "project.godot restored to the Compatibility renderer"
+  grep -q "^${SETTING}=\"gl_compatibility\"" project.godot \
+    && echo "project.godot restored to the Compatibility renderer" \
+    || echo "WARNING: project.godot is NOT back on the Compatibility renderer" >&2
 }
 trap restore EXIT
 

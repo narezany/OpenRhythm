@@ -3,6 +3,11 @@ extends Control
 ## Profile: lifetime counters, per-song records, achievements and saved replays.
 
 const TABS := ["Records", "Achievements", "Replays"]
+## The tabs actually shown. Replays are a recording of a mouse being moved
+## around a flat screen; in a headset there is no mouse, and watching one play
+## itself on a panel behind the room is not something anybody wants. So the tab
+## is not there at all rather than there and empty.
+var _tabs: Array = []
 
 var tab := 0
 var _tab_buttons: Array = []
@@ -28,9 +33,12 @@ func _ready() -> void:
 	tabs.add_theme_constant_override("separation", 10)
 	add_child(tabs)
 	G.anchor_top_wide(tabs, 112, 44)
-	for i in TABS.size():
+	_tabs = TABS.duplicate()
+	if G.vr_active:
+		_tabs.erase("Replays")
+	for i in _tabs.size():
 		var idx := i
-		var b := G.button(TABS[i], func(): _switch(idx), 20)
+		var b := G.button(str(_tabs[i]), func(): _switch(idx), 20)
 		tabs.add_child(b)
 		_tab_buttons.append(b)
 
@@ -71,10 +79,11 @@ func _switch(i: int) -> void:
 		b.add_theme_color_override("font_color", G.C_PRIMARY if j == i else G.C_MUTED)
 	for c in _body.get_children():
 		c.queue_free()
-	match i:
-		0: _build_records()
-		1: _build_achievements()
-		2: _build_replays()
+	# by name, not by number - the list is shorter in a headset
+	match str(_tabs[i]) if i < _tabs.size() else "":
+		"Records": _build_records()
+		"Achievements": _build_achievements()
+		"Replays": _build_replays()
 
 
 func _build_records() -> void:

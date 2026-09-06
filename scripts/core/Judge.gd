@@ -46,6 +46,20 @@ const ACC_FLOOR := {
 }
 
 
+## The saber's stand-in for position.
+##
+## A sword meets the cube out in the air; there is no cell to be central in, so
+## nothing about where you cut it is worth grading. What is worth grading is
+## when. Dead on the beat is the middle of the cell and this far off is the
+## edge of it, and feeding that through the same bands means a saber run and a
+## mouse run mean the same thing on the results screen - one accuracy scale,
+## not two that have to be argued about later.
+const T_ZONE := 0.125
+
+static func time_acc(dt: float) -> float:
+	return 1.0 - clampf(absf(dt) / T_ZONE, 0.0, 1.0)
+
+
 static func pos_acc(cursor_local: Vector2, hit: Vector2, half: float) -> float:
 	# zones are wider on a phone - a finger is less precise than a mouse
 	var k := 1.45 if _mobile() else 1.0

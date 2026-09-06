@@ -9,6 +9,9 @@ const APPROACH := 1.0        # cube flight time, sec
 const GUIDE_AHEAD := 3.0     # how early the next-target outline shows
 const PARALLAX := 26.0       # camera follows the cursor by up to this many px
 const FADE_LEAD := 0.80      # BLACKOUT: seconds before hit when cubes vanish
+## Saber play has no long notes; a hold becomes a run of ordinary cubes this
+## far apart, in the same cell.
+const SABER_REPEAT := 0.16
 
 var song: Dictionary
 var diff_name := ""
@@ -155,14 +158,60 @@ func _load_notes(raw: Array, seek: float) -> void:
 			"base_acc": 0.0, "base_label": "",
 		})
 	notes.sort_custom(func(a, b): return a.t < b.t)
+	_saber_chart()
 	if not notes.is_empty():
 		_last_note_t = notes[-1].t + float(notes[-1].h)
+
+
+## Saber play has no long notes.
+##
+## Holding a cursor still is a mouse idea - there is nothing to hold with a
+## sword, and a hold in a headset comes out as a long box you have to keep the
+## blade parked inside, which is neither fun nor anything a sword does. So a
+## hold becomes the thing a sword is for: a short run of ordinary cubes in the
+## same cell, close enough together that clearing it means swinging hard at one
+## spot. Click notes are left alone; in VR they have their own answer.
+##
+## This changes the chart, and so the number of notes and what a full score is
+## worth. That is the point rather than a side effect - it is a different way
+## of playing the same song, and it only happens in a headset holding sabers.
+func _saber_chart() -> void:
+	if not (G.vr_active and G.vr_style == "saber"):
+		return
+	var out: Array = []
+	var made := 0
+	for n in notes:
+		var h := float(n.get("h", 0.0))
+		if h <= 0.0 or bool(n.get("click", false)):
+			out.append(n)
+			continue
+		# capped, or a ten-second hold would become a wall nobody can swing
+		# through and the chart would stop being the chart
+		var count := clampi(int(round(h / SABER_REPEAT)) + 1, 2, 16)
+		var step := h / float(count - 1)
+		for k in count:
+			var c: Dictionary = n.duplicate(true)
+			c["t"] = float(n.t) + step * float(k)
+			c["h"] = 0.0
+			out.append(c)
+		made += count - 1
+	if made == 0:
+		return
+	notes = out
+	notes.sort_custom(func(a, b): return a.t < b.t)
+	G.dev_log("saber chart: holds opened out into %d extra cubes" % made)
 
 
 # ---------------------------------------------------------------- build
 func _build() -> void:
 	_is_tutorial = str(song.get("id", "")) == "tutorial"
+	# A saber is taught differently from a cursor, so the tutorial has a second
+	# script of its own. Falls back to the written one if a song only has that.
 	_hints = song.get("hints", [])
+	if G.vr_active and G.vr_style == "saber":
+		var alt = song.get("hints_saber", [])
+		if alt is Array and not alt.is_empty():
+			_hints = alt
 	bg = BackgroundFX.new()
 	bg.base_hue = float(song.get("hue", 0.985))
 	add_child(bg)
@@ -552,6 +601,10 @@ func _update_guide(st: float) -> void:
 
 func _spawn(n: Dictionary) -> void:
 	idx += 1
+	# a saber can take a cube before it was ever spawned; it is finished with,
+	# and spawning it now would resolve it a second time
+	if n.done:
+		return
 	# A cube whose whole window elapsed before it could spawn (a frame hitch, a
 	# seek) still counts as a miss - accuracy must never silently improve.
 	if Conductor.play_time() - n.t > Judge.LAND_GRACE:
@@ -600,6 +653,30 @@ func _resolve(n: Dictionary, dt: float, cursor_local: Vector2, p_acc_in := -1.0)
 			n.node.hold_started = true
 		frame_view.hit_glow = minf(1.0, frame_view.hit_glow + 0.3)
 		return
+	n.done = true
+	_award(n, acc, lbl)
+
+
+## A saber cut this cube. VR only.
+##
+## Two things separate this from every other way a note resolves. It grades on
+## timing rather than on where in the cell the cursor was, because a sword
+## meets the cube in the air and there is no cell to be off-centre in. And it
+## settles the note now, instead of leaving it to land under a cursor that has
+## already swung on to the next cube - which is why cutting used to read as a
+## miss unless you left the blade parked in the cube until it touched down.
+func cut_note(n: Dictionary) -> void:
+	if ended or paused or bool(n.get("done", false)):
+		return
+	var dt: float = Conductor.play_time() - float(n.t)
+	n["hit_dt"] = dt
+	n["cut"] = true
+	if not bool(n.get("sounded", false)):
+		n["sounded"] = true
+		_play_hit_on_beat(dt)
+	var p := Judge.time_acc(dt)
+	var lbl := Judge.label_for(dt, p)
+	var acc := maxf(Judge.acc_for(dt, p), Judge.ACC_FLOOR[lbl])
 	n.done = true
 	_award(n, acc, lbl)
 
@@ -657,7 +734,7 @@ func _award(n: Dictionary, acc: float, lbl: String) -> void:
 	# a click note also reports how far off the press was, in milliseconds -
 	# that is the only note type where timing is something you can practise
 	var suffix := ""
-	if bool(n.get("click", false)):
+	if bool(n.get("click", false)) or bool(n.get("cut", false)):
 		suffix = "  %+d" % roundi(float(n.get("hit_dt", 0.0)) * 1000.0)
 	texts.spawn(n.hit + to_center * 46.0, lbl, col, suffix)
 	trauma += (0.10 if lbl == "PERFECT" else 0.06) * G.motion()

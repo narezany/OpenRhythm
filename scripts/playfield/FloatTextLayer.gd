@@ -2,14 +2,21 @@ class_name FloatTextLayer
 extends Node2D
 ## Floating judgement labels (PERFECT/GREAT/...) in world coordinates.
 
-var items: Array = []   # {pos, text, color, age, tilt}
+var items: Array = []   # {id, pos, text, color, age, tilt}
+## Every label gets a number so a mirror of this layer can tell which ones it
+## has already seen. In VR the ranks are put up in the room as real 3D labels
+## rather than printed on the screen hanging behind it, and that reader has no
+## other way to spot a new one.
+var _next_id := 0
 
 
 ## draw_string does not auto-translate, so the label is translated on the way
 ## in. The suffix is appended afterwards and left alone - it is a number.
 func spawn(pos: Vector2, text: String, color: Color, suffix := "") -> void:
 	text = tr(text) + suffix
+	_next_id += 1
 	items.append({
+		"id": _next_id,
 		"pos": pos, "text": text, "color": color, "age": 0.0,
 		"tilt": randf_range(-0.07, 0.07),
 	})

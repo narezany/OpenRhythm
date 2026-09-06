@@ -62,6 +62,8 @@ func _ready() -> void:
 		stage.preview = true
 		add_child(stage)
 		return
+	if await _restart_on_vulkan():
+		return
 	_pick_step()
 	if _step <= STEP_FLAT:
 		_go_flat("stepping back after a crash" if _survived < STEP_STAGE
@@ -95,6 +97,89 @@ func _process(delta: float) -> void:
 			_survived = _step
 			_write_probe(_step, _survived)
 			G.dev_log("step %d (%s) held for %.0fs" % [_step, STEP_NAMES[_step], PROBE_SETTLE])
+
+
+# ------------------------------------------------------------- the renderer
+## Desktop VR needs Vulkan, and the renderer is chosen before any of this runs.
+##
+## The game ships on Compatibility because that is what phones want, and on a
+## desktop that renderer draws both eyes at once through GL_OVR_multiview2.
+## Mesa offers that extension to GLES contexts only, while Godot on Linux draws
+## through desktop GL - so the engine asks for multiview, gets it, and then
+## every 3D shader in the game fails to compile with "gl_ViewID_OVR undeclared".
+## The result is a headset that tracks your head perfectly and shows you
+## nothing, which looks like a streaming fault and is not one.
+##
+## It cannot be fixed with a project setting - the renderer is picked before the
+## engine knows a headset is there - so when a runtime is installed and we are
+## on the wrong renderer, the game starts itself again on the right one and
+## steps aside. The child is given a moment to prove it is alive first: a
+## machine with no working Vulkan must end up with a flat game, not with no
+## game at all.
+func _restart_on_vulkan() -> bool:
+	# Every way out of here says which one it took. A silent no is what made
+	# this whole class of trouble expensive to find in the first place.
+	if OS.has_feature("android") or OS.has_feature("web") or G.vr_start == "off" \
+			or G.shot_mode != "" or DisplayServer.get_name() == "headless":
+		return false
+	var method := RenderingServer.get_current_rendering_method()
+	if method != "gl_compatibility":
+		G.dev_log("renderer: %s - stereo is the graphics API's job here" % method)
+		return false
+	if OS.get_environment("OR_ON_VULKAN") == "1":
+		G.dev_log("renderer: VR wants Vulkan, but the restart already happened once")
+		return false
+	if not _openxr_installed():
+		G.dev_log("renderer: on %s, and no OpenXR runtime is installed" % method)
+		return false
+	var exe := OS.get_executable_path()
+	if exe == "" or not FileAccess.file_exists(exe):
+		G.dev_log("renderer: cannot find myself at '%s' to start again" % exe)
+		return false
+	var args: PackedStringArray = []
+	var skip := false
+	for a in OS.get_cmdline_args():
+		if skip:
+			skip = false
+			continue
+		if a == "--rendering-method" or a == "--rendering-driver":
+			skip = true
+			continue
+		args.append(a)
+	args.append_array(PackedStringArray(
+		["--rendering-method", "forward_plus", "--rendering-driver", "vulkan"]))
+	OS.set_environment("OR_ON_VULKAN", "1")
+	G.dev_log("an OpenXR runtime is installed; restarting on Vulkan for VR")
+	var pid := OS.create_process(exe, args)
+	if pid <= 0:
+		G.dev_log("could not start the Vulkan copy; carrying on as we are")
+		return false
+	await get_tree().create_timer(1.2).timeout
+	if not OS.is_process_running(pid):
+		G.dev_log("the Vulkan copy did not survive; carrying on as we are")
+		return false
+	get_tree().quit()
+	return true
+
+
+## Whether an OpenXR runtime is installed at all - the manifest the loader
+## itself reads. Asked as a file rather than by starting a session on purpose:
+## starting one here would hold it while the copy that actually needs it is
+## trying to take it.
+func _openxr_installed() -> bool:
+	if OS.get_environment("XR_RUNTIME_JSON") != "":
+		return true
+	var home := OS.get_environment("HOME")
+	var conf := OS.get_environment("XDG_CONFIG_HOME")
+	if conf == "" and home != "":
+		conf = home + "/.config"
+	var places := ["/etc/xdg", "/usr/local/share", "/usr/share"]
+	if conf != "":
+		places.push_front(conf)
+	for dir in places:
+		if FileAccess.file_exists("%s/openxr/1/active_runtime.json" % dir):
+			return true
+	return false
 
 
 # ---------------------------------------------------------------- the steps

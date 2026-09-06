@@ -92,6 +92,8 @@ func _switch(i: int) -> void:
 ## to say no.
 var _vr_pointer_btn: Button = null
 var _vr_saber_btn: Button = null
+var _vr_right_btn: Button = null
+var _vr_left_btn: Button = null
 
 
 ## Colour whichever way of playing is chosen.
@@ -102,6 +104,12 @@ func _paint_vr_style() -> void:
 		G.C_PRIMARY if G.vr_style == "pointer" else G.C_MUTED)
 	_vr_saber_btn.add_theme_color_override("font_color",
 		G.C_PRIMARY if G.vr_style == "saber" else G.C_MUTED)
+	if _vr_right_btn == null or not is_instance_valid(_vr_right_btn):
+		return
+	_vr_right_btn.add_theme_color_override("font_color",
+		G.C_PRIMARY if G.vr_hand == "right" else G.C_MUTED)
+	_vr_left_btn.add_theme_color_override("font_color",
+		G.C_PRIMARY if G.vr_hand == "left" else G.C_MUTED)
 
 
 func _build_vr() -> void:
@@ -140,6 +148,29 @@ func _build_vr() -> void:
 	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_child(how)
+	_body.add_child(_sep())
+
+	_body.add_child(G.label("Which hand does the work", 21, G.C_TEXT))
+	var hrow := HBoxContainer.new()
+	hrow.add_theme_constant_override("separation", 14)
+	_vr_right_btn = G.button("Right handed", func():
+		G.vr_hand = "right"
+		G.save_all()
+		G.play_sfx("click")
+		_paint_vr_style(), 22)
+	_vr_left_btn = G.button("Left handed", func():
+		G.vr_hand = "left"
+		G.save_all()
+		G.play_sfx("click")
+		_paint_vr_style(), 22)
+	hrow.add_child(_vr_right_btn)
+	hrow.add_child(_vr_left_btn)
+	_body.add_child(hrow)
+	var hnote := G.label("Both hands hold a pointer, but only one of them works - this says which. The other is dead weight, and looks it.",
+		15, Color(1, 1, 1, 0.45))
+	hnote.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hnote.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(hnote)
 	_body.add_child(_sep())
 
 	_body.add_child(_check("Open in VR when a headset is there", G.vr_start == "auto",

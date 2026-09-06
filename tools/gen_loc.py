@@ -21,6 +21,8 @@ SKIP = {
     "Open Rhythm", "Neon Drift", "MELLY", "Custom", "Discord", "Telegram forum",
     "English", "Русский", "中文", "Deutsch", "Nederlands", "Español",
     "mods: ", "OPEN",
+    # command-line flags handed straight to the engine
+    "--rendering-method", "--rendering-driver",
     # FileDialog filter specs and the difficulty names written into imported maps
     "*.sspm ; Sound Space Plus / Rhythia map", "*.txt ; Sound Space map data",
     "*.wav ; WAV audio", "*.ogg ; OGG audio", "*.mp3 ; MP3 audio",
@@ -287,6 +289,16 @@ add("The pointer aims a beam and the trigger presses. Sabers are held in your ha
     "Der Pointer zielt mit einem Strahl, der Trigger druckt. Sabel halst du in den Handen, und ein Wurfel zahlt, sobald eine Klinge hindurchfahrt - aus jeder Richtung, denn die Wurfel haben keine Schnittseite. Schwing, wie es sich richtig anfuhlt.",
     "De pointer richt een straal en de trigger drukt. Sabels houd je in je handen, en een kubus telt zodra een blad erdoorheen zwaait - uit elke richting, want de kubussen hebben geen snijkant. Zwaai zoals het goed voelt.",
     "El puntero apunta un haz y el gatillo pulsa. Los sables van en tus manos y un cubo cuenta cuando una hoja lo atraviesa, desde cualquier direccion: los cubos no tienen lado por donde cortarlos. Golpea como te salga.")
+add("Which hand does the work", "Какая рука рабочая", "哪只手是主手",
+    "Welche Hand arbeitet", "Welke hand het werk doet", "Que mano trabaja")
+add("Right handed", "Правша", "右手", "Rechtshander", "Rechtshandig", "Diestro")
+add("Left handed", "Левша", "左手", "Linkshander", "Linkshandig", "Zurdo")
+add("Both hands hold a pointer, but only one of them works - this says which. The other is dead weight, and looks it.",
+    "Указка в обеих руках, но работает только одна — эта настройка и говорит какая. Вторая просто болтается, и выглядит соответственно.",
+    "两只手都握着指针，但只有一只能用——这里决定是哪只。另一只就是摆设，看上去也是。",
+    "Beide Hande halten einen Pointer, aber nur einer davon geht - hier steht welcher. Der andere ist totes Gewicht und sieht auch so aus.",
+    "Beide handen houden een pointer vast, maar er werkt er maar een - hier staat welke. De ander is dood gewicht, en ziet er ook zo uit.",
+    "Ambas manos llevan un puntero, pero solo uno funciona: aqui eliges cual. El otro es peso muerto, y se nota.")
 add("Open in VR when a headset is there", "Открывать в VR, если есть шлем",
     "有头显时以 VR 打开", "In VR offnen, wenn ein Headset da ist",
     "In VR openen als er een headset is", "Abrir en RV si hay gafas")
@@ -326,6 +338,55 @@ add("★ STORY COMPLETE ★", "★ ИСТОРИЯ ПРОЙДЕНА ★", "★ �
     "★ STORY ABGESCHLOSSEN ★", "★ VERHAAL VOLTOOID ★", "★ HISTORIA COMPLETADA ★")
 
 # ---------------------------------------------------------------- tutorial
+# the same lesson told for sabers - see hints_saber in songs/tutorial/map.json
+add("Welcome to the tutorial! Let's learn how to play with sabers.",
+    "Добро пожаловать в туториал! Учимся играть саблями.",
+    "欢迎来到教程！我们来学怎么用光剑玩。",
+    "Willkommen im Tutorial! Lernen wir das Spiel mit Sabeln.",
+    "Welkom bij de tutorial! We leren spelen met sabels.",
+    "Bienvenido al tutorial. Vamos a aprender a jugar con sables.")
+add("Watch the air in front of you: cubes fly straight at you.",
+    "Смотри перед собой: кубы летят прямо на тебя.",
+    "看着前方：方块会径直朝你飞来。",
+    "Schau nach vorn: die Wurfel fliegen direkt auf dich zu.",
+    "Kijk voor je: de kubussen vliegen recht op je af.",
+    "Mira al frente: los cubos vuelan directos hacia ti.")
+add("Swing a saber through a cube. Any part of the blade, any direction.",
+    "Проведи саблей сквозь куб. Любой частью клинка, с любой стороны.",
+    "用光剑扫过方块。剑身任何部位、任何方向都算。",
+    "Fahr mit der Sabel durch den Wurfel. Jeder Teil der Klinge, jede Richtung.",
+    "Haal de sabel door de kubus. Elk deel van het blad, elke richting.",
+    "Pasa el sable a traves del cubo. Cualquier parte de la hoja, cualquier direccion.")
+add("On the beat = PERFECT. Early or late = GREAT, GOOD, or worse.",
+    "В долю — PERFECT. Раньше или позже — GREAT, GOOD или хуже.",
+    "踩准节拍是 PERFECT。早了或晚了就是 GREAT、GOOD，甚至更差。",
+    "Auf dem Beat = PERFECT. Zu fruh oder zu spat = GREAT, GOOD oder schlechter.",
+    "Op de beat = PERFECT. Te vroeg of te laat = GREAT, GOOD of slechter.",
+    "Al ritmo = PERFECT. Antes o despues = GREAT, GOOD o peor.")
+add("A long note arrives as a burst in one spot: keep swinging to clear it.",
+    "Длинная нота приходит очередью в одну точку: маши, пока не срубишь всё.",
+    "长音符会变成同一位置的一串方块：一直挥，把它们全清掉。",
+    "Eine lange Note kommt als Salve an einer Stelle: weiterschwingen, bis sie weg ist.",
+    "Een lange noot komt als een reeks op een plek: blijf zwaaien tot hij op is.",
+    "Una nota larga llega como una rafaga en un mismo sitio: sigue golpeando hasta acabarla.")
+add("Do not stop halfway. Every cube in the burst counts on its own.",
+    "Не останавливайся на полпути. Каждый куб очереди считается отдельно.",
+    "别中途停下。这串里的每个方块都单独计分。",
+    "Nicht auf halbem Weg aufhoren. Jeder Wurfel der Salve zahlt einzeln.",
+    "Stop niet halverwege. Elke kubus in de reeks telt apart.",
+    "No pares a medias. Cada cubo de la rafaga cuenta por su cuenta.")
+add("A cube in a ring cannot be cut. Hold the trigger and the blade goes live.",
+    "Куб в кольце не разрубить. Зажми триггер — клинок оживёт.",
+    "带环的方块砍不动。按住扳机，剑会通电。",
+    "Ein Wurfel im Ring lasst sich nicht schneiden. Halte den Trigger, dann wird die Klinge scharf.",
+    "Een kubus in een ring snijd je niet. Houd de trigger vast en het blad wordt geladen.",
+    "Un cubo con anillo no se corta. Manten el gatillo y la hoja se electrifica.")
+add("A live blade burns ringed cubes and passes straight through plain ones.",
+    "Живой клинок сжигает кубы в кольце и проходит сквозь обычные.",
+    "通电的剑会烧掉带环的方块，而直接穿过普通方块。",
+    "Eine scharfe Klinge verbrennt Wurfel im Ring und geht durch die normalen hindurch.",
+    "Een geladen blad verbrandt kubussen met een ring en gaat dwars door gewone heen.",
+    "La hoja electrificada quema los cubos con anillo y atraviesa los normales.")
 add("Welcome to the tutorial! Let's learn how to play.",
     "Добро пожаловать в обучение! Давай научимся играть.",
     "欢迎来到教程！我们来学怎么玩。",
@@ -1000,13 +1061,19 @@ def looks_translatable(s):
 
 
 def hint_strings():
-    """Tutorial hints live in songs/tutorial/map.json, not in the scripts."""
+    """Tutorial hints live in songs/tutorial/map.json, not in the scripts.
+
+    Both scripts: the written one and the one the sabers are taught with.
+    """
     path = os.path.join(ROOT, "songs", "tutorial", "map.json")
     if not os.path.exists(path):
         return set()
     import json
     data = json.load(open(path, encoding="utf-8"))
-    return {str(h.get("text", "")) for h in data.get("hints", [])}
+    out = set()
+    for key in ("hints", "hints_saber"):
+        out |= {str(h.get("text", "")) for h in data.get(key, [])}
+    return out
 
 
 def main():
