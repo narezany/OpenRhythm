@@ -97,5 +97,7 @@ func _go_flat(why: String) -> void:
 ## anything with something to say has said it.
 func _keep_engine_log() -> void:
 	G.copy_engine_log()
+	G.dump_logcat()
 	await get_tree().create_timer(6.0).timeout
 	G.copy_engine_log()
+	G.dump_logcat()

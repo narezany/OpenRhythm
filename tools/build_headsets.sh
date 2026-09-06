@@ -65,5 +65,15 @@ mkdir -p build
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
 "$GODOT" --headless --path . --export-release "Meta Quest" build/OpenRhythm-quest.apk
 "$GODOT" --headless --path . --export-release "Pico" build/OpenRhythm-pico.apk
+# A second Pico package on the generic Khronos loader, which finds the runtime
+# through the broker rather than through PICO's own plugin. Same game either
+# way; it is here because only a headset can say which of the two a device
+# actually accepts.
+"$GODOT" --headless --path . --export-release "Pico (Khronos loader)" \
+  build/OpenRhythm-pico-khronos.apk
 
-ls -la build/OpenRhythm-quest.apk build/OpenRhythm-pico.apk
+for f in quest pico pico-khronos; do
+  apk="build/OpenRhythm-${f}.apk"
+  printf '%-34s %s\n' "$apk" "$(unzip -l "$apk" 2>/dev/null | grep -c libopenxr_loader.so) loader"
+done
+ls -la build/OpenRhythm-quest.apk build/OpenRhythm-pico.apk build/OpenRhythm-pico-khronos.apk

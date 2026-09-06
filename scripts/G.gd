@@ -190,6 +190,45 @@ func copy_engine_log() -> void:
 		f.close()
 
 
+## Dump this app's own Android log next to the songs folder.
+##
+## The engine writes why OpenXR refused to the system log, and on a headset
+## there is no console to read it in and often no cable that works. An app is
+## allowed to read its own log, so it reads it and writes it down.
+func dump_logcat() -> void:
+	if not OS.has_feature("android"):
+		return
+	var out: Array = []
+	var code := OS.execute("logcat", ["-d", "-v", "brief", "-t", "1500"], out, true)
+	var path := RhythmMap.user_songs_dir().get_base_dir() + "/logcat.txt"
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return
+	if out.is_empty():
+		f.store_line("logcat gave nothing back (exit %d) - the log has to come off the device another way" % code)
+		f.close()
+		return
+	# the whole log is mostly other people's noise; keep what concerns us and a
+	# tail of everything else for context
+	var text := "\n".join(PackedStringArray(out))
+	var lines := text.split("\n")
+	var kept: Array[String] = []
+	for line in lines:
+		var low := line.to_lower()
+		if low.contains("openxr") or low.contains("godot") or low.contains("xrruntime") \
+				or low.contains("vulkan") or low.contains("pvr") or low.contains("pico"):
+			kept.append(line)
+	f.store_line("--- lines mentioning openxr / godot / the runtime (%d of %d) ---"
+		% [kept.size(), lines.size()])
+	for line in kept:
+		f.store_line(line)
+	f.store_line("")
+	f.store_line("--- the last 120 lines of everything ---")
+	for i in range(maxi(0, lines.size() - 120), lines.size()):
+		f.store_line(lines[i])
+	f.close()
+
+
 func aspect_ratio() -> float:
 	return view_w / maxf(view_h, 1.0)
 
