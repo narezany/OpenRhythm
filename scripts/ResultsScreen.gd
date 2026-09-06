@@ -30,7 +30,12 @@ func _ready() -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(rank_label, "modulate:a", 1.0, 0.25)
 
-	var sub := G.label("RESULTS", 22, G.C_MUTED)
+	# A lost run says so, in the one place the eye goes first. It used to read
+	# RESULTS in muted grey whether you had cleared the song or been buried by
+	# it, which is how a failed run came to look exactly like a win.
+	var failed: bool = bool(data.get("failed", Judge.failed(rank)))
+	var sub := G.label("FAILED" if failed else "RESULTS", 22,
+		G.JUDGE_COLORS["MISS"] if failed else G.C_MUTED)
 	sub.position = Vector2(0, 118)
 	sub.size = Vector2(464, 30)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -44,8 +49,7 @@ func _ready() -> void:
 	# adaptive anchors: Melly bottom-right, panel centred, buttons to the bottom
 	var vis0 := G.visible_rect_design()
 	rig.position = Vector2(vis0.end.x - rig.size.x, vis0.end.y - rig.size.y)
-	var passed := rank != "D" and rank != "F"
-	rig.set_mood("very" if passed else "sad")
+	rig.set_mood("sad" if failed else "very")
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", G.panel_style())

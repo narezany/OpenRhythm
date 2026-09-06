@@ -60,17 +60,12 @@ func _ready() -> void:
 			goto_stats()
 		"versus":
 			goto_versus()
-		"disclaimer":
-			goto_disclaimer()
 		"story":
 			goto_story()
 		"credits":
 			goto_credits()
 		_:
-			if not G.disclaimer_seen:
-				goto_disclaimer()
-			else:
-				goto_menu()
+			goto_menu()
 
 
 func _fake_results() -> void:
@@ -154,12 +149,6 @@ func _update_view() -> void:
 		G.view_w = float(sz.x)
 		G.view_h = float(sz.y)
 		G.view_changed.emit()
-
-
-func goto_disclaimer() -> void:
-	G.touch_zone = false
-	switch_to(DisclaimerScreen.new())
-	Conductor.ensure_menu_music()
 
 
 func goto_menu() -> void:

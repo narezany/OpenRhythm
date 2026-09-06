@@ -36,7 +36,7 @@ func _run_case(sz: Vector2i) -> void:
 		["MenuScreen", MenuScreen], ["SettingsScreen", SettingsScreen],
 		["SongsScreen", SongsScreen], ["SongSelectScreen", SongSelectScreen],
 		["StatsScreen", StatsScreen], ["CalibrationScreen", CalibrationScreen],
-		["DisclaimerScreen", DisclaimerScreen], ["CreditsScreen", CreditsScreen],
+		["CreditsScreen", CreditsScreen],
 		["StoryScreen", StoryScreen], ["PlayChoiceScreen", PlayChoiceScreen],
 		["VersusScreen", VersusScreen],
 	]:

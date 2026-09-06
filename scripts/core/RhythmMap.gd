@@ -303,6 +303,47 @@ static func _extract_user_zips() -> void:
 			f = dir.get_next()
 
 
+## Install a song pack chosen from anywhere on disk.
+##
+## The songs folder already unpacks any zip dropped into it, so this is the
+## same road with a different entrance: the archive is unpacked straight into
+## the library and the caller rescans. Packs are how songs get passed around in
+## the chat, and telling somebody to find a folder they have never opened is a
+## worse answer than a file picker.
+static func install_zip(src: String) -> Dictionary:
+	var name := src.get_file().get_basename()
+	if name == "":
+		return {"ok": false, "error": "That file has no name"}
+	var target: String = USER_SONGS + "/" + name
+	DirAccess.make_dir_recursive_absolute(USER_SONGS)
+	if FileAccess.file_exists(target + "/map.json"):
+		return {"ok": false, "error": "%s is already in the library" % name}
+	var err := extract_zip(src, target)
+	if err != OK:
+		return {"ok": false, "error": "Could not unpack that zip (%d)" % err}
+	if not FileAccess.file_exists(target + "/map.json"):
+		# not one of ours: leave nothing behind rather than a broken folder
+		_wipe(target)
+		return {"ok": false, "error": "No map.json inside - not an Open Rhythm pack"}
+	return {"ok": true, "name": name}
+
+
+static func _wipe(dir_path: String) -> void:
+	var d := DirAccess.open(dir_path)
+	if d == null:
+		return
+	d.list_dir_begin()
+	var f := d.get_next()
+	while f != "":
+		if d.current_is_dir():
+			_wipe(dir_path + "/" + f)
+		else:
+			d.remove(f)
+		f = d.get_next()
+	d.list_dir_end()
+	DirAccess.remove_absolute(dir_path)
+
+
 ## Extract a song zip via the built-in ZIPReader.
 static func extract_zip(zip_path: String, target_dir: String) -> Error:
 	DirAccess.make_dir_recursive_absolute(target_dir)

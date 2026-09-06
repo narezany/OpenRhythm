@@ -59,7 +59,6 @@ func _test_settings_roundtrip() -> void:
 	G.cursor_scale = 1.6
 	G.gamepad_speed = 1234.0
 	G.locale = "de"
-	G.disclaimer_seen = true
 	G.key_binds = {Binds.PAUSE: [KEY_P]}
 	G.save_all()
 
@@ -85,7 +84,6 @@ func _test_settings_roundtrip() -> void:
 	ok(is_equal_approx(G.cursor_scale, 1.6), "cursor size survives")
 	ok(is_equal_approx(G.gamepad_speed, 1234.0), "gamepad speed survives")
 	ok(G.locale == "de", "language survives")
-	ok(G.disclaimer_seen, "first-launch flag survives")
 	ok(G.key_binds.get(Binds.PAUSE, []) == [KEY_P], "key binds survive")
 	# the buses must actually be at the reloaded level, not the default
 	var db := AudioServer.get_bus_volume_db(0)
@@ -266,7 +264,6 @@ func _test_back_button() -> void:
 	ok(missing.is_empty(), "every screen answers the back button (%s)"
 		% ("all " + str(screens.size()) if missing.is_empty() else str(missing)))
 
-	G.disclaimer_seen = true
 	G.shot_mode = ""
 	var main: Node = load("res://scripts/Main.gd").new()
 	add_child(main)
@@ -811,6 +808,12 @@ func _signed_volume(mesh: Mesh) -> float:
 ## on. A browser has nothing to lend, and the whole Russian translation came
 ## out of the web build as boxes with hex codes in them.
 func _test_fonts() -> void:
+	_say("== winning and losing ==")
+	ok(Judge.failed(Judge.rank_for(0.2)), "a run you were buried by is a loss")
+	ok(Judge.failed(Judge.rank_for(0.55)), "and so is a sloppy one")
+	ok(not Judge.failed(Judge.rank_for(0.62)), "a scrappy C is still a pass")
+	ok(not Judge.failed(Judge.rank_for(0.99)), "and an SS certainly is")
+
 	_say("== fonts ==")
 	var sample := {
 		"English": "Rg", "Русский": "ЯжЁй", "Deutsch": "üßÄ",

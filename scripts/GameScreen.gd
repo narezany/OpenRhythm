@@ -996,21 +996,33 @@ func _finish() -> void:
 	if ended:
 		return
 	ended = true
-	if G.melly != null:
-		G.melly.react_win()
 	Conductor.stop_music()
 	var acc: float = (acc_sum / acc_n) if acc_n > 0 else 1.0
 	var rank := Judge.rank_for(acc)
-	var is_best := G.save_best(str(song.get("id", "")), diff_name, score, acc, max_combo)
+	# A run can be lost. The results screen has always known that - it is what
+	# made Melly go sad - but nothing else did: a run you flunked still paid
+	# out a score, still counted the song as cleared, still opened the next
+	# story chapter and still congratulated you for it.
+	var failed := Judge.failed(rank)
+	if G.melly != null:
+		if failed:
+			G.melly.react_miss()
+		else:
+			G.melly.react_win()
+	var is_best := false
+	if not failed:
+		is_best = G.save_best(str(song.get("id", "")), diff_name, score, acc, max_combo)
+		G.add_total_score(score)
+	# played is played, however badly
 	G.stat_plays += 1
 	G.stat_playtime += _elapsed
-	G.add_total_score(score)
 	G.results = {
 		"title": str(song.get("title", "?")),
 		"artist": str(song.get("artist", "")),
 		"diff": diff_name,
 		"score": score, "acc": acc, "max_combo": max_combo,
 		"counts": counts.duplicate(), "rank": rank, "new_best": is_best,
+		"failed": failed,
 		"on_mobile": G.is_mobile(),
 		"mods": G.active_mods.duplicate(),
 		"total_score": G.total_score,
@@ -1023,14 +1035,15 @@ func _finish() -> void:
 		_replay.finish(G.results)
 		G.replay = _replay
 		G.results["has_replay"] = true
-	G.results["unlocked"] = Achievements.check_results(G.results)
+	# nothing is earned by a run that was lost
+	G.results["unlocked"] = [] if failed else Achievements.check_results(G.results)
 	if OS.get_environment("OR_DEBUG") != "":
 		print("[DBG] result ", G.results)
 	# Story mode: find where this song sits in the playlist rather than trusting
 	# a counter, so a retry does not lose the thread. The playlist is kept until
 	# the story ends or the player leaves it - clearing it here used to kill the
 	# "continue" button after the second song.
-	if not G.story_playlist.is_empty():
+	if not G.story_playlist.is_empty() and not failed:
 		var pos: int = G.story_playlist.find(str(song.get("id", "")))
 		if pos >= 0:
 			G.story_idx = pos

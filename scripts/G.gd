@@ -77,7 +77,6 @@ var key_binds := {}              # action name -> [physical keycode, ...]
 
 # --- misc ---
 var locale := ""
-var disclaimer_seen := false
 var check_updates := true
 
 # --- lifetime stats ---
@@ -577,7 +576,6 @@ func _load_save() -> void:
 				cursor_scale = float(data.get("cursor_scale", 1.0))
 				gamepad_speed = float(data.get("gamepad_speed", 950.0))
 				locale = str(data.get("locale", ""))
-				disclaimer_seen = bool(data.get("disclaimer_seen", false))
 				check_updates = bool(data.get("check_updates", true))
 				stat_plays = int(data.get("stat_plays", 0))
 				stat_notes = int(data.get("stat_notes", 0))
@@ -619,7 +617,7 @@ func save_all() -> void:
 			"reduce_motion": reduce_motion, "reduce_flashes": reduce_flashes,
 			"disable_song_video": disable_song_video, "cursor_scale": cursor_scale,
 			"gamepad_speed": gamepad_speed, "key_binds": key_binds,
-			"locale": locale, "disclaimer_seen": disclaimer_seen,
+			"locale": locale,
 			"check_updates": check_updates,
 			"stat_plays": stat_plays, "stat_notes": stat_notes,
 			"stat_best_combo": stat_best_combo, "stat_playtime": stat_playtime,

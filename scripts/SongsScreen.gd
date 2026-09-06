@@ -32,7 +32,7 @@ func _ready() -> void:
 	copy_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	path_row.add_child(copy_btn)
 
-	var hint := G.label("Drop song folders or .zip packs here, then press RESCAN. Or import an .sspm / Sound Space map.",
+	var hint := G.label("Drop song folders or .zip packs here, then press RESCAN. Or press IMPORT and pick a pack, an .sspm or a Sound Space map.",
 		15, Color(1, 1, 1, 0.4))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(hint)
@@ -148,10 +148,11 @@ func _open_import() -> void:
 		_import_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 		_import_dialog.access = FileDialog.ACCESS_FILESYSTEM
 		_import_dialog.filters = PackedStringArray([
+			"*.zip ; Open Rhythm song pack",
 			"*.sspm ; Sound Space Plus / Rhythia map",
 			"*.txt ; Sound Space map data",
 		])
-		_import_dialog.title = "Import .sspm / Sound Space map"
+		_import_dialog.title = "Import a song pack or a map"
 		_import_dialog.size = Vector2i(900, 600)
 		_import_dialog.file_selected.connect(_do_import)
 		add_child(_import_dialog)
@@ -160,6 +161,18 @@ func _open_import() -> void:
 
 
 func _do_import(path: String) -> void:
+	# One of ours goes straight into the library - it is already a song, not a
+	# map from another game that has to be converted into one.
+	if path.get_extension().to_lower() == "zip":
+		var pack := RhythmMap.install_zip(path)
+		if not pack.get("ok", false):
+			_toast(str(pack.get("error", "Import failed")))
+			G.play_sfx("miss", 1.0, -6.0)
+			return
+		_toast("%s added" % str(pack.get("name", "")))
+		G.play_sfx("click", 1.3)
+		_rebuild()
+		return
 	var res := MapImport.import_path(path)
 	if not res.get("ok", false):
 		_toast(str(res.get("error", "Import failed")))

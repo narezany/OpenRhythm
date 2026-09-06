@@ -118,6 +118,15 @@ static func degrade(label: String, held_frac: float) -> String:
 	return label
 
 
+## Where the game draws the line between a run cleared and a run lost.
+##
+## In one place, because two places disagreeing is how a lost run came to be
+## congratulated: the results screen already knew a D was a failure - it is
+## what made Melly sulk - while everything that paid out did not.
+static func failed(rank: String) -> bool:
+	return rank == "D" or rank == "F"
+
+
 static func rank_for(acc: float) -> String:
 	if acc >= 0.95:
 		return "SS"

@@ -130,6 +130,40 @@ def subset(src, codepoints, out):
     return out
 
 
+def match_metrics(path, reference):
+    """Make the fallback take exactly as much vertical room as the body face.
+
+    A font's ascent and descent decide how tall a line of text is, and Godot
+    takes the tallest of a font and its fallbacks. Noto Sans SC asks for
+    1160/-630 against Rajdhani's 930/-346 - forty per cent more - so simply
+    carrying it made every label, button and panel in the game grow, and the
+    back button on the settings screen dropped two pixels off the bottom of
+    the screen. Nothing was written in Chinese for that to happen.
+
+    So the cut wears the body face's metrics. The ideographs sit well inside
+    them; what it costs is nothing, and what it buys is a layout that does not
+    move when a fallback is added.
+    """
+    from fontTools.ttLib import TTFont
+    ref = TTFont(reference)
+    scale = 1.0 * TTFont(path)["head"].unitsPerEm / ref["head"].unitsPerEm
+    asc = int(round(ref["hhea"].ascender * scale))
+    desc = int(round(ref["hhea"].descender * scale))
+    font = TTFont(path)
+    font["hhea"].ascender = asc
+    font["hhea"].descender = desc
+    font["hhea"].lineGap = int(round(ref["hhea"].lineGap * scale))
+    os2 = font["OS/2"]
+    os2.sTypoAscender = asc
+    os2.sTypoDescender = desc
+    os2.sTypoLineGap = font["hhea"].lineGap
+    os2.usWinAscent = abs(asc)
+    os2.usWinDescent = abs(desc)
+    font.save(path)
+    print("  metrics matched to %s: %d / %d"
+          % (os.path.basename(reference), asc, desc))
+
+
 def rename(path):
     """The OFL reserves these families' names: what we cut must not wear them."""
     from fontTools.ttLib import TTFont
@@ -192,6 +226,7 @@ def main():
         # to load, one thing to license and one thing to think about
         merged = Merger().merge(pieces)
         merged.save(OUT)
+    match_metrics(OUT, os.path.join(ROOT, BASE[0]))
     rename(OUT)
     print("wrote %s  %.1f KB, %d characters"
           % (os.path.relpath(OUT, ROOT), os.path.getsize(OUT) / 1024.0,

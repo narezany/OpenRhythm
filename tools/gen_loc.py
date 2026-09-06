@@ -561,35 +561,6 @@ add("Taps", "Ударов", "点击次数", "Eingaben", "Tikken", "Toques")
 add("Detected offset", "Найденное смещение", "测得偏移", "Ermittelter Offset",
     "Gemeten offset", "Desfase detectado")
 
-# ---------------------------------------------------------------- disclaimer
-add("BEFORE YOU START", "ПЕРЕД НАЧАЛОМ", "开始之前", "BEVOR DU STARTEST",
-    "VOORDAT JE BEGINT", "ANTES DE EMPEZAR")
-add("I understand", "Я понял", "我明白了", "Verstanden", "Begrepen", "Entendido")
-add("Open Rhythm is a rhythm game, not a music player.",
-    "Open Rhythm — это ритм-игра, а не музыкальный плеер.",
-    "Open Rhythm 是一款节奏游戏，不是音乐播放器。",
-    "Open Rhythm ist ein Rhythmusspiel, kein Musikplayer.",
-    "Open Rhythm is een ritmespel, geen muziekspeler.",
-    "Open Rhythm es un juego de ritmo, no un reproductor de música.")
-add("The tracks here exist so there is something to play to. If a song grabs you — go and listen to it properly: Spotify, Apple Music, YouTube, Bandcamp, wherever the artist actually gets paid for it.",
-    "Треки здесь нужны, чтобы было подо что играть. Зацепила песня — послушай её по-нормальному: Spotify, Apple Music, YouTube, Bandcamp, там, где автору реально платят.",
-    "这里的曲子只是为了让你有东西可玩。如果某首歌打动了你，就去正经地听它：Spotify、Apple Music、YouTube、Bandcamp，去创作者真正能拿到钱的地方。",
-    "Die Tracks hier sind nur da, damit du etwas zum Spielen hast. Wenn dich ein Song packt, hör ihn richtig: Spotify, Apple Music, YouTube, Bandcamp — dort, wo die Künstler auch bezahlt werden.",
-    "De tracks hier zijn er zodat je ergens op kunt spelen. Als een nummer je grijpt: luister het fatsoenlijk via Spotify, Apple Music, YouTube of Bandcamp, waar de artiest er ook aan verdient.",
-    "Los temas están aquí solo para tener algo con lo que jugar. Si una canción te engancha, escúchala en condiciones: Spotify, Apple Music, YouTube, Bandcamp, donde el artista cobre de verdad.")
-add("We support the original authors. Maps are built on their songs out of respect for the music, and where an author has given their blessing we say so — the Verity tracks are used with the author's permission.",
-    "Мы за оригинальных авторов. Карты сделаны по их песням из уважения к музыке, и где автор дал добро — мы об этом говорим: треки Verity используются с разрешения автора.",
-    "我们支持原作者。这些谱面是出于对音乐的尊重而制作的；凡是得到作者许可的我们都会说明——Verity 的曲目已获得作者授权。",
-    "Wir stehen hinter den Urhebern. Die Maps entstehen aus Respekt vor der Musik, und wo eine Erlaubnis vorliegt, sagen wir es: die Verity-Tracks werden mit Erlaubnis des Autors genutzt.",
-    "Wij steunen de originele makers. Maps zijn gemaakt uit respect voor de muziek, en waar een maker toestemming gaf zeggen we dat: de Verity-tracks worden met toestemming gebruikt.",
-    "Apoyamos a los autores originales. Los mapas se hacen por respeto a la música, y donde hay permiso lo decimos: los temas de Verity se usan con permiso del autor.")
-add("If you are an artist and you want your track out of this game, tell us in Telegram or Discord and it is gone.",
-    "Если ты автор и хочешь убрать свой трек из игры — напиши в Telegram или Discord, и его не будет.",
-    "如果你是音乐人，希望把自己的曲子从游戏里撤下来，在 Telegram 或 Discord 告诉我们，马上就撤。",
-    "Wenn du Künstler bist und deinen Track hier nicht haben willst: schreib uns auf Telegram oder Discord, dann ist er weg.",
-    "Ben je artiest en wil je je track hier weg? Laat het weten via Telegram of Discord en hij verdwijnt.",
-    "Si eres artista y quieres tu tema fuera del juego, dínoslo en Telegram o Discord y desaparece.")
-
 # ---------------------------------------------------------------- achievements
 add("And so it begins", "И понеслось", "就此开始", "Und los geht's", "En daar gaan we", "Y así empieza")
 add("Cannot be stopped", "Не остановить", "停不下来", "Nicht zu stoppen", "Niet te stoppen", "Imparable")
