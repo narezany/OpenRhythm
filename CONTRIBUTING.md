@@ -88,6 +88,16 @@ because the analysis window reaches back in time. That constant is measured by
 `beatgrid` reports. If you change the window or the hop, run the self-test and
 re-measure it, or every chart in the library will look 43 ms out of time.
 
+## Project settings
+
+**Never put a comment in `project.godot`.** A `#` line inside a section is
+folded into the name of the key beneath it, the key vanishes, and its default
+quietly takes over - which is how VR, the engine's log file and the Android
+back button were all broken at once by three tidy explanatory comments. The
+explanations live in **[docs/PROJECT_SETTINGS.md](docs/PROJECT_SETTINGS.md)**
+instead, and CoreTest fails if any setting name comes back with a comment in
+it.
+
 ## Tests
 
 There is a small headless test harness. CI runs the first one on every push.

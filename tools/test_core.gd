@@ -27,6 +27,7 @@ func _say(line: String) -> void:
 
 
 func _ready() -> void:
+	_test_project_settings()
 	_test_settings_roundtrip()
 	_test_hold_notes()
 	_test_judge()
@@ -627,3 +628,33 @@ func _test_editor_scale() -> void:
 	ok(del_ms < 2000, "and finishes rather than hanging (%d ms)" % del_ms)
 	main.free()
 	_wipe(str(song["dir"]))
+
+
+## The project settings the game actually depends on, checked to be in force.
+##
+## A comment line in project.godot is folded into the name of the key below it,
+## so the key silently disappears and its default takes over. That is not a
+## hypothetical: it switched off VR, switched off the engine's log file, and
+## turned the Android back button back into "quit the app", and each one looked
+## like a separate bug somewhere else. Nothing warns you, so this does.
+func _test_project_settings() -> void:
+	_say("== project settings ==")
+	for name in ["application/config/quit_on_go_back", "xr/openxr/enabled",
+			"xr/openxr/startup_alert", "xr/shaders/enabled",
+			"debug/file_logging/enable_file_logging",
+			"rendering/renderer/rendering_method",
+			"rendering/renderer/rendering_method.mobile",
+			"input_devices/pointing/emulate_mouse_from_touch"]:
+		ok(ProjectSettings.has_setting(name), "%s survived into the project" % name)
+	ok(ProjectSettings.get_setting_with_override("application/config/quit_on_go_back") == false,
+		"back does not close the game by itself")
+	ok(bool(ProjectSettings.get_setting_with_override("xr/openxr/enabled")),
+		"OpenXR is on, so a headset can be found at startup")
+	# and no key carries a comment inside its name
+	var mangled: Array[String] = []
+	for prop in ProjectSettings.get_property_list():
+		var n := str(prop.get("name", ""))
+		if n.contains("#"):
+			mangled.append(n.substr(0, 40))
+	ok(mangled.is_empty(), "no setting name has a comment folded into it (%s)"
+		% ("none" if mangled.is_empty() else str(mangled)))

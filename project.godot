@@ -11,8 +11,6 @@ config/description="Rhythm game collection. Open maps, any audio."
 run/main_scene="res://scenes/Boot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
-# The Android back button is handled by Main, which turns it into Esc rather
-# than letting the system close the game.
 config/quit_on_go_back=false
 
 [autoload]
@@ -41,36 +39,17 @@ window/handheld/orientation=0
 
 [debug]
 
-# The engine's own log, kept on disk. When a headset shows nothing there is no
-# console to read, and the reason OpenXR refused is written by the engine, not
-# by the game - this is the only way to get at it without a working cable.
 file_logging/enable_file_logging=true
 
 [xr]
 
-# On everywhere the engine has it. The desktop build then finds a runtime when
-# SteamVR is up and starts in VR, and finds nothing when it is not and starts
-# in a window - one build, no switch to flip. The phone package is exported
-# with XR mode off, so it has no OpenXR to try in the first place.
 openxr/enabled=true
-# No alert box when there is no headset: most players are on a flat screen and
-# a runtime that is simply not running is not an error worth interrupting them
-# with. Boot falls back to a window on its own.
 openxr/startup_alert=false
 shaders/enabled=true
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
-# Headsets need Vulkan: OpenXR on Android binds to the graphics API when it
-# creates its session, and the OpenGL ES binding is not the one that works
-# there - the interface is found, the session never is, and the headset sits on
-# its loading screen while the game runs behind it.
-#
-# It cannot be done with a feature override. The engine picks the renderer
-# before it knows about an export's custom features, so an override tagged for
-# a headset is simply never seen - measured, not assumed. tools/build_headsets
-# flips this line for the length of those two builds instead.
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=2
