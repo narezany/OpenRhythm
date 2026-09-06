@@ -22,6 +22,8 @@ extends Node
 ##   OR_BG_WAIT   seconds to let the shader and the dust settle (default 3.0)
 ##   OR_BG_HUE    base hue, 0..1 (default 0.985, the game's blood red)
 ##   OR_BG_DUST   "0" to leave the drifting particles out
+##   OR_BG_LOGO   "1" to put the game's wordmark in the middle of it
+##   OR_BG_LOGO_W how much of the width the wordmark takes (default 0.78)
 
 const SETTLE := 3.0
 
@@ -44,6 +46,8 @@ func _ready() -> void:
 		bg.base_hue = clampf(float(hue), 0.0, 1.0)
 	vp.add_child(bg)
 	_fit(bg, Vector2(size))
+	if OS.get_environment("OR_BG_LOGO") == "1":
+		vp.add_child(_logo(Vector2(size)))
 
 	var wait := SETTLE
 	if OS.get_environment("OR_BG_WAIT") != "":
@@ -85,6 +89,31 @@ func _fit(bg: BackgroundFX, size: Vector2) -> void:
 			# wide with the same forty specks in it reads as empty
 			p.amount = clampi(int(40.0 * size.x / 1280.0), 40, 400)
 			p.restart()
+
+
+## The wordmark from the main menu, in the middle of the picture.
+##
+## The same label the menu builds - Orbitron at weight 850, the same near-white
+## - and not a picture of it, so a cover cannot end up showing a logo the game
+## stopped using. Only the size is worked out here: the menu sets 64 against a
+## canvas 1280 across, and a cover is a different shape, so the type is scaled
+## to take a fixed share of the width instead.
+func _logo(size: Vector2) -> Label:
+	var want := 0.78
+	if OS.get_environment("OR_BG_LOGO_W") != "":
+		want = clampf(float(OS.get_environment("OR_BG_LOGO_W")), 0.2, 1.0)
+	var text := "Open Rhythm"
+	var at64 := G.font_logo.get_string_size(
+		text, HORIZONTAL_ALIGNMENT_LEFT, -1, 64).x
+	var fs := 64
+	if at64 > 1.0:
+		fs = maxi(8, int(round(64.0 * size.x * want / at64)))
+	var lab := G.label(text, fs, Color(1, 1, 1, 0.97), true)
+	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lab.size = size
+	lab.position = Vector2.ZERO
+	return lab
 
 
 func _size() -> Vector2i:
