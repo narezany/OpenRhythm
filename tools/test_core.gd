@@ -46,6 +46,7 @@ func _ready() -> void:
 	_test_rounded()
 	_test_charter()
 	_test_coins()
+	_test_events()
 	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -1049,3 +1050,39 @@ func _test_coins() -> void:
 			art.free()
 	ok(broken == "", "every item in the wardrobe exists and can be built%s"
 		% ("" if broken == "" else " (%s)" % broken))
+
+
+## The events editor has to offer every command the game can run, and only
+## those. A command with no fields is a row somebody can add and never fill in;
+## a field for a command that does not exist is a line written into a map that
+## the game will ignore without saying so.
+func _test_events() -> void:
+	_say("== event editor ==")
+	var missing := ""
+	for cmd in SongScript.COMMANDS:
+		if not EventEditor.FIELDS.has(cmd):
+			missing += "%s " % str(cmd)
+	ok(missing == "", "every command can be edited%s"
+		% ("" if missing == "" else " (%s)" % missing))
+	var extra := ""
+	for cmd in EventEditor.FIELDS:
+		if not (cmd in SongScript.COMMANDS):
+			extra += "%s " % str(cmd)
+	ok(extra == "", "and nothing is offered that the game cannot run%s"
+		% ("" if extra == "" else " (%s)" % extra))
+	var bad := ""
+	for cmd in EventEditor.FIELDS:
+		for f in EventEditor.FIELDS[cmd]:
+			if not (f as Dictionary).has("key") or not (f as Dictionary).has("def"):
+				bad += "%s " % str(cmd)
+			elif str(f.kind) == "num" and not ((f as Dictionary).has("lo")
+					and (f as Dictionary).has("hi")):
+				bad += "%s.%s " % [str(cmd), str(f.key)]
+	ok(bad == "", "and every field has a default and a range%s"
+		% ("" if bad == "" else " (%s)" % bad))
+	# a caption is the one with settings, so it is the one worth pinning
+	var keys: Array = []
+	for f in EventEditor.FIELDS["text"]:
+		keys.append(str(f.key))
+	for want in ["value", "x", "y", "size", "color", "hold"]:
+		ok(want in keys, "a caption can set its %s" % want)

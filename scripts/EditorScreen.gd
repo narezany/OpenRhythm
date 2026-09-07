@@ -497,6 +497,14 @@ func _build_side_panel() -> void:
 	row5.add_child(auto_clicks)
 	row5.add_child(G.button("Generate", _auto_build, 16))
 	vb.add_child(row5)
+
+	# The storyboard has its own timeline and its own vocabulary, so it gets its
+	# own screen rather than more rows in this panel.
+	var row6 := HBoxContainer.new()
+	row6.add_theme_constant_override("separation", 8)
+	row6.add_child(G.button("Events…", _open_events, 16))
+	row6.add_child(G.label("backgrounds, skins, captions", 13, Color(1, 1, 1, 0.4)))
+	vb.add_child(row6)
 	var ahint := G.label("Replaces the whole chart. Onset detection needs a .wav; other formats get an even beat grid.",
 		13, Color(1, 1, 1, 0.4))
 	ahint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -768,6 +776,22 @@ func _save() -> String:
 		Achievements.unlock("mapper")
 		G.play_sfx("click")
 	return path
+
+
+## The storyboard editor, over the top of the map editor.
+func _open_events() -> void:
+	G.play_sfx("click")
+	var layer := CanvasLayer.new()
+	layer.layer = 55
+	add_child(layer)
+	var ed := EventEditor.new()
+	ed.song = song
+	layer.add_child(ed)
+	ed.closed.connect(func():
+		# whatever was saved should be what a test run plays
+		song = ed.song
+		G.editor_song = song
+		layer.queue_free())
 
 
 func _test() -> void:

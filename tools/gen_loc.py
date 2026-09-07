@@ -302,6 +302,41 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
 add("Dead", "Смерть", "阵亡", "Tot", "Dood", "Muerto")
 add("brutal", "жесть", "残酷", "brutal", "bruut", "brutal")
 
+# ------------------------------------------------------------- event editor
+add("EVENTS", "СОБЫТИЯ", "事件", "EVENTS", "EVENTS", "EVENTOS")
+add("Events…", "События…", "事件…", "Events…", "Events…", "Eventos…")
+add("backgrounds, skins, captions", "фоны, скины, надписи", "背景、皮肤、字幕",
+    "Hintergrunde, Skins, Texte", "achtergronden, skins, teksten",
+    "fondos, skins, textos")
+add("A song's storyboard: backgrounds, note skins, camera moves and captions, on a timeline of their own.",
+    "Раскадровка песни: фоны, скины нот, движения камеры и надписи на своей отдельной дорожке.",
+    "一首歌的分镜：背景、方块皮肤、镜头移动和字幕，在自己的时间轴上。",
+    "Das Storyboard eines Songs: Hintergrunde, Wurfel-Skins, Kamerafahrten und Texte, auf einer eigenen Zeitleiste.",
+    "Het storyboard van een nummer: achtergronden, kubus-skins, camerabewegingen en teksten, op een eigen tijdlijn.",
+    "El guion de una cancion: fondos, skins de cubos, movimientos de camara y textos, en su propia linea de tiempo.")
+add("Nothing yet. Add is below.", "Пока пусто. Кнопка «Добавить» внизу.",
+    "还什么都没有。下面是“添加”。", "Noch nichts. Hinzufugen ist unten.",
+    "Nog niets. Toevoegen staat hieronder.", "Todavia nada. Anadir esta abajo.")
+add("Pick an event on the left, or add one.",
+    "Выбери событие слева или добавь новое.", "在左边选一个事件，或者添加一个。",
+    "Wahl links ein Event, oder leg eins an.",
+    "Kies links een event, of maak er een.", "Elige un evento a la izquierda, o anade uno.")
+add("When", "Когда", "何时", "Wann", "Wanneer", "Cuando")
+add("What", "Что", "做什么", "Was", "Wat", "Que")
+add("Add", "Добавить", "添加", "Hinzufugen", "Toevoegen", "Anadir")
+add("Delete", "Удалить", "删除", "Loschen", "Verwijderen", "Borrar")
+add("Save the map first — a built-in song has to be copied into your library.",
+    "Сначала сохрани карту — встроенную песню нужно скопировать в библиотеку.",
+    "先保存谱面——内置曲目要先复制到你的库里。",
+    "Speicher erst die Map - ein mitgelieferter Song muss in deine Bibliothek kopiert werden.",
+    "Sla eerst de map op - een meegeleverd nummer moet naar je bibliotheek gekopieerd worden.",
+    "Guarda primero el mapa: una cancion incluida hay que copiarla a tu biblioteca.")
+add("Could not write events.json", "Не удалось записать events.json",
+    "无法写入 events.json", "events.json konnte nicht geschrieben werden",
+    "Kon events.json niet schrijven", "No se pudo escribir events.json")
+add("Saved %d events", "Сохранено событий: %d", "已保存 %d 个事件",
+    "%d Events gespeichert", "%d events opgeslagen", "%d eventos guardados")
+
 # ------------------------------------------------------------ melly's screen
 add("MELLY", "МЕЛЛИ", "梅利", "MELLY", "MELLY", "MELLY")
 add("colours\nand wardrobe", "цвета\nи гардероб", "颜色\n与衣橱",
