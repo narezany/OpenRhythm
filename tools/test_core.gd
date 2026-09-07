@@ -45,6 +45,7 @@ func _ready() -> void:
 	_test_dialogue()
 	_test_rounded()
 	_test_charter()
+	_test_coins()
 	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -1007,3 +1008,44 @@ func _test_charter() -> void:
 			grew = false
 		last_n = chart.size()
 	ok(grew and last_n > 0, "and a harder setting never puts down fewer cubes")
+
+
+## Coins, as arithmetic. The rules matter more than most because they decide
+## how long somebody has to play for a hat, and a mistake here is either a
+## currency nobody can earn or one that means nothing.
+func _test_coins() -> void:
+	_say("== coins ==")
+	ok(Coins.for_run(false, "SS", 2, 3, true) == 0,
+		"a chart you wrote yourself pays nothing")
+	ok(Coins.for_run(true, Judge.DEAD, 2, 3, true) == 0, "and a run you lost pays nothing")
+	var first := Coins.for_run(true, "S", 2, 3, true)
+	var again := Coins.for_run(true, "S", 2, 3, false)
+	ok(first > 0, "a first clear pays (%d)" % first)
+	ok(again == int(round(first * Coins.REPEAT_SHARE)) or absi(again * 2 - first) <= 1,
+		"and every one after it pays half (%d)" % again)
+	var good := Coins.for_run(true, "SS", 2, 3, true)
+	var scrape := Coins.for_run(true, "D", 2, 3, true)
+	ok(good > scrape and scrape > 0, "a better rank pays more (%d against %d)" % [good, scrape])
+	var easy := Coins.for_run(true, "SS", 0, 4, true)
+	var hard := Coins.for_run(true, "SS", 3, 4, true)
+	ok(hard > easy, "and a harder chart pays more (%d against %d)" % [hard, easy])
+	# a wardrobe has to cost real play
+	var cheapest := 999999
+	for it in MellyShop.ITEMS:
+		cheapest = mini(cheapest, int(it.price))
+	ok(cheapest >= good * 8,
+		"the cheapest item costs real play (%d coins, about %d clears of a hard chart)"
+		% [cheapest, int(round(float(cheapest) / float(maxi(good, 1))))])
+
+	# every item can be built, and every slot it claims is a real one
+	var broken := ""
+	for it in MellyShop.ITEMS:
+		if not (str(it.slot) in MellyShop.SLOTS):
+			broken += "%s:slot " % str(it.id)
+		var art := MellyShop.build(str(it.id))
+		if art == null:
+			broken += "%s:art " % str(it.id)
+		else:
+			art.free()
+	ok(broken == "", "every item in the wardrobe exists and can be built%s"
+		% ("" if broken == "" else " (%s)" % broken))

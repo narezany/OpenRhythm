@@ -1117,9 +1117,17 @@ func _finish() -> void:
 		else:
 			G.melly.react_win()
 	var is_best := false
+	var earned := 0
 	if not failed:
 		is_best = G.save_best(str(song.get("id", "")), diff_name, score, acc, max_combo)
 		G.add_total_score(score)
+		# Coins are for the game's own songs. A chart you wrote yourself and
+		# cleared on easy is not a thing a currency can survive being minted by.
+		if G.custom_test.is_empty() and not G.replay_mode:
+			var diffs := RhythmMap.diffs_of(song)
+			earned = G.earn_coins(not RhythmMap.is_user_song(song),
+				str(song.get("id", "")), diff_name, rank,
+				clampi(G.selected_diff, 0, maxi(diffs.size() - 1, 0)), diffs.size())
 	# played is played, however badly
 	G.stat_plays += 1
 	G.stat_playtime += _elapsed
@@ -1129,7 +1137,7 @@ func _finish() -> void:
 		"diff": diff_name,
 		"score": score, "acc": acc, "max_combo": max_combo,
 		"counts": counts.duplicate(), "rank": rank, "new_best": is_best,
-		"failed": failed,
+		"failed": failed, "coins": earned,
 		"on_mobile": G.is_mobile(),
 		"mods": G.active_mods.duplicate(),
 		"total_score": G.total_score,
@@ -1159,6 +1167,9 @@ func _finish() -> void:
 				G.results["story_diff"] = G.story_diff
 			else:
 				G.results["story_complete"] = true
+				G.coins += Coins.STORY_BONUS
+				G.results["coins"] = int(G.results.get("coins", 0)) + Coins.STORY_BONUS
+				G.save_all()
 				G.story_playlist = []
 				G.story_idx = 0
 	var tw := create_tween()

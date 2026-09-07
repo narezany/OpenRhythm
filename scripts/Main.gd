@@ -58,6 +58,8 @@ func _ready() -> void:
 			goto_calibration()
 		"stats":
 			goto_stats()
+		"melly":
+			goto_melly()
 		"versus":
 			goto_versus()
 		"story":
@@ -149,6 +151,12 @@ func _update_view() -> void:
 		G.view_w = float(sz.x)
 		G.view_h = float(sz.y)
 		G.view_changed.emit()
+
+
+func goto_melly() -> void:
+	G.touch_zone = false
+	switch_to(MellyScreen.new())
+	Conductor.ensure_menu_music()
 
 
 func goto_menu() -> void:

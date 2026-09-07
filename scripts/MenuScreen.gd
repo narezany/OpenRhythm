@@ -9,6 +9,7 @@ const ITEMS := [
 	{"id": "songs", "title": "SONGS", "sub": "manage library\ndelete / disable"},
 	{"id": "versus", "title": "VERSUS", "sub": "BETA · two players\none chart"},
 	{"id": "stats", "title": "STATS", "sub": "records\nachievements"},
+	{"id": "melly", "title": "MELLY", "sub": "colours\nand wardrobe"},
 	{"id": "settings", "title": "SETTINGS", "sub": "audio\ncursor"},
 	{"id": "credits", "title": "CREDITS", "sub": "who made this\nand why"},
 	{"id": "quit", "title": "QUIT", "sub": "see you soon"},
@@ -122,6 +123,13 @@ func _ready() -> void:
 		var so: Dictionary = SOCIALS[i]
 		_add_social(str(so.icon), str(so.name), str(so.url), i, so.color)
 	_add_donate(SOCIALS.size())
+
+	# Everything already in the save is cashed in here, once - the menu is the
+	# first place the song list is definitely loaded, and it is where the coin
+	# count is about to be looked at.
+	var back_pay := G.backfill_coins()
+	if back_pay > 0:
+		G.dev_log("coins: %d for what was already cleared" % back_pay)
 
 	_build_update_banner()
 
@@ -282,6 +290,8 @@ func _activate() -> void:
 			G.main.goto_songs()
 		"stats":
 			G.main.goto_stats()
+		"melly":
+			G.main.goto_melly()
 		"versus":
 			G.main.goto_versus()
 		"settings":

@@ -109,6 +109,10 @@ func _ready() -> void:
 		ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vb.add_child(ml)
 
+	var earned := int(data.get("coins", 0))
+	if earned > 0:
+		vb.add_child(_row("COINS", "+%d ◆" % earned, G.C_GOLD, 24))
+
 	if data.get("story_complete", false):
 		var sc := G.label("★ STORY COMPLETE ★", 26, Color("ffd700"), true)
 		sc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

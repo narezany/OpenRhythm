@@ -336,24 +336,14 @@ func _build_language() -> void:
 
 
 func _build_melly() -> void:
-	var cc := CenterContainer.new()
-	cc.custom_minimum_size = Vector2(0, 176)
-	_body.add_child(cc)
-	_rig = MellyRig.new()
-	_rig.size = Vector2(168, 172)
-	_rig.custom_minimum_size = Vector2(168, 172)
-	cc.add_child(_rig)
-
-	for part in MellyRig.PARTS:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 3)
-		var pl := G.label(MellyRig.PART_NAMES[part], 15, G.C_MUTED)
-		pl.custom_minimum_size = Vector2(90, 0)
-		pl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		row.add_child(pl)
-		for hex in PRESETS:
-			row.add_child(_swatch(hex, part))
-		_body.add_child(row)
+	var l := G.label("Melly has a screen of her own now — colours and wardrobe are in MELLY, on the main menu.",
+		18, G.C_MUTED)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(l)
+	_body.add_child(G.button("Open it", func():
+		G.play_sfx("click")
+		G.main.goto_melly(), 22))
 
 
 # ---------------------------------------------------------------- widgets

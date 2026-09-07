@@ -132,6 +132,19 @@ var melly_colors := {
 }
 var melly = null   # the MellyRig currently on screen, if any
 
+## Purple coins, and what has already been paid for.
+##
+## The keys are "song id|difficulty" for everything that has ever paid a first
+## clear, so a second clear of the same chart knows it is a second one. The
+## backlog flag is set the first time the save is opened after coins existed,
+## when the records already in it are cashed in at once.
+var coins := 0
+var coins_paid := {}
+var coins_backfilled := false
+## What Melly owns and what they are wearing, by wardrobe slot.
+var melly_owned := {}
+var melly_worn := {}
+
 
 # ---------------------------------------------------------------- adaptive layout
 ## Layout mode for the window's real aspect ratio - the design is never
@@ -669,6 +682,14 @@ func _load_save() -> void:
 					for kc in kb[act]:
 						arr.append(int(kc))
 					key_binds[act] = arr
+				coins = int(data.get("coins", 0))
+				var paid = data.get("coins_paid", {})
+				coins_paid = paid if paid is Dictionary else {}
+				coins_backfilled = bool(data.get("coins_backfilled", false))
+				var own = data.get("melly_owned", {})
+				melly_owned = own if own is Dictionary else {}
+				var worn = data.get("melly_worn", {})
+				melly_worn = worn if worn is Dictionary else {}
 				var mc: Dictionary = data.get("melly_colors", {})
 				for part in MellyRig.PARTS:
 					if mc.has(part):
@@ -692,6 +713,9 @@ func save_all() -> void:
 			"hit_offset": hit_offset,
 			"vr_start": vr_start, "game_mode": game_mode, "vr_hand": vr_hand,
 			"melly_colors": mc,
+			"coins": coins, "coins_paid": coins_paid,
+			"coins_backfilled": coins_backfilled,
+			"melly_owned": melly_owned, "melly_worn": melly_worn,
 			"master_vol": master_vol, "music_vol": music_vol, "sfx_vol": sfx_vol,
 			"hitsound": hitsound, "audio_offset": audio_offset,
 			"fullscreen": fullscreen, "vsync": vsync, "max_fps": max_fps,
@@ -756,13 +780,58 @@ func get_best(song_id: String, diff: String) -> Dictionary:
 	return {}
 
 
+## Pay for a finished run, and say what it paid so the results screen can put
+## it on the board. Everything the rules need is in Coins; this is the till.
+func earn_coins(official: bool, song_id: String, diff: String, rank: String,
+		diff_index: int, diff_count: int) -> int:
+	var key := Coins.key_for(song_id, diff)
+	var first: bool = not coins_paid.has(key)
+	var paid := Coins.for_run(official, rank, diff_index, diff_count, first)
+	if paid <= 0:
+		return 0
+	coins += paid
+	coins_paid[key] = true
+	save_all()
+	return paid
+
+
+## Cash in what was already in the save, once.
+##
+## Somebody who has been playing since before coins existed should not start at
+## nothing, and somebody who opened the game twice should not be handed a
+## wardrobe - so the backlog pays at first-clear rates off the rank stored
+## against each record, which is exactly as generous as the play that earned it.
+func backfill_coins() -> int:
+	if coins_backfilled:
+		return 0
+	coins_backfilled = true
+	var res := Coins.backlog(best, RhythmMap.load_songs())
+	var got := int(res.get("coins", 0))
+	coins += got
+	for k in (res.get("keys", {}) as Dictionary):
+		coins_paid[k] = true
+	save_all()
+	if got > 0:
+		dev_log("coins: %d paid for records already in the save" % got)
+	return got
+
+
+func spend_coins(amount: int) -> bool:
+	if amount <= 0 or coins < amount:
+		return false
+	coins -= amount
+	save_all()
+	return true
+
+
 func save_best(song_id: String, diff: String, score: int, acc: float, combo: int) -> bool:
 	if not best.has(song_id) or not (best[song_id] is Dictionary):
 		best[song_id] = {}
 	var cur: Dictionary = get_best(song_id, diff)
 	if not cur.is_empty() and float(cur.get("score", 0)) >= score:
 		return false
-	best[song_id][diff] = {"score": score, "acc": acc, "combo": combo}
+	best[song_id][diff] = {"score": score, "acc": acc, "combo": combo,
+		"rank": Judge.rank_for(acc)}
 	save_all()
 	return true
 

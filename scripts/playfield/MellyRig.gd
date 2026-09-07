@@ -27,16 +27,13 @@ var mood := "idle"             # idle | happy | very | sad
 ## A mood is a reaction to the game - a hit, a miss, a win - and it comes with
 ## the bouncing and the dancing that belong to those. A conversation wants none
 ## of it: someone who breaks into a victory dance while explaining something is
-## not talking to you, they are performing. So the poses below are built for
-## standing and speaking, and each names the two faces it flips between while
-## the words are coming out.
-## One face per pose, held for the whole line.
+## not talking to you, they are performing. So these are built for standing and
+## speaking, and each holds one face for the whole line.
 ##
-## It used to flip between an open mouth and a shut one while the words
-## appeared, which is what a talking sprite normally does - and on this face,
-## which is two dots and a mouth on a smooth white head, it did not read as
-## talking. It read as wrong. A smile that stays a smile is better than a mouth
-## that chatters; the hands and the head do the talking instead.
+## One face, not two alternating with the letters. That is what a talking
+## sprite normally does, and on this face - two dots and a mouth on a smooth
+## white head - it did not read as talking. It read as wrong. The hands and the
+## head do the talking instead.
 const POSES := {
 	"talk":      {"arms": 0.30, "gesture": 0.30, "lean": 0.0,  "head": 0.02,
 	              "face": "happy"},
@@ -99,6 +96,7 @@ var leg_lv := 0.0
 var leg_rv := 0.0
 
 var _kick_cd := 0.0            # stops the spring being re-kicked every frame
+var _worn: Array[Node3D] = []
 
 # --- being patted on a flat screen ---
 var _cam: Camera3D
@@ -126,6 +124,7 @@ func _ready() -> void:
 	_hearts = HeartLayer.new()
 	add_child(_hearts)
 	G.melly = self
+	wear_accessories()
 	tree_exiting.connect(func():
 		if G.melly == self:
 			G.melly = null)
@@ -311,6 +310,36 @@ func apply_colors() -> void:
 		am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _base[1].duplicate())
 		am.surface_set_material(1, _face_mat)
 	_mi.mesh = am
+
+
+## ---------------------------------------------------------------- wardrobe
+## Hang whatever Melly owns and is wearing off the right bones.
+##
+## A BoneAttachment3D per item rather than a transform written every frame: the
+## skeleton is already being posed by the springs, and letting the engine carry
+## the hat along with the head is what stops a hat lagging behind a nod.
+func wear_accessories() -> void:
+	for w in _worn:
+		if is_instance_valid(w):
+			w.queue_free()
+	_worn.clear()
+	if _skel == null:
+		return
+	for slot in MellyShop.SLOTS:
+		var id := str(G.melly_worn.get(slot, ""))
+		if id == "" or not G.melly_owned.has(id):
+			continue
+		var def := MellyShop.def_of(id)
+		if def.is_empty():
+			continue
+		var art := MellyShop.build(id)
+		if art == null:
+			continue
+		var hook := BoneAttachment3D.new()
+		hook.bone_idx = int(def.get("bone", 1))
+		hook.add_child(art)
+		_skel.add_child(hook)
+		_worn.append(hook)
 
 
 ## ---------------------------------------------------------------- moods

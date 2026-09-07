@@ -302,6 +302,48 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
 add("Dead", "Смерть", "阵亡", "Tot", "Dood", "Muerto")
 add("brutal", "жесть", "残酷", "brutal", "bruut", "brutal")
 
+# ------------------------------------------------------------ melly's screen
+add("MELLY", "МЕЛЛИ", "梅利", "MELLY", "MELLY", "MELLY")
+add("colours\nand wardrobe", "цвета\nи гардероб", "颜色\n与衣橱",
+    "Farben\nund Garderobe", "kleuren\nen garderobe", "colores\ny vestuario")
+add("COLOURS", "ЦВЕТА", "颜色", "FARBEN", "KLEUREN", "COLORES")
+add("WARDROBE", "ГАРДЕРОБ", "衣橱", "GARDEROBE", "GARDEROBE", "VESTUARIO")
+add("Which part", "Какая часть", "哪个部位", "Welches Teil", "Welk deel", "Que parte")
+add("Colour", "Цвет", "颜色", "Farbe", "Kleur", "Color")
+add("Everything here is free. The wardrobe is not.",
+    "Здесь всё бесплатно. В гардеробе — нет.",
+    "这里的一切都免费。衣橱可不是。",
+    "Hier ist alles umsonst. Die Garderobe nicht.",
+    "Alles hier is gratis. De garderobe niet.",
+    "Aqui todo es gratis. El vestuario no.")
+add("Melly has a screen of her own now — colours and wardrobe are in MELLY, on the main menu.",
+    "У Мелли теперь свой экран — цвета и гардероб в разделе МЕЛЛИ в главном меню.",
+    "梅利现在有自己的页面了——颜色和衣橱在主菜单的 MELLY 里。",
+    "Melly hat jetzt einen eigenen Bildschirm - Farben und Garderobe stehen unter MELLY im Hauptmenu.",
+    "Melly heeft nu een eigen scherm - kleuren en garderobe staan onder MELLY in het hoofdmenu.",
+    "Melly ya tiene su propia pantalla: colores y vestuario estan en MELLY, en el menu principal.")
+add("Open it", "Открыть", "打开", "Offnen", "Openen", "Abrir")
+add("Not enough coins — play the game's own songs to earn them.",
+    "Не хватает монет — они даются за песни самой игры.",
+    "硬币不够——玩游戏自带的曲目来赚。",
+    "Zu wenig Munzen - die gibt es fur die Songs des Spiels selbst.",
+    "Te weinig munten - die verdien je met de eigen nummers van het spel.",
+    "No hay monedas suficientes: se ganan con las canciones del propio juego.")
+add("BUY", "КУПИТЬ", "购买", "KAUFEN", "KOPEN", "COMPRAR")
+add("WEAR", "НАДЕТЬ", "穿戴", "ANZIEHEN", "DRAGEN", "PONER")
+add("WORN", "НАДЕТО", "已穿戴", "GETRAGEN", "GEDRAGEN", "PUESTO")
+add("COINS", "МОНЕТЫ", "硬币", "MUNZEN", "MUNTEN", "MONEDAS")
+add("Cap", "Кепка", "帽子", "Kappe", "Pet", "Gorra")
+add("Little horns", "Рожки", "小角", "Kleine Horner", "Hoorntjes", "Cuernitos")
+add("Headphones", "Наушники", "耳机", "Kopfhorer", "Koptelefoon", "Auriculares")
+add("Halo", "Нимб", "光环", "Heiligenschein", "Aureool", "Aureola")
+add("Crown", "Корона", "王冠", "Krone", "Kroon", "Corona")
+add("Glasses", "Очки", "眼镜", "Brille", "Bril", "Gafas")
+add("Shades", "Тёмные очки", "墨镜", "Sonnenbrille", "Zonnebril", "Gafas de sol")
+add("Scarf", "Шарф", "围巾", "Schal", "Sjaal", "Bufanda")
+add("Bow tie", "Бабочка", "领结", "Fliege", "Vlinderdas", "Pajarita")
+add("Cape", "Плащ", "披风", "Umhang", "Cape", "Capa")
+
 # ---------------------------------------------------------------- the menu
 add("Support the game", "Поддержать игру", "支持这个游戏",
     "Das Spiel unterstutzen", "Steun het spel", "Apoyar el juego")
