@@ -11,6 +11,10 @@ extends BaseButton
 
 var kind := "all"        # all | laser | saber
 var chosen := false
+## What this mode is, for the bar's own hint panel. Deliberately not
+## tooltip_text: the engine draws that one too, and the two of them arrived
+## together in different corners of the screen.
+var hint := ""
 
 var _glow := 0.0
 

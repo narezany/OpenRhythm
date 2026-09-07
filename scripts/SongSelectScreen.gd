@@ -161,8 +161,30 @@ func _card(song: Dictionary) -> PanelContainer:
 		var btn := G.button(txt, _difficulty_picked.bind(song, i), 22)
 		btn.custom_minimum_size = Vector2(280, 0)
 		right.add_child(btn)
+	# In the map maker, a map of your own can be renamed and restructured from
+	# here. Everything that is not the notes - the title, the artist, which
+	# difficulties exist - lived in map.json and nowhere else.
+	if mode == "edit" and RhythmMap.is_user_song(song):
+		var manage := G.button("Details…", _manage.bind(song), 17)
+		manage.custom_minimum_size = Vector2(280, 0)
+		right.add_child(manage)
 	hb.add_child(right)
 	return panel
+
+
+func _manage(song: Dictionary) -> void:
+	G.play_sfx("click")
+	var layer := CanvasLayer.new()
+	layer.layer = 45
+	add_child(layer)
+	var mm := MapManager.new()
+	mm.song = song
+	layer.add_child(mm)
+	mm.changed.connect(func():
+		_fill_songs()
+		if not is_instance_valid(mm):
+			layer.queue_free())
+	mm.tree_exited.connect(func(): layer.queue_free())
 
 
 # ---------------------------------------------------------------- preview

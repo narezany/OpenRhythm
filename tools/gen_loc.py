@@ -302,6 +302,34 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
 add("Dead", "Смерть", "阵亡", "Tot", "Dood", "Muerto")
 add("brutal", "жесть", "残酷", "brutal", "bruut", "brutal")
 
+# --------------------------------------------------------------- map details
+add("Details…", "Подробности…", "详情…", "Details…", "Details…", "Detalles…")
+add("MAP DETAILS", "О КАРТЕ", "谱面信息", "MAP-DETAILS", "MAP-DETAILS", "DATOS DEL MAPA")
+add("Title", "Название", "标题", "Titel", "Titel", "Titulo")
+add("Artist", "Исполнитель", "艺人", "Interpret", "Artiest", "Artista")
+add("Difficulties", "Сложности", "难度", "Schwierigkeiten", "Moeilijkheden", "Dificultades")
+add("+  Add a difficulty", "+  Добавить сложность", "+  添加难度",
+    "+  Schwierigkeit hinzufugen", "+  Moeilijkheid toevoegen", "+  Anadir dificultad")
+add("%d notes", "нот: %d", "%d 个音符", "%d Noten", "%d noten", "%d notas")
+add("Edit", "Править", "编辑", "Bearbeiten", "Bewerken", "Editar")
+add("A map needs at least one difficulty.", "У карты должна быть хотя бы одна сложность.",
+    "一张谱面至少要有一个难度。", "Eine Map braucht mindestens eine Schwierigkeit.",
+    "Een map heeft minstens een moeilijkheid nodig.",
+    "Un mapa necesita al menos una dificultad.")
+add("Could not write map.json", "Не удалось записать map.json", "无法写入 map.json",
+    "map.json konnte nicht geschrieben werden", "Kon map.json niet schrijven",
+    "No se pudo escribir map.json")
+add("Saved", "Сохранено", "已保存", "Gespeichert", "Opgeslagen", "Guardado")
+add("Tap an item to see it on Melly. Buying is the button.",
+    "Нажми на вещь, чтобы примерить её на Мелли. Купить — кнопкой.",
+    "点一件衣物就能在梅利身上看效果。购买用按钮。",
+    "Tipp auf ein Teil, um es an Melly zu sehen. Gekauft wird mit dem Knopf.",
+    "Tik op een item om het op Melly te zien. Kopen doe je met de knop.",
+    "Toca una prenda para verla en Melly. Comprar es el boton.")
+add("Trying it on", "Примеряет", "试戴中", "Wird anprobiert", "Wordt gepast", "Probandoselo")
+add("%d ◆ for finishing it", "%d ◆ за прохождение", "通关可得 %d ◆",
+    "%d ◆ furs Durchspielen", "%d ◆ voor het uitspelen", "%d ◆ por terminarla")
+
 # ------------------------------------------------------------- event editor
 add("EVENTS", "СОБЫТИЯ", "事件", "EVENTS", "EVENTS", "EVENTOS")
 add("Events…", "События…", "事件…", "Events…", "Events…", "Eventos…")
@@ -1150,7 +1178,6 @@ add("Could not copy this song into your library",
 
 
 # ---------------------------------------------------------------- versus
-add("VERSUS", "ДУЭЛЬ", "对战", "DUELL", "DUEL", "DUELO")
 add("two players\\none chart", "два игрока\\nодна карта", "两名玩家\\n同一张谱面",
     "zwei Spieler\\neine Map", "twee spelers\\neen map", "dos jugadores\\nun mapa")
 add("Two players, one chart, higher score wins. Direct connection, no server.",
@@ -1166,8 +1193,6 @@ add("Not connected", "Нет подключения", "未连接", "Nicht verbun
     "Niet verbonden", "Sin conexión")
 add("START THE MATCH", "НАЧАТЬ МАТЧ", "开始对战", "MATCH STARTEN",
     "START DE MATCH", "EMPEZAR EL DUELO")
-add("Back to versus", "Назад к дуэли", "返回对战", "Zurück zum Duell",
-    "Terug naar duel", "Volver al duelo")
 add("host address, e.g. 192.168.1.42", "адрес хоста, например 192.168.1.42",
     "房主地址，例如 192.168.1.42", "Host-Adresse, z. B. 192.168.1.42",
     "hostadres, bijv. 192.168.1.42", "dirección del host, p. ej. 192.168.1.42")
@@ -1209,12 +1234,6 @@ add("Different game version", "Разные версии игры", "游戏版�
 add("Different network protocol", "Разные сетевые протоколы", "网络协议不同",
     "Unterschiedliches Netzwerkprotokoll", "Ander netwerkprotocol",
     "Protocolo de red distinto")
-add("YOU WIN", "ТЫ ПОБЕДИЛ", "你赢了", "DU GEWINNST", "JIJ WINT", "GANASTE")
-add("YOU LOSE", "ТЫ ПРОИГРАЛ", "你输了", "DU VERLIERST", "JIJ VERLIEST", "PERDISTE")
-add("A DRAW", "НИЧЬЯ", "平局", "UNENTSCHIEDEN", "GELIJKSPEL", "EMPATE")
-add("Waiting for the other player…", "Ждём второго игрока…", "等待对手完成…",
-    "Warte auf den anderen Spieler…", "Wachten op de andere speler…",
-    "Esperando al otro jugador…")
 add("COPY THIS SONG", "СКОПИРОВАТЬ ПЕСНЮ", "复制这首歌",
     "SONG KOPIEREN", "NUMMER KOPIËREN", "COPIAR ESTA CANCIÓN")
 add("This song ships with the game and cannot be edited in place. Name the copy that goes into your library:",

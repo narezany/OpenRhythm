@@ -24,6 +24,7 @@ var _part_btns := {}
 var _coin_lbl: Label
 var _wardrobe: GridContainer
 var _tab := "paint"
+var _trying := ""
 var _paint_panel: Control
 var _shop_panel: Control
 var _toast: Label
@@ -91,7 +92,7 @@ func _build_paint() -> Control:
 	var root := Control.new()
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	G.anchor_margins(root, 560, 150, 60, 110)
+	G.anchor_margins(root, 560, 158, 60, 110)
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 14)
@@ -161,12 +162,18 @@ func _build_shop() -> Control:
 	var root := Control.new()
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	G.anchor_margins(root, 560, 150, 60, 110)
+	G.anchor_margins(root, 560, 158, 60, 110)
+
+	var tip := G.label("Tap an item to see it on Melly. Buying is the button.",
+		15, G.C_MUTED)
+	tip.position = Vector2(0, 0)
+	tip.size = Vector2(620, 22)
+	root.add_child(tip)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root.add_child(scroll)
-	G.anchor_full(scroll)
+	G.anchor_margins(scroll, 0, 30, 0, 0)
 	DragScroll.attach(scroll)
 
 	_wardrobe = GridContainer.new()
@@ -190,11 +197,20 @@ func _shop_card(item: Dictionary) -> PanelContainer:
 	var id := str(item.id)
 	var owned: bool = G.melly_owned.has(id)
 	var worn: bool = str(G.melly_worn.get(str(item.slot), "")) == id
-	var edge: Color = G.C_GOLD if worn else (G.C_PRIMARY if owned else Color(0.5, 0.45, 0.5))
+	var trying: bool = _trying == id
+	var edge: Color = G.C_EMBER if trying else \
+		(G.C_GOLD if worn else (G.C_PRIMARY if owned else Color(0.5, 0.45, 0.5)))
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", G.panel_style(
-		Color(edge.r, edge.g, edge.b, 0.7 if owned else 0.3)))
+		Color(edge.r, edge.g, edge.b, 0.7 if (owned or trying) else 0.3)))
 	p.custom_minimum_size = Vector2(0, 112)
+	# The whole card is a way to look at the thing. Nobody should have to buy a
+	# hat to find out what the hat looks like, and Melly is right there.
+	p.mouse_filter = Control.MOUSE_FILTER_STOP
+	p.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed \
+				and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			_try_on(id))
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 2)
 	p.add_child(vb)
@@ -204,10 +220,24 @@ func _shop_card(item: Dictionary) -> PanelContainer:
 	vb.add_child(d)
 	if not owned:
 		vb.add_child(G.label("%d coins" % int(item.price), 17, G.C_GOLD))
+	if trying:
+		vb.add_child(G.label("Trying it on", 14, G.C_EMBER))
 	var b := G.button(("WORN" if worn else ("WEAR" if owned else "BUY")), func():
 		_act_on(id), 17)
 	vb.add_child(b)
 	return p
+
+
+## Put it on Melly to be looked at, bought or not.
+func _try_on(id: String) -> void:
+	if _trying == id:
+		id = ""                       # clicking it again takes it back off
+	_trying = id
+	G.play_sfx("click", 1.1, -14.0)
+	if _rig != null and is_instance_valid(_rig):
+		_rig.preview_item = id
+		_rig.wear_accessories()
+	_fill_shop()
 
 
 ## Buy it if it is not owned, wear it if it is, take it off if it is on.
@@ -232,9 +262,12 @@ func _act_on(id: String) -> void:
 		G.melly_worn[slot] = id
 		G.play_sfx("click", 1.2)
 	G.save_all()
+	# once it is really on, it is not being tried on any more
+	_trying = ""
 	_refresh_coins()
 	_fill_shop()
 	if _rig != null and is_instance_valid(_rig):
+		_rig.preview_item = ""
 		_rig.wear_accessories()
 
 

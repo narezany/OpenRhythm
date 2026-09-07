@@ -172,6 +172,28 @@ func _cleared_count(st: Dictionary) -> int:
 	return n
 
 
+## What clearing a whole chapter pays: every song in it plus the chapter bonus,
+## at the rate each of them is actually on. A song already cleared pays half,
+## so the number on a finished chapter is the number for playing it again.
+func _worth(st: Dictionary) -> int:
+	var total := Coins.STORY_BONUS
+	var songs := RhythmMap.load_songs()
+	for id in st.get("songs", []):
+		for song in songs:
+			if str(song.get("id", "")) != str(id):
+				continue
+			var diffs := RhythmMap.diffs_of(song)
+			var pick: int = clampi(G.story_diff, 0, maxi(diffs.size() - 1, 0))
+			var dname := str(diffs[pick].get("name", "")) if not diffs.is_empty() else ""
+			var again: bool = G.coins_paid.has(Coins.key_for(str(id), dname))
+			# an honest figure needs a rank to assume, and the one it assumes is
+			# a clean run - anything worse pays less, which is the point of it
+			total += Coins.for_run(not RhythmMap.is_user_song(song), "S",
+				pick, diffs.size(), not again)
+			break
+	return total
+
+
 func _story_card(st: Dictionary, on_open: Callable) -> PanelContainer:
 	var locked := not _unlocked(st)
 	var total: int = (st.get("songs", []) as Array).size()
@@ -204,6 +226,9 @@ func _story_card(st: Dictionary, on_open: Callable) -> PanelContainer:
 		vb.add_child(G.label("%d / %d cleared" % [done, total], 17, G.C_EMBER))
 	else:
 		vb.add_child(G.label("Not played yet", 16, G.C_MUTED))
+	if not locked:
+		# what finishing it is worth, before you decide whether to
+		vb.add_child(G.label("%d ◆ for finishing it" % _worth(st), 16, G.C_GOLD))
 
 	var b := G.button(("LOCKED" if locked else ("REPLAY" if finished else
 		("CONTINUE" if done > 0 else "PLAY"))), func():

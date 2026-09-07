@@ -60,8 +60,6 @@ func _ready() -> void:
 			goto_stats()
 		"melly":
 			goto_melly()
-		"versus":
-			goto_versus()
 		"story":
 			goto_story()
 		"credits":
@@ -184,12 +182,6 @@ func goto_settings() -> void:
 func goto_calibration() -> void:
 	G.touch_zone = false
 	switch_to(CalibrationScreen.new())
-
-
-func goto_versus() -> void:
-	G.touch_zone = false
-	switch_to(VersusScreen.new())
-	Conductor.ensure_menu_music()
 
 
 func goto_stats() -> void:

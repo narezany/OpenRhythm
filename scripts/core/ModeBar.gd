@@ -53,7 +53,7 @@ func _ready() -> void:
 		# hold, so the mode is shown greyed rather than hidden - it is a real
 		# way to play and worth knowing about before you own a headset
 		icon.disabled = id == "saber" and not G.vr_active
-		icon.tooltip_text = "%s — %s" % [tr(str(m.label)), tr(str(m.hint))] \
+		icon.hint = "%s — %s" % [tr(str(m.label)), tr(str(m.hint))] \
 			if not icon.disabled else \
 			"%s — %s" % [tr(str(m.label)), tr("Needs a headset.")]
 		icon.pressed.connect(_pick.bind(id))
@@ -102,7 +102,7 @@ func _process(delta: float) -> void:
 		_hover = over
 		_hover_t = 0.0
 		if over >= 0:
-			_hint_lbl.text = _buttons[over].tooltip_text
+			_hint_lbl.text = _buttons[over].hint
 	var want := 0.0
 	if _hover >= 0:
 		_hover_t += delta

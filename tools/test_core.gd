@@ -267,7 +267,7 @@ func _test_back_button() -> void:
 		"SongSelectScreen": true, "GameScreen": true, "EditorScreen": true,
 		"SettingsScreen": true, "SongsScreen": true, "StatsScreen": true,
 		"StoryScreen": true, "CreditsScreen": true, "ResultsScreen": true,
-		"VersusScreen": true, "CalibrationScreen": true, "PlayChoiceScreen": true,
+		"CalibrationScreen": true, "PlayChoiceScreen": true,
 	}
 	var missing: Array[String] = []
 	for name_ in screens:

@@ -318,6 +318,12 @@ func apply_colors() -> void:
 ## A BoneAttachment3D per item rather than a transform written every frame: the
 ## skeleton is already being posed by the springs, and letting the engine carry
 ## the hat along with the head is what stops a hat lagging behind a nod.
+## An item being tried on: worn over whatever is already there, whether or not
+## it has been bought. Nobody should have to buy a hat to find out what the hat
+## looks like.
+var preview_item := ""
+
+
 func wear_accessories() -> void:
 	for w in _worn:
 		if is_instance_valid(w):
@@ -325,9 +331,14 @@ func wear_accessories() -> void:
 	_worn.clear()
 	if _skel == null:
 		return
+	var trying := MellyShop.def_of(preview_item)
 	for slot in MellyShop.SLOTS:
 		var id := str(G.melly_worn.get(slot, ""))
-		if id == "" or not G.melly_owned.has(id):
+		if not trying.is_empty() and str(trying.slot) == slot:
+			id = preview_item          # what is being looked at wins
+		elif id == "" or not G.melly_owned.has(id):
+			continue
+		if id == "":
 			continue
 		var def := MellyShop.def_of(id)
 		if def.is_empty():

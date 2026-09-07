@@ -7,7 +7,6 @@ const ITEMS := [
 	{"id": "play", "title": "PLAY", "sub": "free play\nor story mode"},
 	{"id": "edit", "title": "MAP EDITOR", "sub": "create maps\nfor any track"},
 	{"id": "songs", "title": "SONGS", "sub": "manage library\ndelete / disable"},
-	{"id": "versus", "title": "VERSUS", "sub": "BETA · two players\none chart"},
 	{"id": "stats", "title": "STATS", "sub": "records\nachievements"},
 	{"id": "melly", "title": "MELLY", "sub": "colours\nand wardrobe"},
 	{"id": "settings", "title": "SETTINGS", "sub": "audio\ncursor"},
@@ -292,8 +291,6 @@ func _activate() -> void:
 			G.main.goto_stats()
 		"melly":
 			G.main.goto_melly()
-		"versus":
-			G.main.goto_versus()
 		"settings":
 			G.main.goto_settings()
 		"credits":

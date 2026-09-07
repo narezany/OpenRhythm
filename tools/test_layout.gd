@@ -38,7 +38,6 @@ func _run_case(sz: Vector2i) -> void:
 		["StatsScreen", StatsScreen], ["CalibrationScreen", CalibrationScreen],
 		["CreditsScreen", CreditsScreen],
 		["StoryScreen", StoryScreen], ["PlayChoiceScreen", PlayChoiceScreen],
-		["VersusScreen", VersusScreen],
 	]:
 		await _check(str(entry[0]), entry[1].new(), canvas)
 	# the modifier panel is hidden until a difficulty is picked, and a hidden
