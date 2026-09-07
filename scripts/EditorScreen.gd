@@ -900,9 +900,9 @@ func _auto_build() -> void:
 		_show_toast("Auto: could not find a beat in this track")
 		return
 	var level := _auto_level()
-	var picked := b.select(level)
+	var picked := b.select(level, Beat.FLOOR, _auto_cover())
 	if picked.size() < 12:
-		picked = b.select(level, Beat.FLOOR * 0.45)   # a quiet track: listen harder
+		picked = b.select(level, Beat.FLOOR * 0.45, _auto_cover())
 	if picked.size() < 8:
 		_show_toast("Auto: too quiet to chart (%d attacks)" % picked.size())
 		return
@@ -935,16 +935,32 @@ func _auto_build() -> void:
 	_show_toast("Auto: %d notes, %s, %.1f BPM" % [notes.size(), _auto_level_name(level), bpm])
 
 
-## The density slider picks which of the three difficulty shapes to build.
+## The density slider picks which of the four difficulty shapes to build.
+##
+## Four rather than three: the old top was a gap of about a third of a beat,
+## which on a fast track is a chart somebody comfortable with the game reads as
+## gentle. The slider now reaches something that is meant to hurt.
 func _auto_level() -> int:
 	var pct: float = auto_dense.value if auto_dense != null else 60.0
 	if pct <= 40.0:
 		return 0
-	return 1 if pct <= 75.0 else 2
+	if pct <= 65.0:
+		return 1
+	return 2 if pct <= 85.0 else 3
+
+
+## How much of a subdivision has to be hit before the chart commits to it.
+##
+## Once the gaps are as tight as the difficulty allows, the only thing left for
+## "harder" to mean is taking a denser grid on thinner evidence - so the top of
+## the slider also lowers the bar for what counts as a beat worth charting.
+func _auto_cover() -> float:
+	var pct: float = auto_dense.value if auto_dense != null else 60.0
+	return lerpf(0.62, 0.34, clampf((pct - 20.0) / 80.0, 0.0, 1.0))
 
 
 func _auto_level_name(level: int) -> String:
-	return ["sparse", "medium", "dense"][clampi(level, 0, 2)]
+	return ["sparse", "medium", "dense", "brutal"][clampi(level, 0, 3)]
 
 
 func _auto_decorate(raw: Array, spb: float) -> Array:

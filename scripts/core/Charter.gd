@@ -31,27 +31,58 @@ const PATTERNS := {
 	"bounce": [3, 4, 5, 4],
 	"spiral": [0, 1, 2, 5, 8, 7, 6, 3, 4],
 	"vee": [0, 4, 2, 5, 8, 4, 6, 3],
+	# Long shapes, for charts that have the notes to spend on them. A pattern
+	# only reads as a shape if it lasts long enough to be recognised, and with
+	# seventeen of them a two-minute song was coming back round to the same
+	# handful every few bars.
+	"zigzag": [0, 5, 3, 8, 6, 2, 4, 1, 7],
+	"ladder": [0, 3, 1, 4, 2, 5, 8, 5, 7, 4, 6, 3],
+	"pinwheel": [1, 5, 7, 3, 0, 2, 8, 6],
+	"cross": [4, 1, 4, 5, 4, 7, 4, 3],
+	"knight": [0, 5, 6, 1, 8, 3, 2, 7],
+	"sweep_down": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+	"sweep_up": [8, 7, 6, 5, 4, 3, 2, 1, 0],
+	"pillars": [0, 6, 1, 7, 2, 8],
+	"rails": [0, 2, 3, 5, 6, 8],
+	"hourglass": [0, 2, 4, 6, 8, 4],
+	"tumble": [0, 4, 8, 5, 2, 4, 6, 3],
+	"clock": [1, 2, 5, 8, 7, 6, 3, 0],
+	"chevron": [3, 0, 1, 2, 5, 4, 3, 4, 5],
+	"scatter": [0, 8, 1, 6, 2, 7, 3, 5],
+	"wave": [6, 3, 0, 1, 4, 7, 8, 5, 2],
+	"lock": [4, 0, 8, 4, 2, 6],
 }
 
+## Which shapes each difficulty is allowed to use. Easy stays near the middle
+## and moves in straight lines; the higher ones get the shapes that cross the
+## grid and the ones long enough to be recognised as shapes.
 const POOLS := {
-	0: ["row_mid", "col_mid", "diag_a", "diag_b", "row_top", "row_bot", "edges"],
+	0: ["row_mid", "col_mid", "diag_a", "diag_b", "row_top", "row_bot", "edges",
+		"bounce", "cross", "pillars"],
 	1: ["row_top", "row_mid", "row_bot", "col_left", "col_mid", "col_right",
-		"diag_a", "diag_b", "corners", "edges", "box", "star", "snake"],
+		"diag_a", "diag_b", "corners", "edges", "box", "star", "snake",
+		"cross", "chevron", "rails", "pillars", "hourglass", "sweep_down",
+		"sweep_up", "clock"],
 	2: ["snake", "box", "spiral", "vee", "star", "corners", "row_top", "row_bot",
-		"col_left", "col_right", "diag_a", "diag_b", "wide", "bounce"],
+		"col_left", "col_right", "diag_a", "diag_b", "wide", "bounce",
+		"zigzag", "ladder", "pinwheel", "knight", "tumble", "clock", "wave",
+		"chevron", "hourglass", "sweep_down", "sweep_up", "scatter", "lock"],
+	3: ["zigzag", "knight", "scatter", "pinwheel", "tumble", "wave", "spiral",
+		"ladder", "wide", "corners", "star", "box", "snake", "vee", "clock",
+		"lock", "hourglass", "sweep_down", "sweep_up", "rails"],
 }
 
-const SIZE_MUL := [1.25, 1.05, 0.92]
+const SIZE_MUL := [1.25, 1.05, 0.92, 0.82]
 ## How far the next cube may be, by how much time there is to travel. Distance
 ## is measured across the grid, so 4 is corner to opposite corner.
-const REACH_T := [0.18, 0.28, 0.45]
+const REACH_T := [0.14, 0.24, 0.40]
 const REACH_D := [1, 2, 3]
 ## One hold per this many bars, and how long it runs, in beats.
-const HOLD_BARS := [8, 8, 12]
-const HOLD_LEN_BEATS := [2.0, 2.0, 1.5]
+const HOLD_BARS := [8, 8, 12, 16]
+const HOLD_LEN_BEATS := [2.0, 2.0, 1.5, 1.0]
 const HOLD_TAIL := 0.5
 ## One in this many on-beat notes carries a click marker. Easy carries none.
-const CLICK_EVERY := [0, 6, 5]
+const CLICK_EVERY := [0, 6, 5, 3]
 
 
 ## times: [{t, v, slot}] as Beat.select returns. Returns chart notes.
@@ -68,6 +99,7 @@ static func build(times: Array, level: int, beat: float, seed_key: String,
 	var prev_cell := -1
 	var last_t := -9.0
 	var step := 0
+	var last_pattern := ""
 	var cur_phrase := -1
 	var pattern: Array = PATTERNS["row_mid"]
 	var strong := 0
@@ -81,7 +113,13 @@ static func build(times: Array, level: int, beat: float, seed_key: String,
 			cur_phrase = phrase
 			var h := _hash(seed_key, level, phrase)
 			var pool: Array = POOLS[level]
-			pattern = PATTERNS[pool[h % pool.size()]]
+			# never the same shape twice running: the same figure repeated is
+			# what makes a generated chart feel machine-made
+			var name: String = pool[h % pool.size()]
+			if name == last_pattern and pool.size() > 1:
+				name = pool[(h % pool.size() + 1 + (h >> 16) % (pool.size() - 1)) % pool.size()]
+			last_pattern = name
+			pattern = PATTERNS[name]
 			step = (h >> 8) % pattern.size()
 		var target: int = pattern[step % pattern.size()]
 		step += 1

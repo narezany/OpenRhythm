@@ -300,6 +300,8 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
     "Beide handen houden een pointer vast, maar er werkt er maar een - hier staat welke. De ander is dood gewicht, en ziet er ook zo uit.",
     "Ambas manos llevan un puntero, pero solo uno funciona: aqui eliges cual. El otro es peso muerto, y se nota.")
 add("Dead", "Смерть", "阵亡", "Tot", "Dood", "Muerto")
+add("brutal", "жесть", "残酷", "brutal", "bruut", "brutal")
+
 # ---------------------------------------------------------------- the menu
 add("Support the game", "Поддержать игру", "支持这个游戏",
     "Das Spiel unterstutzen", "Steun het spel", "Apoyar el juego")

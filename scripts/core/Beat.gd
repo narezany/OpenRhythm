@@ -25,8 +25,12 @@ const SNAP := 0.40
 ## How full a subdivision has to be before a bar is charted at it.
 const COVER := 0.50
 ## Minimum spacing per difficulty, in beats and as an absolute floor.
-const GAP_BEATS := [1.00, 0.55, 0.30]
-const GAP_FLOOR := [0.55, 0.30, 0.17]
+## The closest two cubes may sit, per difficulty. A fourth step was added
+## because the old top - a gap of about a third of a beat - was as hard as the
+## generator could be asked to be, and on a fast track that is a chart somebody
+## comfortable with the game reads as gentle.
+const GAP_BEATS := [1.00, 0.55, 0.30, 0.17]
+const GAP_FLOOR := [0.55, 0.30, 0.17, 0.10]
 
 ## The flux peak arrives before the sound that causes it: the envelope is built
 ## from differences between frames, so a change is noticed at the end of the
@@ -453,7 +457,11 @@ func slots(floor_ := FLOOR) -> PackedFloat32Array:
 ## that the music actually fills. Notes then go on the slots of that
 ## subdivision which have an attack, so every gap in the finished bar is a
 ## whole number of that subdivision.
-func select(level: int, floor_ := FLOOR) -> Array:
+## cover: how much of a subdivision has to be hit before the chart commits to
+## it. Lower means the generator will take a denser grid on thinner evidence,
+## which is what "make it harder" has to mean once the gaps are already as
+## tight as the difficulty allows.
+func select(level: int, floor_ := FLOOR, cover := COVER) -> Array:
 	var sl := slots(floor_)
 	var step := 60.0 / bpm / 4.0
 	var min_gap: float = maxf(GAP_FLOOR[level], (60.0 / bpm) * GAP_BEATS[level])
@@ -485,7 +493,7 @@ func select(level: int, floor_ := FLOOR) -> Array:
 				if sl[j] > 0.0:
 					hit += 1
 				j += d
-			if tot > 0 and float(hit) / float(tot) >= COVER:
+			if tot > 0 and float(hit) / float(tot) >= cover:
 				pick = d
 				break
 		var j2 := bar

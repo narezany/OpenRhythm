@@ -44,6 +44,7 @@ func _ready() -> void:
 	_test_game_mode()
 	_test_dialogue()
 	_test_rounded()
+	_test_charter()
 	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -960,3 +961,49 @@ func _test_rounded() -> void:
 		ok(pts.size() >= 3 and repeats == 0,
 			"%s comes out fillable (%d points, %d repeated)"
 			% [str(c[0]), pts.size(), repeats])
+
+
+## The auto builder, as data. A pool naming a shape that does not exist is a
+## crash the first time that phrase comes up in a song nobody has generated
+## yet, and a per-level table one entry short is the same thing at the top of
+## the slider.
+func _test_charter() -> void:
+	_say("== auto builder ==")
+	var levels := Charter.POOLS.size()
+	ok(levels == 4, "there are four difficulties to build (%d)" % levels)
+	for table in [["SIZE_MUL", Charter.SIZE_MUL], ["HOLD_BARS", Charter.HOLD_BARS],
+			["HOLD_LEN_BEATS", Charter.HOLD_LEN_BEATS],
+			["CLICK_EVERY", Charter.CLICK_EVERY],
+			["GAP_BEATS", Beat.GAP_BEATS], ["GAP_FLOOR", Beat.GAP_FLOOR]]:
+		ok((table[1] as Array).size() >= levels,
+			"%s covers all of them (%d)" % [str(table[0]), (table[1] as Array).size()])
+	var unknown := ""
+	for lv in Charter.POOLS:
+		for name in Charter.POOLS[lv]:
+			if not Charter.PATTERNS.has(name):
+				unknown += "%s " % name
+	ok(unknown == "", "every shape a pool asks for exists%s"
+		% ("" if unknown == "" else " (%s)" % unknown))
+	ok(Charter.PATTERNS.size() >= 30,
+		"and there are enough of them to not repeat (%d)" % Charter.PATTERNS.size())
+	# each step up is tighter than the one below it, or the slider is a lie
+	var tighter := true
+	for i in range(1, levels):
+		if Beat.GAP_BEATS[i] >= Beat.GAP_BEATS[i - 1]:
+			tighter = false
+	ok(tighter, "and each difficulty is tighter than the one below it")
+
+	# a real build: harder settings put more cubes down and move you further
+	var times: Array = []
+	var t := 0.0
+	while t < 40.0:
+		times.append({"t": t, "v": 1.0, "slot": int(t / 0.125) % 16})
+		t += 0.125
+	var last_n := 0
+	var grew := true
+	for lv in levels:
+		var chart := Charter.build(times, lv, 0.5, "test", false, true)
+		if lv > 0 and chart.size() < last_n:
+			grew = false
+		last_n = chart.size()
+	ok(grew and last_n > 0, "and a harder setting never puts down fewer cubes")
