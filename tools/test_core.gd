@@ -41,6 +41,7 @@ func _ready() -> void:
 	_test_touch_cursor()
 	_test_mouse_cursor()
 	_test_vr_room()
+	_test_game_mode()
 	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -742,12 +743,12 @@ func _test_vr_room() -> void:
 		{"t": 4.0, "h": 0.5, "click": true},
 	]
 	var was_active := G.vr_active
-	var was_style := G.vr_style
+	var was_mode := G.game_mode
 	G.vr_active = true
-	G.vr_style = "saber"
+	G.game_mode = "saber"
 	gs._saber_chart()
 	G.vr_active = was_active
-	G.vr_style = was_style
+	G.game_mode = was_mode
 	var holds := 0
 	var in_order := true
 	for i in gs.notes.size():
@@ -858,3 +859,22 @@ func _test_fonts() -> void:
 				gone += char(c)
 		ok(gone == "", "%s can be drawn too%s"
 			% [pair[1], "" if gone == "" else " (missing %s - rerun tools/gen_fontpack.py)" % gone])
+
+
+## The mode picker is one choice, and VR reads it rather than keeping a second
+## one of its own that could disagree with the list you are looking at.
+func _test_game_mode() -> void:
+	_say("== game mode ==")
+	var was := G.game_mode
+	G.game_mode = "laser"
+	ok(G.vr_style == "pointer", "picking the laser puts a pointer in your hand")
+	G.game_mode = "saber"
+	ok(G.vr_style == "saber", "picking sabers gives you a blade")
+	G.game_mode = "all"
+	ok(G.vr_style == "saber", "and \"all\" plays sabers, which is what a headset is for")
+	var song := {"id": "x"}
+	for m in ["all", "laser", "saber"]:
+		ok(RhythmMap.supports_mode(song, m), "every song plays in %s today" % m)
+	ok(not RhythmMap.supports_mode({"modes": ["laser"]}, "saber"),
+		"but a song may say which modes it is written for")
+	G.game_mode = was

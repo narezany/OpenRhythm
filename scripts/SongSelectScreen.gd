@@ -10,6 +10,7 @@ var _pick_song: Dictionary = {}
 var _pick_diff := 0
 var _mods_layer: CanvasLayer
 var _mod_scroll: ScrollContainer
+var _list: VBoxContainer
 var _mod_rows: VBoxContainer
 var _mod_checks: Dictionary = {}
 
@@ -58,18 +59,18 @@ func _ready() -> void:
 	G.anchor_margins(scroll, 140, 104, 140, 106)
 	DragScroll.attach(scroll)
 
-	var vb := VBoxContainer.new()
-	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vb.add_theme_constant_override("separation", 18)
-	scroll.add_child(vb)
+	_list = VBoxContainer.new()
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list.add_theme_constant_override("separation", 18)
+	scroll.add_child(_list)
+
+	# The mode picker sits over the list it filters. Not in a story: that is a
+	# fixed playlist and there is nothing to choose about it.
+	if mode != "story":
+		ModeBar.attach(self, _fill_songs)
 
 	var songs := RhythmMap.load_songs()
-	for song in songs:
-		# story mode lists exactly the current story's playlist
-		if mode == "story" and not (str(song.get("id", "")) in G.story_playlist):
-			continue
-		if RhythmMap.is_playable(song):
-			vb.add_child(_card(song))
+	_fill_songs()
 
 	# Android: file access denied - say plainly what to do about it
 	if RhythmMap.storage_denied_flag:
@@ -81,7 +82,7 @@ func _ready() -> void:
 			16, G.C_GOLD)
 		wl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		warn.add_child(wl)
-		vb.add_child(warn)
+		_list.add_child(warn)
 
 	if songs.is_empty():
 		var empty := G.label("No songs found. Put folders or .zip song packs into:",
@@ -100,6 +101,24 @@ func _ready() -> void:
 		G.anchor_bottom_center(nb, 50, Vector2(260, 46))
 
 	_build_mods_layer()
+
+
+## Fill the list with whatever the chosen mode allows. Called again whenever
+## that choice changes, so the list is the answer to the question on screen.
+func _fill_songs() -> void:
+	if _list == null or not is_instance_valid(_list):
+		return
+	for c in _list.get_children():
+		c.queue_free()
+	for song in RhythmMap.load_songs():
+		# story mode lists exactly the current story's playlist
+		if mode == "story" and not (str(song.get("id", "")) in G.story_playlist):
+			continue
+		if not RhythmMap.is_playable(song):
+			continue
+		if mode != "story" and not RhythmMap.supports_mode(song, G.game_mode):
+			continue
+		_list.add_child(_card(song))
 
 
 func _add_sticky(c: Control) -> void:

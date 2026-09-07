@@ -91,20 +91,12 @@ func _switch(i: int) -> void:
 ## VR. The same build plays flat or in a headset, so there is nothing here to
 ## turn VR on with - it is on when a headset is - only how it plays and a way
 ## to say no.
-var _vr_pointer_btn: Button = null
-var _vr_saber_btn: Button = null
 var _vr_right_btn: Button = null
 var _vr_left_btn: Button = null
 
 
 ## Colour whichever way of playing is chosen.
 func _paint_vr_style() -> void:
-	if _vr_pointer_btn == null or not is_instance_valid(_vr_pointer_btn):
-		return
-	_vr_pointer_btn.add_theme_color_override("font_color",
-		G.C_PRIMARY if G.vr_style == "pointer" else G.C_MUTED)
-	_vr_saber_btn.add_theme_color_override("font_color",
-		G.C_PRIMARY if G.vr_style == "saber" else G.C_MUTED)
 	if _vr_right_btn == null or not is_instance_valid(_vr_right_btn):
 		return
 	_vr_right_btn.add_theme_color_override("font_color",
@@ -123,32 +115,13 @@ func _build_vr() -> void:
 	_body.add_child(here)
 	_body.add_child(_sep())
 
-	_body.add_child(G.label("How you hit the cubes", 21, G.C_TEXT))
-	# The two buttons are kept on the screen rather than in local variables: a
-	# lambda captures what a local holds when the lambda is made, and these are
-	# still null at that point, so the highlight would have been reaching into
-	# nothing every time it ran.
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	_vr_pointer_btn = G.button("Laser pointer", func():
-		G.vr_style = "pointer"
-		G.save_all()
-		G.play_sfx("click")
-		_paint_vr_style(), 22)
-	_vr_saber_btn = G.button("Sabers", func():
-		G.vr_style = "saber"
-		G.save_all()
-		G.play_sfx("click")
-		_paint_vr_style(), 22)
-	row.add_child(_vr_pointer_btn)
-	row.add_child(_vr_saber_btn)
-	_body.add_child(row)
-	_paint_vr_style()
-	var how := G.label("The pointer aims a beam and the trigger presses. Sabers are held in your hands and a cube counts when a blade sweeps through it - from any direction, since the cubes have no side to cut them on. Swing however feels right.",
-		15, Color(1, 1, 1, 0.45))
-	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_child(how)
+	# How the cubes are hit is chosen in the song lists now, next to the songs
+	# it filters - a setting here could disagree with what you were looking at.
+	var where := G.label("How you hit the cubes is chosen in the song list, in the top right corner.",
+		17, G.C_MUTED)
+	where.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	where.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(where)
 	_body.add_child(_sep())
 
 	_body.add_child(G.label("Which hand does the work", 21, G.C_TEXT))

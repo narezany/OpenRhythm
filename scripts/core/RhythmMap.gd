@@ -303,6 +303,22 @@ static func _extract_user_zips() -> void:
 			f = dir.get_next()
 
 
+## Whether a song can be played in a given game mode.
+##
+## Everything can, today: the laser and the sabers read the same charts, so no
+## song is hidden from either. The question is asked anyway, by every list, so
+## that a mode which does need charts written for it - one where a cube has a
+## side you must cut it on, say - can be added without going back through the
+## song lists to teach them what filtering is.
+static func supports_mode(song: Dictionary, mode: String) -> bool:
+	if mode == "" or mode == "all":
+		return true
+	var only = song.get("modes", null)
+	if only is Array and not (only as Array).is_empty():
+		return mode in only
+	return true
+
+
 ## Install a song pack chosen from anywhere on disk.
 ##
 ## The songs folder already unpacks any zip dropped into it, so this is the

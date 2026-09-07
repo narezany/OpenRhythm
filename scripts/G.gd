@@ -102,7 +102,19 @@ var disabled_songs: Array = []
 ## values fire the hitsound earlier.
 var hit_offset := 0.0
 var vr_start := "auto"           # "auto" enters VR when a runtime is up, "off" never
-var vr_style := "saber"          # "saber" cuts with a blade, "pointer" aims a laser
+## Which game mode the library is filtered by, and - in a headset - how the
+## cubes are hit. One choice rather than two: picking "sabers" in a song list
+## and then finding the settings still had a laser in them was a setting
+## disagreeing with itself.
+##
+## "all" is the default and means no filter. In a headset it plays sabers,
+## which is what a headset is for; on a flat screen every mode is the mouse.
+var game_mode := "all"           # "all" | "laser" | "saber"
+
+## How VR hits cubes, derived rather than stored - see game_mode.
+var vr_style: String:
+	get:
+		return "pointer" if game_mode == "laser" else "saber"
 var vr_hand := "right"           # which hand holds the working pointer
 var vr_active := false
 ## Show the VR room on this screen instead of in a headset. A look, and a way
@@ -560,7 +572,9 @@ func _load_save() -> void:
 				disabled_songs = data.get("disabled_songs", [])
 				hit_offset = float(data.get("hit_offset", 0.0))
 				vr_start = str(data.get("vr_start", "auto"))
-				vr_style = str(data.get("vr_style", "saber"))
+				game_mode = str(data.get("game_mode", "all"))
+				if not (game_mode in ["all", "laser", "saber"]):
+					game_mode = "all"
 				vr_hand = str(data.get("vr_hand", "right"))
 				master_vol = float(data.get("master_vol", master_vol))
 				music_vol = float(data.get("music_vol", music_vol))
@@ -609,7 +623,7 @@ func save_all() -> void:
 			"mouse_sens": mouse_sens, "relative_touch": relative_touch,
 			"disabled_songs": disabled_songs,
 			"hit_offset": hit_offset,
-			"vr_start": vr_start, "vr_style": vr_style, "vr_hand": vr_hand,
+			"vr_start": vr_start, "game_mode": game_mode, "vr_hand": vr_hand,
 			"melly_colors": mc,
 			"master_vol": master_vol, "music_vol": music_vol, "sfx_vol": sfx_vol,
 			"hitsound": hitsound, "audio_offset": audio_offset,

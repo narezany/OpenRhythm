@@ -52,6 +52,8 @@ func _ready() -> void:
 	G.anchor_margins(scroll, 160, 146, 160, 112)
 	DragScroll.attach(scroll)
 
+	ModeBar.attach(self, _rebuild)
+
 	list_vb = VBoxContainer.new()
 	list_vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_vb.add_theme_constant_override("separation", 12)

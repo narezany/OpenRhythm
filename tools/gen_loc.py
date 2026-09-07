@@ -300,6 +300,35 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
     "Beide handen houden een pointer vast, maar er werkt er maar een - hier staat welke. De ander is dood gewicht, en ziet er ook zo uit.",
     "Ambas manos llevan un puntero, pero solo uno funciona: aqui eliges cual. El otro es peso muerto, y se nota.")
 add("Dead", "Смерть", "阵亡", "Tot", "Dood", "Muerto")
+# ---------------------------------------------------------------- game modes
+add("All modes", "Все режимы", "全部模式", "Alle Modi", "Alle modi", "Todos los modos")
+add("Every song in the library. In a headset this plays with sabers.",
+    "Все песни библиотеки. В шлеме играется саблями.",
+    "库里的全部曲目。在头显里用光剑玩。",
+    "Jeder Song in der Bibliothek. Im Headset mit Sabeln.",
+    "Elk nummer in de bibliotheek. Met een headset speel je met sabels.",
+    "Todas las canciones de la biblioteca. Con gafas se juega con sables.")
+add("Aim and press: the mouse on a screen, a pointer in a headset.",
+    "Целься и нажимай: мышь на экране, указка в шлеме.",
+    "瞄准并按下：屏幕上是鼠标，头显里是指针。",
+    "Zielen und drucken: die Maus am Bildschirm, ein Pointer im Headset.",
+    "Richten en drukken: de muis op het scherm, een pointer in een headset.",
+    "Apunta y pulsa: el raton en pantalla, un puntero con gafas.")
+add("Cut the cubes out of the air with a blade in each hand.",
+    "Руби кубы в воздухе клинком в каждой руке.",
+    "双手各持一把剑，把方块从空中砍开。",
+    "Schneide die Wurfel mit einer Klinge in jeder Hand aus der Luft.",
+    "Snijd de kubussen uit de lucht met een blad in elke hand.",
+    "Corta los cubos en el aire con una hoja en cada mano.")
+add("Needs a headset.", "Нужен шлем.", "需要头显。", "Braucht ein Headset.",
+    "Vereist een headset.", "Requiere gafas.")
+add("How you hit the cubes is chosen in the song list, in the top right corner.",
+    "Чем бить по кубам выбирается в списке песен, в правом верхнем углу.",
+    "用什么打方块，在曲目列表右上角选。",
+    "Womit du die Wurfel triffst, wahlst du in der Songliste, oben rechts.",
+    "Waarmee je de kubussen raakt kies je in de songlijst, rechtsboven.",
+    "Con que golpeas los cubos se elige en la lista de canciones, arriba a la derecha.")
+
 # ---------------------------------------------------------------- story list
 add("✓ COMPLETE", "✓ ПРОЙДЕНО", "✓ 已通关", "✓ ABGESCHLOSSEN",
     "✓ VOLTOOID", "✓ COMPLETADO")
