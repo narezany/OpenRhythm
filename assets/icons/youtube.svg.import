@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4id802lui16s"
-path="res://.godot/imported/discord.svg-7faef76484f8c3cadcb4f73c849b4b82.ctex"
+uid="uid://bhl7or0uqxxlk"
+path="res://.godot/imported/youtube.svg-3dd1e848512c62ecc2e78ecec164fbe2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/discord.svg"
-dest_files=["res://.godot/imported/discord.svg-7faef76484f8c3cadcb4f73c849b4b82.ctex"]
+source_file="res://assets/icons/youtube.svg"
+dest_files=["res://.godot/imported/youtube.svg-3dd1e848512c62ecc2e78ecec164fbe2.ctex"]
 
 [params]
 

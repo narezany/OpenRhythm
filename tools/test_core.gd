@@ -205,7 +205,18 @@ func _test_updater() -> void:
 	ok(Updater.compare("0.3.0", "0.3.0") == 0, "the same version is not an update")
 	ok(Updater.compare("0.2.9", "0.3.0") < 0, "an older release is not offered")
 	ok(Updater.compare("0.3", "0.3.0") == 0, "a missing patch counts as zero")
-	ok(G.VERSION.split(".").size() == 3, "the game version is semantic (%s)" % G.VERSION)
+	# Two parts or three, and every part a number. Not three exactly: 0.4 is a
+	# version somebody would write, and Updater.compare already treats a
+	# missing patch as zero - so the rule is that it can be compared, which is
+	# the only thing the version is for.
+	var parts := G.VERSION.split(".")
+	var numeric := parts.size() == 2 or parts.size() == 3
+	for part in parts:
+		if not part.is_valid_int():
+			numeric = false
+	ok(numeric, "the game version can be compared (%s)" % G.VERSION)
+	ok(Updater.compare(G.VERSION, "0.3.2") > 0,
+		"and is newer than the last release")
 	# a release carries three .apk files now; a phone must not be offered a
 	# headset build just because it also ends in .apk
 	var up := Updater.new()

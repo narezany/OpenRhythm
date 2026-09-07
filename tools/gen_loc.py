@@ -300,6 +300,22 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
     "Beide handen houden een pointer vast, maar er werkt er maar een - hier staat welke. De ander is dood gewicht, en ziet er ook zo uit.",
     "Ambas manos llevan un puntero, pero solo uno funciona: aqui eliges cual. El otro es peso muerto, y se nota.")
 add("Dead", "Смерть", "阵亡", "Tot", "Dood", "Muerto")
+# ---------------------------------------------------------------- the menu
+add("Support the game", "Поддержать игру", "支持这个游戏",
+    "Das Spiel unterstutzen", "Steun het spel", "Apoyar el juego")
+add("Open Rhythm is free and stays free. This only helps it get made.",
+    "Open Rhythm бесплатна и такой останется. Это только помогает её делать.",
+    "Open Rhythm 是免费的，而且会一直免费。这只是帮它做下去。",
+    "Open Rhythm ist kostenlos und bleibt es. Das hilft nur beim Machen.",
+    "Open Rhythm is gratis en blijft gratis. Dit helpt alleen bij het maken.",
+    "Open Rhythm es gratis y seguira siendolo. Esto solo ayuda a hacerlo.")
+add("Cards issued in Russia", "Для карт, выпущенных в России", "俄罗斯发行的银行卡",
+    "Karten aus Russland", "Kaarten uitgegeven in Rusland",
+    "Tarjetas emitidas en Rusia")
+add("Everywhere else", "Для всех остальных", "其他所有地区",
+    "Uberall sonst", "Overal elders", "Para el resto")
+add("Close", "Закрыть", "关闭", "Schliessen", "Sluiten", "Cerrar")
+
 # ------------------------------------------------------------- story dialogue
 add("YOU", "ТЫ", "你", "DU", "JIJ", "TU")
 add("FAILED", "ПРОВАЛ", "失败", "GESCHEITERT", "MISLUKT", "FALLASTE")

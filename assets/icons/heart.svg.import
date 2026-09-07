@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4id802lui16s"
-path="res://.godot/imported/discord.svg-7faef76484f8c3cadcb4f73c849b4b82.ctex"
+uid="uid://d0cempamjrnsm"
+path="res://.godot/imported/heart.svg-973f083dd5e02626f6363eeb85724b7e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/discord.svg"
-dest_files=["res://.godot/imported/discord.svg-7faef76484f8c3cadcb4f73c849b4b82.ctex"]
+source_file="res://assets/icons/heart.svg"
+dest_files=["res://.godot/imported/heart.svg-973f083dd5e02626f6363eeb85724b7e.ctex"]
 
 [params]
 

@@ -28,7 +28,29 @@ var score_val: Label
 var footer: Label
 var back_btn: Button
 var carousel_y := 300.0
+## Where to find the rest of it. Brand colours rather than one tint: on a black
+## menu they are the fastest way to tell one small glyph from another.
+const SOCIALS := [
+	{"icon": "discord", "name": "Discord", "color": Color("5865f2"),
+	 "url": "https://discord.gg/rc79e2sfqC"},
+	{"icon": "telegram", "name": "Telegram forum", "color": Color("2aabee"),
+	 "url": "https://t.me/openrhythmforum"},
+	{"icon": "reddit", "name": "Reddit", "color": Color("ff4500"),
+	 "url": "https://www.reddit.com/r/OpenRhythm/"},
+	{"icon": "youtube", "name": "YouTube", "color": Color("ff0033"),
+	 "url": "https://www.youtube.com/channel/UC4CKawg1MJ0bKah8IyvAyfg"},
+]
+
+## Two ways to give money, because one of them only works for some people.
+const DONATE := [
+	{"label": "YooMoney", "note": "Cards issued in Russia",
+	 "url": "https://yoomoney.ru/to/4100118196133693"},
+	{"label": "Boosty", "note": "Everywhere else",
+	 "url": "https://boosty.to/ega_link"},
+]
+
 var _social_btns: Array = []
+var _donate_layer: CanvasLayer = null
 
 # --- update banner ---
 var _updater: Updater
@@ -95,11 +117,11 @@ func _ready() -> void:
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	add_child(footer)
 
-	# social links: small icons bottom right
-	_add_social("res://assets/icons/discord.svg", "Discord",
-		"https://discord.gg/rc79e2sfqC", 0)
-	_add_social("res://assets/icons/telegram.svg", "Telegram forum",
-		"https://t.me/openrhythmforum", 1)
+	# social links: small icons bottom right, newest on the left
+	for i in SOCIALS.size():
+		var so: Dictionary = SOCIALS[i]
+		_add_social(str(so.icon), str(so.name), str(so.url), i, so.color)
+	_add_donate(SOCIALS.size())
 
 	_build_update_banner()
 
@@ -271,29 +293,102 @@ func _activate() -> void:
 
 
 ## Small social icon in the bottom-right corner.
-func _add_social(svg: String, name_: String, url: String, idx: int) -> void:
-	var b := Button.new()
-	b.tooltip_text = name_
-	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(46, 46)
-	var tex: Texture2D = null
-	if ResourceLoader.exists(svg):
-		tex = load(svg)
-	var tr := TextureRect.new()
-	tr.texture = tex
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tr.custom_minimum_size = Vector2(34, 34)
-	tr.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.add_child(tr)
+func _add_social(icon: String, name_: String, url: String, idx: int,
+		tint := Color.WHITE) -> void:
+	var b := _icon_button(icon, name_, tint)
 	b.pressed.connect(func():
 		G.play_sfx("click")
 		OS.shell_open(url))
 	b.position = Vector2(G.DESIGN.x - 46 - idx * 56, G.DESIGN.y - 60)
 	add_child(b)
 	_social_btns.append(b)
+
+
+## The donate button forks rather than going straight out: one of the two ways
+## to pay only works with a card issued in Russia, and sending everybody else
+## to a page they cannot use is worse than asking.
+func _add_donate(idx: int) -> void:
+	var b := _icon_button("heart", "Support the game", G.C_GOLD)
+	b.pressed.connect(func():
+		G.play_sfx("click")
+		_show_donate())
+	b.position = Vector2(G.DESIGN.x - 46 - idx * 56, G.DESIGN.y - 60)
+	add_child(b)
+	_social_btns.append(b)
+
+
+func _icon_button(icon: String, name_: String, tint: Color) -> Button:
+	var b := Button.new()
+	b.tooltip_text = name_
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(46, 46)
+	var path := "res://assets/icons/%s.svg" % icon
+	var tr := TextureRect.new()
+	tr.texture = load(path) if ResourceLoader.exists(path) else null
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.custom_minimum_size = Vector2(34, 34)
+	tr.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# the artwork is monochrome, so the brand colour is applied here rather
+	# than baked into the file - one place to change, and no surprise when a
+	# logo turns out to be black on a black menu
+	tr.modulate = Color(tint.r, tint.g, tint.b, 0.86)
+	b.add_child(tr)
+	b.mouse_entered.connect(func(): tr.modulate.a = 1.0)
+	b.mouse_exited.connect(func(): tr.modulate.a = 0.86)
+	return b
+
+
+## The fork: which way you can actually pay.
+func _show_donate() -> void:
+	if _donate_layer != null and is_instance_valid(_donate_layer):
+		_donate_layer.queue_free()
+	_donate_layer = CanvasLayer.new()
+	_donate_layer.layer = 60
+	add_child(_donate_layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.004, 0.008, 0.82)
+	_donate_layer.add_child(dim)
+	G.anchor_full(dim)
+	dim.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed:
+			_donate_layer.queue_free())
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", G.panel_style(
+		Color(G.C_GOLD.r, G.C_GOLD.g, G.C_GOLD.b, 0.6)))
+	_donate_layer.add_child(panel)
+	panel.size = Vector2(520, 300)
+	panel.position = (G.canvas_size() - panel.size) * 0.5
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
+	panel.add_child(vb)
+	var t := G.label("Support the game", 28, G.C_GOLD, true)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(t)
+	var sub2 := G.label("Open Rhythm is free and stays free. This only helps it get made.",
+		16, G.C_MUTED)
+	sub2.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(sub2)
+	for d in DONATE:
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", 0)
+		var url := str(d.url)
+		var btn := G.button(str(d.label), func():
+			G.play_sfx("click")
+			OS.shell_open(url), 24)
+		row.add_child(btn)
+		var note := G.label(str(d.note), 15, G.C_MUTED)
+		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		row.add_child(note)
+		vb.add_child(row)
+	var close := G.button("Close", func():
+		G.play_sfx("click")
+		_donate_layer.queue_free(), 20)
+	vb.add_child(close)
 
 
 func _gui_input(event: InputEvent) -> void:

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4id802lui16s"
-path="res://.godot/imported/discord.svg-7faef76484f8c3cadcb4f73c849b4b82.ctex"
+uid="uid://gcyl8ufrdhs1"
+path="res://.godot/imported/boosty.svg-d99680394b9b9ca89dc898c3b34dcded.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/discord.svg"
-dest_files=["res://.godot/imported/discord.svg-7faef76484f8c3cadcb4f73c849b4b82.ctex"]
+source_file="res://assets/icons/boosty.svg"
+dest_files=["res://.godot/imported/boosty.svg-d99680394b9b9ca89dc898c3b34dcded.ctex"]
 
 [params]
 
