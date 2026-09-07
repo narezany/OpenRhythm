@@ -20,7 +20,12 @@ extends RefCounted
 ##   {"t": 48.0, "do": "flash",      "value": 0.8}
 ##   {"t": 48.0, "do": "shake",      "value": 0.5}
 ##   {"t": 60.0, "do": "zoom",       "value": 1.15, "fade": 0.5}
-##   {"t": 64.0, "do": "text",       "value": "DROP"}
+##   {"t": 64.0, "do": "text",       "value": "DROP", "x": 0, "y": -140,
+##                                    "size": 60, "color": "ff2b3a", "hold": 2.5}
+##
+## A caption with none of the extras behaves as it always did: centred, pops
+## and floats away. Give it any of them and it stands where it was put, at the
+## size and colour it asked for, until "hold" seconds are up.
 
 const COMMANDS := ["bg_color", "bg_image", "note_skin", "note_scale",
 	"flash", "shake", "zoom", "text"]

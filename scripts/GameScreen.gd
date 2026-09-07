@@ -107,7 +107,7 @@ var field_center := G.DESIGN / 2.0
 
 ## Map scripting: a timeline of events the song brings with it.
 var script_: SongScript = null
-var script_layer: CanvasLayer
+var script_layer: Node2D
 var script_image: TextureRect
 var _note_skin: Texture2D = null
 var _note_scale := 1.0
@@ -140,6 +140,11 @@ func _ready() -> void:
 		_load_notes(G.custom_test["notes"], 0.0)
 	_play_rate = G.mod_rate(G.active_mods)
 	_build()
+	# Anything the map sets up at or before the first instant is applied now,
+	# before a single cube exists. A skin chosen at t=0 has to be on the first
+	# cube, not on the first cube after the song reaches zero.
+	if script_ != null and not script_.is_empty():
+		_run_script(0.0)
 	if not G.replay_mode and G.custom_test.is_empty():
 		_replay = Replay.new()
 		_replay.start(song, diff_name, G.active_mods)
@@ -247,8 +252,12 @@ func _build() -> void:
 
 	script_ = SongScript.load_for(song)
 	if not script_.is_empty():
-		script_layer = CanvasLayer.new()
-		script_layer.layer = 1
+		# A backdrop, in the same place the song video sits - it used to be a
+		# CanvasLayer above the playfield, which put the picture over the notes,
+		# the frame, the ranks and the HUD. A background that covers the game is
+		# not a background.
+		script_layer = Node2D.new()
+		script_layer.z_index = -80        # above the video, behind everything else
 		add_child(script_layer)
 		script_image = TextureRect.new()
 		script_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -501,6 +510,12 @@ func _process(delta: float) -> void:
 		_click_edge = G.replay.clicked_between(_prev_time, st)
 	_prev_time = st
 
+	# Events first, then the cubes they are meant to be dressing. Run the other
+	# way round, a cube spawned on the same frame as the event that gives it a
+	# skin flies its whole second wearing the default one - which read as the
+	# custom notes not arriving until a second and a half into the song.
+	_run_script(st)
+
 	while idx < notes.size() and notes[idx].t - APPROACH <= st:
 		_spawn(notes[idx])
 
@@ -588,7 +603,6 @@ func _process(delta: float) -> void:
 	_update_guide(st)
 	ghost_layer.items = active + _guide_items
 
-	_run_script(st)
 	_update_fx(delta)
 	_update_hud(delta)
 	_check_end()
@@ -936,7 +950,17 @@ func _run_script(t: float) -> void:
 				else:
 					create_tween().tween_property(self, "_zoom_extra", z, zf)
 			"text":
-				texts.spawn(Vector2.ZERO, str(e.get("value", "")), G.C_PRIMARY)
+				# where, how big, what colour and for how long - all optional,
+				# and all defaulting to what the command used to do on its own
+				var at := Vector2(float(e.get("x", 0.0)), float(e.get("y", 0.0)))
+				var col: Color = G.C_PRIMARY
+				var raw_col = e.get("color", null)
+				if raw_col != null and Color.html_is_valid(str(raw_col)):
+					col = Color.html(str(raw_col))
+				texts.spawn(at, str(e.get("value", "")), col, "",
+					int(e.get("size", 0)),
+					maxf(float(e.get("hold", 0.45)), 0.05),
+					0.0 if e.has("hold") or e.has("x") or e.has("y") else 34.0)
 
 
 # ---------------------------------------------------------------- fx/hud

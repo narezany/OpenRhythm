@@ -8,6 +8,10 @@ uniform float flash = 0.0;
 uniform float hue = 0.985;
 uniform vec2 res = vec2(1280.0, 720.0);
 
+// How far the floor goes before it stops. Anything beyond this is thinner than
+// the pixels available to draw it, so it is not drawn.
+const float GRID_FAR = 17.0;
+
 vec3 hsv(float h, float s, float v) {
 	vec3 rgb = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
 	return v * mix(vec3(1.0), rgb, s);
@@ -38,15 +42,29 @@ void fragment() {
 	float hor = exp(-abs(p.y - horizon) * 7.0);
 	col += hsv(hue, 0.90, 1.0) * hor * (0.20 + beat * 0.25);
 
-	// floor grid
+	// Floor grid.
+	//
+	// It used to run to infinity: depth is one over the distance from the
+	// horizon, so the lines packed tighter and tighter until a whole cell was
+	// narrower than a pixel - and the brightness was highest exactly there,
+	// because the fade was measured from the horizon rather than from the
+	// viewer. What the card was asked to draw was a shimmering mess of
+	// half-pixel lines, and what you saw was the floor tearing itself up.
+	//
+	// So: the floor ends at GRID_FAR, the last stretch of it fades out so the
+	// end is not a seam, and a line's width is measured in screen pixels with
+	// fwidth - which is what keeps a line a line however far away it is,
+	// instead of a flicker between lit and unlit pixels.
 	if (p.y > horizon) {
-		float depth = 1.0 / (p.y - horizon);
+		float d = p.y - horizon;
+		float depth = 1.0 / max(d, 1.0 / GRID_FAR);
 		vec2 g = vec2(p.x * depth, depth * 0.55 - i_time * (1.2 + beat * 5.0));
+		vec2 gw = fwidth(g);
 		vec2 gv = abs(fract(g) - 0.5);
-		float lx = smoothstep(0.05, 0.0, gv.x);
-		float ly = smoothstep(0.05, 0.0, gv.y);
-		float grid = max(lx, ly);
-		float fade = exp(-(p.y - horizon) * 1.9);
+		vec2 lines = vec2(1.0) - smoothstep(vec2(0.0), gw * 1.3 + 0.008, gv);
+		float grid = max(lines.x, lines.y);
+		float far = 1.0 - smoothstep(GRID_FAR * 0.40, GRID_FAR, depth);
+		float fade = exp(-d * 1.9) * far;
 		col += hsv(fract(hue + 0.015), 0.85, 1.0) * grid * fade * (0.18 + beat * 0.50);
 	}
 

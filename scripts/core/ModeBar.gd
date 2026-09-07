@@ -25,6 +25,10 @@ const MODES := [
 ]
 
 var _buttons: Array[ModeIcon] = []
+var _hint: PanelContainer = null
+var _hint_lbl: Label = null
+var _hover := -1
+var _hover_t := 0.0
 
 
 ## Put the row in the top right of a screen, above whatever it is filtering.
@@ -35,6 +39,7 @@ static func attach(parent: Control, on_changed: Callable) -> ModeBar:
 	bar.changed.connect(on_changed)
 	bar.size = Vector2(178, 52)
 	G.anchor_corner(bar, true, false, 26, 30, Vector2(178, 52))
+	bar._build_hint(parent)
 	return bar
 
 
@@ -55,6 +60,59 @@ func _ready() -> void:
 		add_child(icon)
 		_buttons.append(icon)
 	_paint()
+
+
+## The hint, drawn rather than left to the engine.
+##
+## Godot shows a tooltip once the pointer has been still for half a second, and
+## in this game it never is: the cursor is drawn by the game and warped every
+## frame, so the timer restarts forever and the tooltip never arrives. In a
+## headset there is no system cursor to hover at all. So the hint is a panel of
+## our own, under the row, that appears when a button has been hovered for a
+## moment.
+func _build_hint(parent: Control) -> void:
+	_hint = PanelContainer.new()
+	_hint.add_theme_stylebox_override("panel", G.panel_style(
+		Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.75)))
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint.modulate.a = 0.0
+	parent.add_child(_hint)
+	_hint_lbl = G.label("", 16, G.C_TEXT)
+	_hint_lbl.auto_translate_mode = Control.AUTO_TRANSLATE_MODE_DISABLED
+	_hint_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint_lbl.custom_minimum_size = Vector2(300, 0)
+	_hint.add_child(_hint_lbl)
+
+
+func _process(delta: float) -> void:
+	if _hint == null or not is_instance_valid(_hint):
+		return
+	# Asked of the rectangles rather than of the buttons: a disabled button
+	# takes no mouse input and so is never "hovered", and the greyed-out saber
+	# is exactly the one whose hint somebody needs - it is the one that has to
+	# explain why it cannot be pressed.
+	var at := get_global_mouse_position()
+	var over := -1
+	for i in _buttons.size():
+		if _buttons[i].get_global_rect().has_point(at):
+			over = i
+			break
+	if over != _hover:
+		_hover = over
+		_hover_t = 0.0
+		if over >= 0:
+			_hint_lbl.text = _buttons[over].tooltip_text
+	var want := 0.0
+	if _hover >= 0:
+		_hover_t += delta
+		if _hover_t > 0.28:
+			want = 1.0
+			# under the row, hanging off its right edge like a real tooltip
+			_hint.size = Vector2(320, 0)
+			_hint.position = Vector2(
+				global_position.x + size.x - 320.0, global_position.y + size.y + 10.0)
+	_hint.modulate.a = move_toward(_hint.modulate.a, want, delta * 6.0)
 
 
 func _pick(id: String) -> void:

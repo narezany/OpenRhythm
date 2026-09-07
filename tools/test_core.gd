@@ -919,11 +919,10 @@ func _test_dialogue() -> void:
 	# every face a pose asks for has to be drawable
 	var missing := ""
 	for name in MellyRig.POSES:
-		for slot in ["open", "shut"]:
-			var f := str(MellyRig.POSES[name][slot])
-			if not (f in ["idle", "happy", "very", "sad"]) \
-					and MellyFaces.get_face(f) == null:
-				missing += f + " "
+		var f := str(MellyRig.POSES[name]["face"])
+		if not (f in ["idle", "happy", "very", "sad"]) \
+				and MellyFaces.get_face(f) == null:
+			missing += f + " "
 	ok(missing == "", "and every face a pose asks for can be drawn%s"
 		% ("" if missing == "" else " (%s)" % missing))
 

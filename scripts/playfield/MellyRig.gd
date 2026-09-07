@@ -30,36 +30,41 @@ var mood := "idle"             # idle | happy | very | sad
 ## not talking to you, they are performing. So the poses below are built for
 ## standing and speaking, and each names the two faces it flips between while
 ## the words are coming out.
+## One face per pose, held for the whole line.
+##
+## It used to flip between an open mouth and a shut one while the words
+## appeared, which is what a talking sprite normally does - and on this face,
+## which is two dots and a mouth on a smooth white head, it did not read as
+## talking. It read as wrong. A smile that stays a smile is better than a mouth
+## that chatters; the hands and the head do the talking instead.
 const POSES := {
 	"talk":      {"arms": 0.30, "gesture": 0.30, "lean": 0.0,  "head": 0.02,
-	              "open": "talk", "shut": "flat"},
+	              "face": "happy"},
 	"explain":   {"arms": 1.05, "gesture": 0.16, "lean": -0.04, "head": -0.03,
-	              "open": "talk", "shut": "happy"},
+	              "face": "happy"},
 	"ask":       {"arms": 0.16, "gesture": 0.10, "lean": 0.05, "head": 0.16,
-	              "open": "think", "shut": "think"},
+	              "face": "think"},
 	"cheer":     {"arms": 2.35, "gesture": 0.55, "lean": -0.08, "head": -0.10,
-	              "open": "talk", "shut": "very"},
+	              "face": "very"},
 	"smug":      {"arms": -0.10, "gesture": 0.06, "lean": -0.10, "head": -0.06,
-	              "open": "smug", "shut": "smug"},
+	              "face": "smug"},
 	"worried":   {"arms": -0.06, "gesture": 0.05, "lean": 0.14, "head": 0.24,
-	              "open": "talk", "shut": "sad"},
+	              "face": "sad"},
 	"surprised": {"arms": 1.55, "gesture": 0.10, "lean": -0.12, "head": -0.14,
-	              "open": "surprised", "shut": "surprised"},
+	              "face": "surprised"},
 	"wink":      {"arms": 0.85, "gesture": 0.22, "lean": -0.02, "head": 0.08,
-	              "open": "talk", "shut": "wink"},
-	# held while somebody else is speaking: hands down, head tipped, mouth
-	# shut. Without it the face freezes on whatever was said last, which reads
-	# as Melly having stopped existing rather than as listening.
+	              "face": "wink"},
+	# held while somebody else is speaking: hands down, head tipped. Without it
+	# the face freezes on whatever was said last, which reads as Melly having
+	# stopped existing rather than as listening.
 	"listen":    {"arms": 0.06, "gesture": 0.04, "lean": 0.02, "head": 0.10,
-	              "open": "flat", "shut": "flat"},
+	              "face": "flat"},
 }
 
 ## The pose being held, or "" when the moods are driving as usual.
 var pose := ""
 ## True while words are appearing, which is what moves the mouth.
 var talking := false
-var _mouth_t := 0.0
-var _mouth_open := false
 ## Limp: nothing is driving them, every joint hangs, and the springs are the
 ## only thing left moving. Set while they are being carried around a VR room by
 ## the scruff of the neck. It is not a mood - the face stays as it was.
@@ -133,8 +138,6 @@ func _process(delta: float) -> void:
 		_mood_until_ms = 0
 	_kick_cd = maxf(0.0, _kick_cd - delta)
 	_pat_flat(delta)
-	if pose != "":
-		_mouth(delta)
 	_sim(delta)
 	_apply_pose()
 
@@ -422,26 +425,6 @@ func _spring(v: float, vel: float, target: float, stiff: float, damp: float, dt:
 	return [v, vel]
 
 
-## The mouth, while a line is being typed out. Two faces alternating is what
-## every game with a talking sprite does, and it is what makes the words look
-## like they come from the character rather than from a box.
-func _mouth(dt: float) -> void:
-	var p: Dictionary = POSES.get(pose, {})
-	if p.is_empty():
-		return
-	var want := false
-	if talking:
-		_mouth_t += dt
-		if _mouth_t >= 0.085:
-			_mouth_t = 0.0
-			_mouth_open = not _mouth_open
-		want = _mouth_open
-	else:
-		_mouth_t = 0.0
-		_mouth_open = false
-	_wear(str(p.get("open" if want else "shut", "flat")))
-
-
 ## Put a face on, from the four that ship as textures or from the ones drawn
 ## for talking. Cheap to call often: both sides cache.
 func _wear(kind: String) -> void:
@@ -457,9 +440,7 @@ func set_pose(name: String) -> void:
 	pose = name if POSES.has(name) else ""
 	if pose == "":
 		return
-	_mouth_t = 0.0
-	_mouth_open = false
-	_wear(str(POSES[pose].get("shut", "flat")))
+	_wear(str(POSES[pose].get("face", "flat")))
 	if _kick_cd <= 0.0:
 		_kick(pose)
 		_kick_cd = 0.18

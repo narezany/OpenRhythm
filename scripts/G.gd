@@ -7,7 +7,7 @@ const CELL := 166.0            # spacing of the 3x3 note grid
 const SAVE_PATH := "user://save.json"
 ## Semantic version, matched against the tag of a GitHub release by the
 ## updater. Bump it in the same commit as the tag.
-const VERSION := "0.3.2"
+const VERSION := "0.4"
 const REPO := "narezany/OpenRhythm"
 
 # --- heavy black & blood-red palette ---

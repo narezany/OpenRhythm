@@ -99,6 +99,7 @@ var _lines: Array = []
 var _li := 0
 var _shown := 0.0         # how many characters have been typed out
 var _typing := false
+var _last_tap_ms := 0
 var _list_root: Control = null
 
 
@@ -345,6 +346,15 @@ func _line_text() -> String:
 	return tr(str(line.get("text", ""))) if not line.is_empty() else ""
 
 
+## One press, however many events the platform makes out of it.
+func _tap() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_tap_ms < 90:
+		return
+	_last_tap_ms = now
+	_advance()
+
+
 func _advance() -> void:
 	if _novel_layer == null:
 		return
@@ -412,10 +422,15 @@ func _start_playlist_song() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _novel_layer != null:
+		# A tap on a phone arrives twice: once as a touch and once as the mouse
+		# click the engine makes out of it. Both branches fired, so one tap
+		# finished the line and skipped straight past it. Both are kept - touch
+		# still has to work if mouse emulation is ever turned off - and the
+		# second one within a moment is dropped instead.
 		if event is InputEventMouseButton and event.pressed:
-			_advance()
+			_tap()
 		elif event is InputEventScreenTouch and event.pressed:
-			_advance()
+			_tap()
 		elif event.is_action_pressed("ui_accept"):
 			_advance()
 		elif event.is_action_pressed("ui_cancel"):
