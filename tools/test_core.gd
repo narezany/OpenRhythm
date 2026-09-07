@@ -809,10 +809,30 @@ func _signed_volume(mesh: Mesh) -> float:
 ## out of the web build as boxes with hex codes in them.
 func _test_fonts() -> void:
 	_say("== winning and losing ==")
-	ok(Judge.failed(Judge.rank_for(0.2)), "a run you were buried by is a loss")
-	ok(Judge.failed(Judge.rank_for(0.55)), "and so is a sloppy one")
-	ok(not Judge.failed(Judge.rank_for(0.62)), "a scrappy C is still a pass")
-	ok(not Judge.failed(Judge.rank_for(0.99)), "and an SS certainly is")
+	# Losing belongs to story mode and to the health bar. Free play cannot be
+	# failed at all - a bad run there is a bad score, which is what practising
+	# looks like - so no letter rank is a loss, however poor.
+	ok(Judge.failed(Judge.DEAD), "only the health bar running out is a loss")
+	for a in [0.0, 0.2, 0.55, 0.62, 0.99]:
+		ok(not Judge.failed(Judge.rank_for(a)),
+			"a %.0f%% run is a score, not a failure" % (a * 100.0))
+	ok(Judge.rank_color(Judge.DEAD) != Judge.rank_color("C"),
+		"and it is not painted like a rank")
+
+	# The misses a story allows before the bar is empty, by difficulty.
+	var gs2 := GameScreen.new()
+	gs2._set_miss_budget(0, 1)
+	var only := 1.0 / gs2._miss_cost
+	gs2._set_miss_budget(0, 5)
+	var easiest := 1.0 / gs2._miss_cost
+	gs2._set_miss_budget(4, 5)
+	var hardest := 1.0 / gs2._miss_cost
+	gs2.free()
+	ok(absf(hardest - GameScreen.MISS_BUDGET_HARD) < 0.01,
+		"the hardest difficulty allows %.0f misses in a row" % hardest)
+	ok(absf(easiest - GameScreen.MISS_BUDGET_EASY) < 0.01,
+		"the easiest allows %.0f" % easiest)
+	ok(only == easiest, "a song with one difficulty is treated as its easiest")
 
 	_say("== fonts ==")
 	var sample := {

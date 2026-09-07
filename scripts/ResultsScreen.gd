@@ -15,7 +15,9 @@ func _ready() -> void:
 	var rank: String = str(data.get("rank", "D"))
 	var rcol := Judge.rank_color(rank)
 
-	var rank_label := G.label(rank, 170, rcol, true)
+	var failed: bool = bool(data.get("failed", Judge.failed(rank)))
+	# "Dead" is a word, not a letter, so it needs the room a letter did not
+	var rank_label := G.label(rank, 92 if failed else 170, rcol, true)
 	rank_label.position = Vector2(0, 150)
 	rank_label.size = Vector2(464, 240)
 	rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -33,13 +35,16 @@ func _ready() -> void:
 	# A lost run says so, in the one place the eye goes first. It used to read
 	# RESULTS in muted grey whether you had cleared the song or been buried by
 	# it, which is how a failed run came to look exactly like a win.
-	var failed: bool = bool(data.get("failed", Judge.failed(rank)))
-	var sub := G.label("FAILED" if failed else "RESULTS", 22,
-		G.JUDGE_COLORS["MISS"] if failed else G.C_MUTED)
-	sub.position = Vector2(0, 118)
-	sub.size = Vector2(464, 30)
+	var sub := G.label("FAILED" if failed else "RESULTS", 54 if failed else 22,
+		Judge.rank_color(Judge.DEAD) if failed else G.C_MUTED, failed)
+	sub.position = Vector2(0, 96 if failed else 118)
+	sub.size = Vector2(464, 62 if failed else 30)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(sub)
+	if failed:
+		var beat := create_tween().set_loops()
+		beat.tween_property(sub, "modulate:a", 0.55, 0.5)
+		beat.tween_property(sub, "modulate:a", 1.0, 0.5)
 
 	# Melly celebrates a good run and sulks at a D
 	var rig := MellyRig.new()

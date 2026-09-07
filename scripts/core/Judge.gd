@@ -118,13 +118,17 @@ static func degrade(label: String, held_frac: float) -> String:
 	return label
 
 
-## Where the game draws the line between a run cleared and a run lost.
+## The rank of a run that ended early, and the only rank that counts as lost.
 ##
-## In one place, because two places disagreeing is how a lost run came to be
-## congratulated: the results screen already knew a D was a failure - it is
-## what made Melly sulk - while everything that paid out did not.
+## Losing is a story mode idea. Free play has no way to fail: a bad run there
+## is a bad score and nothing more, which is what practising is for. In a story
+## the health bar decides, and when it empties the run stops where it stands -
+## so the mark it leaves is not a letter on the same scale as the others.
+const DEAD := "Dead"
+
+
 static func failed(rank: String) -> bool:
-	return rank == "D" or rank == "F"
+	return rank == DEAD
 
 
 static func rank_for(acc: float) -> String:
@@ -148,4 +152,5 @@ static func rank_color(rank: String) -> Color:
 		"A": return Color("ff7a45")
 		"B": return Color("ffb547")
 		"C": return Color("c9584f")
+		DEAD: return Color("ff1f2e")
 		_: return Color("8d96a0")

@@ -13,6 +13,22 @@ const FADE_LEAD := 0.80      # BLACKOUT: seconds before hit when cubes vanish
 ## far apart, in the same cell.
 const SABER_REPEAT := 0.16
 
+## Health, which only exists in a story.
+##
+## Free play cannot be lost - a bad run there is a bad score, and that is what
+## practice is. A story can be, and what decides it is misses rather than
+## accuracy: accuracy is a verdict on the whole run delivered at the end, while
+## a health bar is something you can watch going and do something about.
+##
+## The hardest difficulty gives you MISS_BUDGET_HARD misses in a row before the
+## bar is empty; the easiest gives you MISS_BUDGET_EASY, because the same seven
+## on a chart nobody can read yet is not a challenge but a wall. Landing notes
+## puts it back, a quarter of a miss at a time, so a bad patch you recover from
+## is survivable and a bad patch you do not is not.
+const MISS_BUDGET_HARD := 7.0
+const MISS_BUDGET_EASY := 14.0
+const HEAL_SHARE := 0.25
+
 var song: Dictionary
 var diff_name := ""
 var notes: Array = []
@@ -27,6 +43,13 @@ var max_combo := 0
 var acc_sum := 0.0
 var acc_n := 0
 var counts := {"PERFECT": 0, "GREAT": 0, "GOOD": 0, "BULLSHIT": 0, "MISS": 0}
+
+## 1.0 full, 0.0 dead. Meaningless outside a story - see _story_run.
+var health := 1.0
+var _story_run := false
+var _miss_cost := 1.0 / MISS_BUDGET_HARD
+var _dead := false
+var health_bar: HealthDraw = null
 
 var trauma := 0.0
 var flash := 0.0
@@ -99,11 +122,17 @@ func _ready() -> void:
 	# clamped: a broken driver can report an absurd figure, and a hitsound half
 	# a second early is worse than one slightly late
 	_out_lat = clampf(AudioServer.get_output_latency(), 0.0, 0.12)
+	# A story is the only place a run can be lost, and it has to be known before
+	# the HUD is built - the bar is not there at all in free play.
+	_story_run = not G.story_playlist.is_empty() and not G.replay_mode \
+		and G.custom_test.is_empty()
 	if G.custom_test.is_empty():
 		song = G.selected_song
 		var diffs := RhythmMap.diffs_of(song)
-		var d: Dictionary = diffs[clampi(G.selected_diff, 0, diffs.size() - 1)]
+		var pick := clampi(G.selected_diff, 0, diffs.size() - 1)
+		var d: Dictionary = diffs[pick]
 		diff_name = str(d.get("name", "?"))
+		_set_miss_budget(pick, diffs.size())
 		_load_notes(d.get("notes", []), G.shot_seek)
 	else:
 		song = G.custom_test["song"]
@@ -290,6 +319,12 @@ func _build_hud() -> void:
 
 	hud_title_hud(hud)
 
+	if _story_run:
+		health_bar = HealthDraw.new()
+		health_bar.size = Vector2(420, 26)
+		health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud.add_child(health_bar)
+
 	progress_bar = ProgressDraw.new()
 	progress_bar.position = Vector2(390, 16)
 	progress_bar.size = Vector2(500, 8)
@@ -362,6 +397,9 @@ func _anchor_hud(rig: MellyRig) -> void:
 	rig.position = Vector2(vis.position.x + 10.0, vis.end.y - rig.size.y)
 	acc_bg.position = Vector2(vis.end.x - acc_bg.size.x - 20.0, 94.0)
 	progress_bar.position = Vector2(vis.get_center().x - progress_bar.size.x / 2.0, 16.0)
+	if health_bar != null and is_instance_valid(health_bar):
+		health_bar.position = Vector2(
+			vis.get_center().x - health_bar.size.x / 2.0, vis.end.y - 52.0)
 
 
 func hud_title_hud(hud: CanvasLayer) -> void:
@@ -726,6 +764,7 @@ func _award(n: Dictionary, acc: float, lbl: String) -> void:
 	acc_n += 1
 	counts[lbl] += 1
 	G.note_hit_stat(combo)
+	_heal()
 
 	var col: Color = G.JUDGE_COLORS[lbl]
 	var ncol: Color = n.color
@@ -756,6 +795,48 @@ func _resolve_best(n: Dictionary) -> void:
 	_resolve(n, float(n.get("best_dt", 0.0)), n.hit, float(n.get("best_p", 0.0)))
 
 
+## How many misses in a row the bar can take, from where this difficulty sits
+## among the song's own. Read from the position rather than from the name: maps
+## bring whatever names they like, and a song with two difficulties means
+## something different by "hard" than one with five.
+func _set_miss_budget(pick: int, count: int) -> void:
+	var hardness := 0.0 if count < 2 else float(pick) / float(count - 1)
+	var budget := lerpf(MISS_BUDGET_EASY, MISS_BUDGET_HARD, hardness)
+	_miss_cost = 1.0 / maxf(budget, 1.0)
+
+
+## A miss takes a bite out of the bar, and the bar running out ends the run
+## where it stands. Outside a story none of this happens at all.
+func _hurt() -> void:
+	if not _story_run or _dead or ended:
+		return
+	health = maxf(0.0, health - _miss_cost)
+	if health_bar != null and is_instance_valid(health_bar):
+		health_bar.hit = 1.0
+	if health <= 0.0:
+		_die()
+
+
+## Landing a note puts a little of it back. A quarter of a miss, so a bad patch
+## you pull out of is survivable and one you do not is not.
+func _heal() -> void:
+	if not _story_run or _dead:
+		return
+	health = minf(1.0, health + _miss_cost * HEAL_SHARE)
+
+
+## The bar emptied. The run stops here rather than playing itself out to a
+## results screen that would have to pretend it went fine.
+func _die() -> void:
+	if _dead or ended:
+		return
+	_dead = true
+	trauma = maxf(trauma, 0.9 * G.motion())
+	miss_flash = 1.0 * G.flashes()
+	G.play_sfx("miss", 0.75, -2.0)
+	_finish()
+
+
 func _resolve_miss(n: Dictionary, has_node := true) -> void:
 	n.done = true
 	counts["MISS"] += 1
@@ -769,6 +850,7 @@ func _resolve_miss(n: Dictionary, has_node := true) -> void:
 		G.play_sfx("miss", 1.0, -8.0)
 	if G.melly != null:
 		G.melly.react_miss()
+	_hurt()
 	if has_node and n.node != null and is_instance_valid(n.node):
 		n.node.fade_out(0.35)
 
@@ -965,6 +1047,8 @@ func _update_hud(delta: float) -> void:
 	hud_combo.position = (cvc - Vector2(150.0, hud_combo.size.y / 2.0)).round()
 
 	progress_bar.frac = Conductor.song_time / maxf(Conductor.length, 0.001)
+	if health_bar != null and is_instance_valid(health_bar):
+		health_bar.frac = health
 
 	# versus: keep the other player posted and show where they are
 	if Net.in_match:
@@ -998,12 +1082,11 @@ func _finish() -> void:
 	ended = true
 	Conductor.stop_music()
 	var acc: float = (acc_sum / acc_n) if acc_n > 0 else 1.0
-	var rank := Judge.rank_for(acc)
-	# A run can be lost. The results screen has always known that - it is what
-	# made Melly go sad - but nothing else did: a run you flunked still paid
-	# out a score, still counted the song as cleared, still opened the next
-	# story chapter and still congratulated you for it.
-	var failed := Judge.failed(rank)
+	# Losing is a story mode idea, and it is the health bar that says so. Free
+	# play cannot be failed at all: a bad run there is a bad score, which is
+	# what practice looks like.
+	var failed := _dead
+	var rank: String = Judge.DEAD if failed else Judge.rank_for(acc)
 	if G.melly != null:
 		if failed:
 			G.melly.react_miss()
@@ -1121,6 +1204,45 @@ func _to_menu() -> void:
 	G.replay_mode = false
 	Conductor.stop_music()
 	G.main.goto_menu()
+
+
+## The health bar, along the bottom of a story run.
+##
+## Deliberately not a thin line like the song progress above it: this is the
+## thing that ends the run, and it has to be readable out of the corner of an
+## eye that is busy watching cubes. It goes from the game's own red to a
+## warning amber as it empties, and flinches when it is bitten.
+class HealthDraw extends Control:
+	var frac := 1.0
+	var hit := 0.0            # 1 on the frame a miss lands, fading out
+	var _shown := 1.0
+
+	func _process(delta: float) -> void:
+		hit = maxf(0.0, hit - delta * 3.2)
+		# the drawn value chases the real one, so a miss reads as a lurch
+		_shown = move_toward(_shown, frac, delta * 1.6)
+		queue_redraw()
+
+	func _draw() -> void:
+		var r := Rect2(Vector2.ZERO, size)
+		var h := size.y * 0.42
+		var y := (size.y - h) * 0.5
+		G.draw_rounded_rect(self, Rect2(0, y, size.x, h), h * 0.5,
+			Color(0.06, 0.012, 0.02, 0.72))
+		var f := clampf(_shown, 0.0, 1.0)
+		if f > 0.001:
+			var col := Color(1.0, 0.62, 0.18).lerp(G.C_PRIMARY, clampf(f * 1.6, 0.0, 1.0))
+			if hit > 0.0:
+				col = col.lerp(Color.WHITE, hit * 0.55)
+			var w: float = maxf(h, size.x * f)
+			G.draw_rounded_rect(self, Rect2(0, y, w, h), h * 0.5, col)
+		G.draw_rounded_outline(self, Rect2(0, y, size.x, h), h * 0.5,
+			Color(1.0, 0.86, 0.84, 0.35 + hit * 0.5), 2.0)
+		# a low bar says so rather than leaving it to be noticed
+		if f <= 0.34:
+			var pulse: float = 0.45 + 0.35 * sin(Time.get_ticks_msec() * 0.008)
+			G.draw_rounded_outline(self, r.grow(-1.0), size.y * 0.5,
+				Color(1.0, 0.16, 0.2, pulse * (1.0 - f / 0.34)), 2.0)
 
 
 class ProgressDraw extends Control:
