@@ -299,6 +299,18 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
     "Beide Hande halten einen Pointer, aber nur einer davon geht - hier steht welcher. Der andere ist totes Gewicht und sieht auch so aus.",
     "Beide handen houden een pointer vast, maar er werkt er maar een - hier staat welke. De ander is dood gewicht, en ziet er ook zo uit.",
     "Ambas manos llevan un puntero, pero solo uno funciona: aqui eliges cual. El otro es peso muerto, y se nota.")
+# ---------------------------------------------------------------- story list
+add("✓ COMPLETE", "✓ ПРОЙДЕНО", "✓ 已通关", "✓ ABGESCHLOSSEN",
+    "✓ VOLTOOID", "✓ COMPLETADO")
+add("Not played yet", "Ещё не играл", "还没玩过", "Noch nicht gespielt",
+    "Nog niet gespeeld", "Sin jugar todavia")
+add("Locked — finish the story before it", "Закрыто — пройди предыдущую историю",
+    "未解锁——先通关上一章", "Gesperrt - schliess die Story davor ab",
+    "Op slot - rond de vorige story af", "Bloqueado: termina la historia anterior")
+add("%d / %d cleared", "%d / %d пройдено", "已通关 %d / %d",
+    "%d / %d geschafft", "%d / %d gehaald", "%d / %d superadas")
+add("CONTINUE", "ПРОДОЛЖИТЬ", "继续", "WEITER", "VERDER", "CONTINUAR")
+add("REPLAY", "ЗАНОВО", "重玩", "NOCHMAL", "OPNIEUW", "REPETIR")
 add("Open in VR when a headset is there", "Открывать в VR, если есть шлем",
     "有头显时以 VR 打开", "In VR offnen, wenn ein Headset da ist",
     "In VR openen als er een headset is", "Abrir en RV si hay gafas")

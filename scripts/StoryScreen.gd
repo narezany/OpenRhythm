@@ -94,9 +94,7 @@ func _build_list() -> void:
 	for i in STORIES.size():
 		var idx := i
 		var st: Dictionary = STORIES[i]
-		var locked := not _unlocked(st)
-		vb.add_child(_story_card(str(st.title), str(st.sub),
-			func(): _open_story(idx), locked))
+		vb.add_child(_story_card(st, func(): _open_story(idx)))
 
 	var back := G.button("← Back", func():
 		G.play_sfx("click")
@@ -118,10 +116,27 @@ func _song_cleared(song_id: String) -> bool:
 	return entry is Dictionary and not entry.is_empty()
 
 
-func _story_card(title: String, sub: String, on_open: Callable, locked: bool) -> PanelContainer:
+## How much of a story has been played. The list used to say nothing at all -
+## whether you had finished a chapter or never opened it, the card looked the
+## same, and the only way to find out was to play it again and see.
+func _cleared_count(st: Dictionary) -> int:
+	var n := 0
+	for id in st.get("songs", []):
+		if _song_cleared(str(id)):
+			n += 1
+	return n
+
+
+func _story_card(st: Dictionary, on_open: Callable) -> PanelContainer:
+	var locked := not _unlocked(st)
+	var total: int = (st.get("songs", []) as Array).size()
+	var done := _cleared_count(st)
+	var finished: bool = not locked and total > 0 and done >= total
+
 	var p := PanelContainer.new()
+	var edge: Color = G.C_GOLD if finished else G.C_PRIMARY
 	p.add_theme_stylebox_override("panel", G.panel_style(
-		Color(G.C_PRIMARY.r, G.C_PRIMARY.g, G.C_PRIMARY.b, 0.22 if locked else 0.75)))
+		Color(edge.r, edge.g, edge.b, 0.22 if locked else 0.75)))
 	p.custom_minimum_size = Vector2(660, 160)
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 20)
@@ -131,11 +146,22 @@ func _story_card(title: String, sub: String, on_open: Callable, locked: bool) ->
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	vb.add_theme_constant_override("separation", 6)
 	hb.add_child(vb)
-	var t := G.label(title, 30, G.C_GOLD if not locked else G.C_MUTED, true)
+	var t := G.label(str(st.title), 30, G.C_GOLD if not locked else G.C_MUTED, true)
 	vb.add_child(t)
-	var s := G.label(sub, 17, G.C_TEXT if not locked else G.C_MUTED)
+	var s := G.label(str(st.sub), 17, G.C_TEXT if not locked else G.C_MUTED)
 	vb.add_child(s)
-	var b := G.button("PLAY" if not locked else "LOCKED", func():
+	# where you got to, in words rather than left to memory
+	if locked:
+		vb.add_child(G.label("Locked — finish the story before it", 16, G.C_MUTED))
+	elif finished:
+		vb.add_child(G.label("✓ COMPLETE", 18, G.C_GOLD, true))
+	elif done > 0:
+		vb.add_child(G.label("%d / %d cleared" % [done, total], 17, G.C_EMBER))
+	else:
+		vb.add_child(G.label("Not played yet", 16, G.C_MUTED))
+
+	var b := G.button(("LOCKED" if locked else ("REPLAY" if finished else
+		("CONTINUE" if done > 0 else "PLAY"))), func():
 		if locked:
 			G.play_sfx("miss", 1.0, -6.0)
 			return

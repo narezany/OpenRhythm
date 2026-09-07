@@ -15,6 +15,7 @@ const LANGS := [
 ]
 
 const RU := {
+	"%d / %d cleared": "%d / %d пройдено",
 	"+  NEW MAP": "+  НОВАЯ КАРТА",
 	"1 • FIRST STEPS": "1 • ПЕРВЫЕ ШАГИ",
 	"2 • NIGHT DRIVE": "2 • НОЧНАЯ ПОЕЗДКА",
@@ -55,6 +56,7 @@ const RU := {
 	"CALIBRATION": "КАЛИБРОВКА",
 	"CLICKS": "КЛИКИ",
 	"CLICKY": "ВСЁ КЛИКОМ",
+	"CONTINUE": "ПРОДОЛЖИТЬ",
 	"COPY THIS SONG": "СКОПИРОВАТЬ ПЕСНЮ",
 	"CREATE": "СОЗДАТЬ",
 	"CREDITS": "АВТОРЫ",
@@ -173,6 +175,7 @@ const RU := {
 	"Let go early and the hold does not count. Carry it to the end.": "Отпустишь раньше — удержание не засчитается. Веди до конца.",
 	"Library folder:": "Папка библиотеки:",
 	"Library is empty.": "Библиотека пуста.",
+	"Locked — finish the story before it": "Закрыто — пройди предыдущую историю",
 	"Long cubes are HOLDS: stay on them until they run out.": "Длинные кубы — это УДЕРЖАНИЯ: не отпускай их до конца.",
 	"Look at the VR room on this screen": "Посмотреть VR-комнату на этом экране",
 	"MAP EDITOR": "РЕДАКТОР КАРТ",
@@ -202,6 +205,7 @@ const RU := {
 	"Nobody has joined yet": "Пока никто не подключился",
 	"Not a single cube was harmed": "Ни один куб не пострадал",
 	"Not connected": "Нет подключения",
+	"Not played yet": "Ещё не играл",
 	"Notes hit": "Попаданий",
 	"Nothing to undo": "Отменять нечего",
 	"Off keeps the game in a window even with a headset connected. Takes effect next launch.": "Выключено — игра останется в окне даже с подключённым шлемом. Применится при следующем запуске.",
@@ -226,6 +230,7 @@ const RU := {
 	"Player connected": "Игрок подключился",
 	"Positive values judge notes later, for when you hear the audio late. Let the game measure it for you:": "Положительные значения судят ноты позже — если звук доходит с задержкой. Пусть игра измерит сама:",
 	"QUIT": "ВЫХОД",
+	"REPLAY": "ЗАНОВО",
 	"RESCAN": "ОБНОВИТЬ",
 	"RESULTS": "РЕЗУЛЬТАТЫ",
 	"RIGHT ARM": "Правая рука",
@@ -364,9 +369,11 @@ const RU := {
 	"▶  Play": "▶  Играть",
 	"★ NEW RECORD ★": "★ НОВЫЙ РЕКОРД ★",
 	"★ STORY COMPLETE ★": "★ ИСТОРИЯ ПРОЙДЕНА ★",
+	"✓ COMPLETE": "✓ ПРОЙДЕНО",
 }
 
 const ZH := {
+	"%d / %d cleared": "已通关 %d / %d",
 	"+  NEW MAP": "+  新建谱面",
 	"1 • FIRST STEPS": "1 • 初次上手",
 	"2 • NIGHT DRIVE": "2 • 夜间驾驶",
@@ -407,6 +414,7 @@ const ZH := {
 	"CALIBRATION": "校准",
 	"CLICKS": "点击音符",
 	"CLICKY": "全部点击",
+	"CONTINUE": "继续",
 	"COPY THIS SONG": "复制这首歌",
 	"CREATE": "创建",
 	"CREDITS": "制作人员",
@@ -525,6 +533,7 @@ const ZH := {
 	"Let go early and the hold does not count. Carry it to the end.": "提前松开就不算数。要一直带到最后。",
 	"Library folder:": "曲库文件夹：",
 	"Library is empty.": "曲库为空。",
+	"Locked — finish the story before it": "未解锁——先通关上一章",
 	"Long cubes are HOLDS: stay on them until they run out.": "长方块是长按音符：一直待在上面直到它结束。",
 	"Look at the VR room on this screen": "在此屏幕上查看 VR 房间",
 	"MAP EDITOR": "谱面编辑器",
@@ -554,6 +563,7 @@ const ZH := {
 	"Nobody has joined yet": "还没有人加入",
 	"Not a single cube was harmed": "没有一个方块受伤",
 	"Not connected": "未连接",
+	"Not played yet": "还没玩过",
 	"Notes hit": "命中音符",
 	"Nothing to undo": "没有可撤销的操作",
 	"Off keeps the game in a window even with a headset connected. Takes effect next launch.": "关闭后即使连接了头显，游戏也会留在窗口中。下次启动生效。",
@@ -578,6 +588,7 @@ const ZH := {
 	"Player connected": "玩家已连接",
 	"Positive values judge notes later, for when you hear the audio late. Let the game measure it for you:": "正值会让判定更晚，适合音频延迟的情况。让游戏自己测量：",
 	"QUIT": "退出",
+	"REPLAY": "重玩",
 	"RESCAN": "重新扫描",
 	"RESULTS": "成绩",
 	"RIGHT ARM": "右臂",
@@ -716,9 +727,11 @@ const ZH := {
 	"▶  Play": "▶  播放",
 	"★ NEW RECORD ★": "★ 新纪录 ★",
 	"★ STORY COMPLETE ★": "★ 剧情通关 ★",
+	"✓ COMPLETE": "✓ 已通关",
 }
 
 const DE := {
+	"%d / %d cleared": "%d / %d geschafft",
 	"+  NEW MAP": "+  NEUE MAP",
 	"1 • FIRST STEPS": "1 • ERSTE SCHRITTE",
 	"2 • NIGHT DRIVE": "2 • NACHTFAHRT",
@@ -759,6 +772,7 @@ const DE := {
 	"CALIBRATION": "KALIBRIERUNG",
 	"CLICKS": "KLICKS",
 	"CLICKY": "ALLES KLICKEN",
+	"CONTINUE": "WEITER",
 	"COPY THIS SONG": "SONG KOPIEREN",
 	"CREATE": "ERSTELLEN",
 	"CREDITS": "CREDITS",
@@ -877,6 +891,7 @@ const DE := {
 	"Let go early and the hold does not count. Carry it to the end.": "Zu früh losgelassen zählt nicht. Trag ihn bis zum Ende.",
 	"Library folder:": "Bibliotheksordner:",
 	"Library is empty.": "Bibliothek ist leer.",
+	"Locked — finish the story before it": "Gesperrt - schliess die Story davor ab",
 	"Long cubes are HOLDS: stay on them until they run out.": "Lange Würfel sind HALTE-NOTEN: bleib drauf, bis sie auslaufen.",
 	"Look at the VR room on this screen": "Den VR-Raum auf diesem Bildschirm ansehen",
 	"MAP EDITOR": "MAP-EDITOR",
@@ -906,6 +921,7 @@ const DE := {
 	"Nobody has joined yet": "Noch ist niemand beigetreten",
 	"Not a single cube was harmed": "Kein Würfel kam zu Schaden",
 	"Not connected": "Nicht verbunden",
+	"Not played yet": "Noch nicht gespielt",
 	"Notes hit": "Getroffene Noten",
 	"Nothing to undo": "Nichts rückgängig zu machen",
 	"Off keeps the game in a window even with a headset connected. Takes effect next launch.": "Aus lasst das Spiel im Fenster, auch mit angeschlossenem Headset. Gilt ab dem nachsten Start.",
@@ -930,6 +946,7 @@ const DE := {
 	"Player connected": "Spieler verbunden",
 	"Positive values judge notes later, for when you hear the audio late. Let the game measure it for you:": "Positive Werte bewerten Noten später, wenn du den Ton verzögert hörst. Lass es das Spiel messen:",
 	"QUIT": "BEENDEN",
+	"REPLAY": "NOCHMAL",
 	"RESCAN": "NEU EINLESEN",
 	"RESULTS": "ERGEBNIS",
 	"RIGHT ARM": "Rechter Arm",
@@ -1068,9 +1085,11 @@ const DE := {
 	"▶  Play": "▶  Start",
 	"★ NEW RECORD ★": "★ NEUER REKORD ★",
 	"★ STORY COMPLETE ★": "★ STORY ABGESCHLOSSEN ★",
+	"✓ COMPLETE": "✓ ABGESCHLOSSEN",
 }
 
 const NL := {
+	"%d / %d cleared": "%d / %d gehaald",
 	"+  NEW MAP": "+  NIEUWE MAP",
 	"1 • FIRST STEPS": "1 • EERSTE STAPPEN",
 	"2 • NIGHT DRIVE": "2 • NACHTRIT",
@@ -1111,6 +1130,7 @@ const NL := {
 	"CALIBRATION": "KALIBRATIE",
 	"CLICKS": "KLIKS",
 	"CLICKY": "ALLES KLIKKEN",
+	"CONTINUE": "VERDER",
 	"COPY THIS SONG": "NUMMER KOPIËREN",
 	"CREATE": "AANMAKEN",
 	"CREDITS": "CREDITS",
@@ -1229,6 +1249,7 @@ const NL := {
 	"Let go early and the hold does not count. Carry it to the end.": "Te vroeg loslaten telt niet. Draag hem tot het einde.",
 	"Library folder:": "Bibliotheekmap:",
 	"Library is empty.": "Bibliotheek is leeg.",
+	"Locked — finish the story before it": "Op slot - rond de vorige story af",
 	"Long cubes are HOLDS: stay on them until they run out.": "Lange kubussen zijn HOUDNOTEN: blijf erop tot ze aflopen.",
 	"Look at the VR room on this screen": "Bekijk de VR-ruimte op dit scherm",
 	"MAP EDITOR": "MAP-EDITOR",
@@ -1258,6 +1279,7 @@ const NL := {
 	"Nobody has joined yet": "Er is nog niemand binnen",
 	"Not a single cube was harmed": "Geen enkele kubus gewond",
 	"Not connected": "Niet verbonden",
+	"Not played yet": "Nog niet gespeeld",
 	"Notes hit": "Geraakte noten",
 	"Nothing to undo": "Niets om ongedaan te maken",
 	"Off keeps the game in a window even with a headset connected. Takes effect next launch.": "Uit houdt het spel in een venster, ook met een aangesloten headset. Werkt vanaf de volgende start.",
@@ -1282,6 +1304,7 @@ const NL := {
 	"Player connected": "Speler verbonden",
 	"Positive values judge notes later, for when you hear the audio late. Let the game measure it for you:": "Positieve waarden beoordelen noten later, als je het geluid te laat hoort. Laat het spel het meten:",
 	"QUIT": "AFSLUITEN",
+	"REPLAY": "OPNIEUW",
 	"RESCAN": "OPNIEUW SCANNEN",
 	"RESULTS": "RESULTAAT",
 	"RIGHT ARM": "Rechterarm",
@@ -1420,9 +1443,11 @@ const NL := {
 	"▶  Play": "▶  Start",
 	"★ NEW RECORD ★": "★ NIEUW RECORD ★",
 	"★ STORY COMPLETE ★": "★ VERHAAL VOLTOOID ★",
+	"✓ COMPLETE": "✓ VOLTOOID",
 }
 
 const ES := {
+	"%d / %d cleared": "%d / %d superadas",
 	"+  NEW MAP": "+  NUEVO MAPA",
 	"1 • FIRST STEPS": "1 • PRIMEROS PASOS",
 	"2 • NIGHT DRIVE": "2 • VIAJE NOCTURNO",
@@ -1463,6 +1488,7 @@ const ES := {
 	"CALIBRATION": "CALIBRACIÓN",
 	"CLICKS": "CLICS",
 	"CLICKY": "TODO CLIC",
+	"CONTINUE": "CONTINUAR",
 	"COPY THIS SONG": "COPIAR ESTA CANCIÓN",
 	"CREATE": "CREAR",
 	"CREDITS": "CRÉDITOS",
@@ -1581,6 +1607,7 @@ const ES := {
 	"Let go early and the hold does not count. Carry it to the end.": "Si lo sueltas antes, no cuenta. Llévalo hasta el final.",
 	"Library folder:": "Carpeta de biblioteca:",
 	"Library is empty.": "La biblioteca está vacía.",
+	"Locked — finish the story before it": "Bloqueado: termina la historia anterior",
 	"Long cubes are HOLDS: stay on them until they run out.": "Los cubos largos son NOTAS MANTENIDAS: quédate en ellos hasta el final.",
 	"Look at the VR room on this screen": "Ver la sala de RV en esta pantalla",
 	"MAP EDITOR": "EDITOR DE MAPAS",
@@ -1610,6 +1637,7 @@ const ES := {
 	"Nobody has joined yet": "Todavía no se unió nadie",
 	"Not a single cube was harmed": "Ningún cubo resultó herido",
 	"Not connected": "Sin conexión",
+	"Not played yet": "Sin jugar todavia",
 	"Notes hit": "Notas acertadas",
 	"Nothing to undo": "Nada que deshacer",
 	"Off keeps the game in a window even with a headset connected. Takes effect next launch.": "Desactivado mantiene el juego en ventana aunque haya gafas conectadas. Se aplica al siguiente inicio.",
@@ -1634,6 +1662,7 @@ const ES := {
 	"Player connected": "Jugador conectado",
 	"Positive values judge notes later, for when you hear the audio late. Let the game measure it for you:": "Los valores positivos juzgan las notas más tarde, si oyes el audio con retraso. Deja que el juego lo mida:",
 	"QUIT": "SALIR",
+	"REPLAY": "REPETIR",
 	"RESCAN": "REESCANEAR",
 	"RESULTS": "RESULTADOS",
 	"RIGHT ARM": "Brazo derecho",
@@ -1772,6 +1801,7 @@ const ES := {
 	"▶  Play": "▶  Play",
 	"★ NEW RECORD ★": "★ NUEVO RÉCORD ★",
 	"★ STORY COMPLETE ★": "★ HISTORIA COMPLETADA ★",
+	"✓ COMPLETE": "✓ COMPLETADO",
 }
 
 
