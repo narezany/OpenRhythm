@@ -12,7 +12,7 @@ extends RefCounted
 ## the shoulders are at 3.88. Anything that has to sit on top of the head is
 ## about 1.3 above its bone.
 
-const SLOTS := ["head", "face", "neck", "back"]
+const SLOTS := ["head", "face", "neck", "back", "arm"]
 
 ## bone: 0 torso, 1 head. Prices are in purple coins - see Coins for what a
 ## clear is worth: the cheapest thing here is about ten clears of a hard chart
@@ -39,6 +39,8 @@ const ITEMS := [
 	 "desc": "Formal, for a cube game."},
 	{"id": "cape", "name": "Cape", "slot": "back", "bone": 0, "price": 980,
 	 "desc": "It does nothing. It is a cape."},
+	{"id": "dutch_band", "name": "Dutch armband", "slot": "arm", "bone": 2,
+	 "price": 1500, "desc": "Red, white and blue, worn high on the arm."},
 ]
 
 
@@ -70,6 +72,7 @@ static func build(id: String) -> Node3D:
 		"scarf": return _scarf()
 		"bowtie": return _bowtie()
 		"cape": return _cape()
+		"dutch_band": return _armband()
 	return null
 
 
@@ -160,11 +163,12 @@ static func _glasses(tint: Color, opacity: float) -> Node3D:
 
 static func _scarf() -> Node3D:
 	var root := Node3D.new()
-	# wide enough to sit outside the neck rather than inside it - the body is
-	# about one and a half units across at the shoulders
-	var wrap := _torus(0.74, 0.98, Color("c0392b"))
-	wrap.position = Vector3(0, 1.90, 0)
-	wrap.rotation_degrees = Vector3(90, 0, 0)
+	# A torus lies flat by default, which is exactly how a scarf goes round a
+	# neck. Standing it on its edge - which is what it was doing - makes a hoop
+	# through the shoulders instead, and sized to clear the head it read as a
+	# horseshoe somebody had put on backwards.
+	var wrap := _torus(0.40, 0.62, Color("c0392b"))
+	wrap.position = Vector3(0, 1.92, 0)
 	root.add_child(wrap)
 	var tail := _box(Vector3(0.30, 1.10, 0.14), Color("a5322a"))
 	tail.position = Vector3(0.34, 1.36, 0.52)
@@ -196,6 +200,18 @@ static func _cape() -> Node3D:
 	var collar := _box(Vector3(1.42, 0.22, 0.30), Color("8e1740"))
 	collar.position = Vector3(0, 1.88, -0.30)
 	root.add_child(collar)
+	return root
+
+
+## Three stripes round the upper arm. The arm bone sits at the shoulder and the
+## limb hangs down from it, so the band goes a little way along its own -Y.
+static func _armband() -> Node3D:
+	var root := Node3D.new()
+	var stripes := [Color("ae1c28"), Color("ffffff"), Color("21468b")]
+	for i in stripes.size():
+		var band := _cylinder(0.34, 0.11, stripes[i])
+		band.position = Vector3(0, -0.42 - 0.11 * float(i), 0)
+		root.add_child(band)
 	return root
 
 

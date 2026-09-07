@@ -19,8 +19,11 @@ extends RefCounted
 ## where the difficulty sits among the song's own rather than from its name.
 const BASE_EASIEST := 9.0
 const BASE_HARDEST := 30.0
-## Finishing a story chapter, on top of the songs inside it.
-const STORY_BONUS := 70
+## Finishing a story chapter, on top of the songs inside it - per song in it,
+## not a flat sum. A flat bonus paid the same for the one-song tutorial as for
+## a three-song set, which made the tutorial the best-value thing in the game
+## and is not what "clearing a chapter" is worth.
+const STORY_BONUS_PER_SONG := 15
 ## Every clear after the first.
 const REPEAT_SHARE := 0.5
 
@@ -28,6 +31,10 @@ const REPEAT_SHARE := 0.5
 const BY_RANK := {
 	"SS": 1.00, "S": 0.88, "A": 0.72, "B": 0.55, "C": 0.38, "D": 0.20,
 }
+
+
+static func story_bonus(song_count: int) -> int:
+	return STORY_BONUS_PER_SONG * maxi(song_count, 1)
 
 
 ## What a finished run pays. Zero for anything that is not one of ours, for a

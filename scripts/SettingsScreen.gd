@@ -336,7 +336,7 @@ func _build_language() -> void:
 
 
 func _build_melly() -> void:
-	var l := G.label("Melly has a screen of her own now — colours and wardrobe are in MELLY, on the main menu.",
+	var l := G.label("Melly has a screen of their own now — colours and wardrobe are in MELLY, on the main menu.",
 		18, G.C_MUTED)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL

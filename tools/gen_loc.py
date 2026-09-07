@@ -365,6 +365,15 @@ add("Could not write events.json", "Не удалось записать events.
 add("Saved %d events", "Сохранено событий: %d", "已保存 %d 个事件",
     "%d Events gespeichert", "%d events opgeslagen", "%d eventos guardados")
 
+add("Dutch armband", "Нидерландская повязка", "荷兰臂章",
+    "Niederlandische Armbinde", "Nederlandse armband", "Brazalete neerlandes")
+add("Red, white and blue, worn high on the arm.",
+    "Красный, белый и синий, высоко на руке.",
+    "红、白、蓝，戴在上臂。",
+    "Rot, weiss und blau, hoch am Arm getragen.",
+    "Rood, wit en blauw, hoog om de arm.",
+    "Rojo, blanco y azul, en lo alto del brazo.")
+
 # ------------------------------------------------------------ melly's screen
 add("MELLY", "МЕЛЛИ", "梅利", "MELLY", "MELLY", "MELLY")
 add("colours\nand wardrobe", "цвета\nи гардероб", "颜色\n与衣橱",
@@ -379,7 +388,7 @@ add("Everything here is free. The wardrobe is not.",
     "Hier ist alles umsonst. Die Garderobe nicht.",
     "Alles hier is gratis. De garderobe niet.",
     "Aqui todo es gratis. El vestuario no.")
-add("Melly has a screen of her own now — colours and wardrobe are in MELLY, on the main menu.",
+add("Melly has a screen of their own now — colours and wardrobe are in MELLY, on the main menu.",
     "У Мелли теперь свой экран — цвета и гардероб в разделе МЕЛЛИ в главном меню.",
     "梅利现在有自己的页面了——颜色和衣橱在主菜单的 MELLY 里。",
     "Melly hat jetzt einen eigenen Bildschirm - Farben und Garderobe stehen unter MELLY im Hauptmenu.",

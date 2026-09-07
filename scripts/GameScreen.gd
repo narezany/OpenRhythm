@@ -148,9 +148,48 @@ func _ready() -> void:
 		_replay = Replay.new()
 		_replay.start(song, diff_name, G.active_mods)
 	var stream := RhythmMap.audio_stream(song)
-	Conductor.play_music(stream, G.shot_seek, float(song.get("bpm", 120.0)),
-		0.0, false, _play_rate)
+	var seek := G.shot_seek
 	G.shot_seek = 0.0
+	await _count_in()
+	if is_inside_tree() and not ended:
+		Conductor.play_music(stream, seek, float(song.get("bpm", 120.0)),
+			0.0, false, _play_rate)
+
+
+## Three, two, one.
+##
+## A song used to start on the frame the screen appeared, which meant the first
+## cube was already in the air before anyone had found the cursor. The count is
+## short on purpose - long enough to put a hand where it needs to be, not long
+## enough to sit through on a retry - and skipped where nobody is watching: a
+## screenshot run, a replay being scrubbed, an automated test.
+func _count_in() -> void:
+	if G.shot_mode != "" or G.replay_mode:
+		return
+	var lbl := G.label("", 150, G.C_PRIMARY, true)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	add_child(layer)
+	layer.add_child(lbl)
+	G.anchor_full(lbl)
+	for n in [3, 2, 1]:
+		if not is_inside_tree() or ended:
+			break
+		lbl.text = str(n)
+		lbl.scale = Vector2(1.6, 1.6)
+		lbl.pivot_offset = lbl.size * 0.5
+		lbl.modulate.a = 0.0
+		G.play_sfx("click", 0.85 + 0.12 * float(3 - n), -6.0)
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(lbl, "scale", Vector2.ONE, 0.22) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(lbl, "modulate:a", 1.0, 0.12)
+		await get_tree().create_timer(0.62, true).timeout
+	if is_instance_valid(layer):
+		layer.queue_free()
 
 
 # ---------------------------------------------------------------- data
@@ -1147,8 +1186,9 @@ func _finish() -> void:
 				G.results["story_diff"] = G.story_diff
 			else:
 				G.results["story_complete"] = true
-				G.coins += Coins.STORY_BONUS
-				G.results["coins"] = int(G.results.get("coins", 0)) + Coins.STORY_BONUS
+				var bonus := Coins.story_bonus(G.story_playlist.size())
+				G.coins += bonus
+				G.results["coins"] = int(G.results.get("coins", 0)) + bonus
 				G.save_all()
 				G.story_playlist = []
 				G.story_idx = 0

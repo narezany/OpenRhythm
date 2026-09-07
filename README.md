@@ -11,14 +11,13 @@ Where inside the cell you caught it decides the rank — timing barely matters, 
 [![godot](https://img.shields.io/badge/godot-4.7-478cbf)](https://godotengine.org)
 
 [**Download**](https://github.com/narezany/OpenRhythm/releases/latest) ·
+[**Play in a browser**](https://narezany.itch.io/open-rhythm) ·
 [Telegram](https://t.me/openrhythmforum) ·
-[Discord](https://discord.gg/rc79e2sfqC)
+[Discord](https://discord.gg/rc79e2sfqC) ·
+[Reddit](https://www.reddit.com/r/OpenRhythm/) ·
+[YouTube](https://www.youtube.com/channel/UC4CKawg1MJ0bKah8IyvAyfg)
 
 </div>
-
-> **Open Rhythm is a game, not a music player.** The tracks are here so there is
-> something to play to. If a song is good, go listen to it where the artist
-> actually gets paid.
 
 <div align="center">
 
@@ -32,7 +31,7 @@ Where inside the cell you caught it decides the rank — timing barely matters, 
 <td width="50%"><img src="docs/img/menu.png" alt="Main menu"><br><sub><b>Main menu</b> — carousel, lifetime score, update banner</sub></td>
 </tr>
 <tr>
-<td width="50%"><img src="docs/img/versus.png" alt="Versus"><br><sub><b>Versus</b> — two players, one chart, no server in between</sub></td>
+<td width="50%"><img src="docs/img/select.png" alt="Song select"><br><sub><b>Song select</b> — modes, difficulties, records</sub></td>
 <td width="50%"><img src="docs/img/stats.png" alt="Stats"><br><sub><b>Stats</b> — records, achievements, saved replays</sub></td>
 </tr>
 </table>
@@ -41,7 +40,9 @@ Where inside the cell you caught it decides the rank — timing barely matters, 
 
 ## Getting it
 
-Grab a build for your platform from **[Releases](https://github.com/narezany/OpenRhythm/releases/latest)**.
+Grab a build for your platform from **[Releases](https://github.com/narezany/OpenRhythm/releases/latest)**,
+or play it in a browser on **[itch.io](https://narezany.itch.io/open-rhythm)**,
+where the downloads live too.
 The game checks for a newer release when the menu opens and offers to update
 itself — one click, it downloads, installs and restarts. That check can be
 turned off in *Settings → Video*.
@@ -63,18 +64,18 @@ godot --path .
 | **Hold notes** | long cubes you have to carry to the end — nothing else is charted while one runs, because there is only one cursor |
 | **Click notes** | cubes that have to be pressed, not just covered. Off by default; the CLICKS modifier turns on the ones a mapper put in |
 | **Modifiers** | TARGET, BLACKOUT, CAGE, SPEED UP, SLOW DOWN, MIRROR, HIDDEN, CLICKS, CLICKY — each with its own score multiplier |
-| **Three stories** | learn with Melly, then Night Drive, then Overdrive |
+| **Three stories** | a visual novel with Melly: you are training for a laser tag regional and somebody told you this would fix your aim. Health along the bottom - miss enough in a row and the run stops there |
 | **Six OST tracks** | written by `tools/gen_media.py` and `tools/gen_pack2.py`, with Easy / Normal / Hyper charts |
 | **Map editor** | piano roll with a waveform and beat grid, snapping, undo, copy/paste, multi-select, hold dragging, and an onset-based auto-generator |
-| **Map scripting** | a song can change the background colour, throw its own pictures behind the playfield, reskin the cubes and shake the camera |
+| **Map scripting** | a song can change the background colour, throw its own pictures behind the playfield, reskin the cubes, shake the camera and put captions up — edited on its own screen in the map maker, not by hand in a text file |
 | **Imports** | `.sspm` (Rhythia / Sound Space Plus, v1 and v2) and the legacy Sound Space map string |
-| **Versus** | two players, one chart, higher score wins — a direct connection, no server |
 | **Offset calibration** | tap along with a metronome and the game works out your audio delay |
 | **Replays** | plus records, lifetime stats and 23 achievements |
+| **Coins** | clearing the game's own songs and stories pays purple coins; Melly's wardrobe is what they are for |
 | **Accessibility** | reduce motion, reduce flashes, cursor size, video off |
 | **Six languages** | English, Russian, Chinese, German, Dutch, Spanish |
 | **Controls** | mouse, touch, gamepad stick or keyboard, with rebindable keys |
-| **VR** | the desktop build opens in a headset when one is running and in a window when it is not; Quest and Pico get their own packages. Aim with a laser pointer, or hold a saber in each hand and cut the cubes from any direction |
+| **VR** | the desktop build opens in a headset when one is running and in a window when it is not. Aim with a laser pointer, or hold a saber in each hand and cut the cubes out of the air |
 
 Runs on Linux, Windows, Android and the web.
 
@@ -128,6 +129,16 @@ bottom is where you actually shape the chart.
 | drag right edge | set a hold length |
 | wheel / Ctrl+wheel / middle drag | scroll / zoom / pan |
 
+**Details…** on a map of your own opens everything that is not the notes: its
+title, the artist, the names of its difficulties, and adding or removing them.
+All of that lived in `map.json` and nowhere else, so fixing a typo used to mean
+editing the file by hand.
+
+**Events…** opens the song's storyboard — backgrounds, note skins, camera moves
+and captions, on a timeline of their own. It reads and writes the same
+`events.json` a map has always carried; what it adds is knowing which arguments
+each command takes, so the fields on screen are the fields that command has.
+
 Saving a song that ships with the game forks it into your library first — it
 asks what to call the copy. `res://` lives inside the binary and cannot be
 written to.
@@ -138,74 +149,73 @@ ships one.
 </details>
 
 <details>
-<summary><b>Versus</b></summary>
-
-<br>
-
-One player hosts, the other types their address. The connection is direct —
-nothing goes through a server and nothing is uploaded anywhere, so both
-machines have to be able to reach each other: the same network, or the host
-forwarding port `27015`.
-
-Both sides must be on the same build and holding the same chart. The handshake
-compares a protocol number, the game version and a SHA-256 of the notes
-themselves, so custom maps work exactly like the bundled ones as long as the
-charts are identical. The audio file name and any video are left out of that
-hash — neither changes what you play.
-
-</details>
-
-<details>
 <summary><b>VR</b></summary>
 
 <br>
 
-> **Headsets are not there yet.** The desktop side is built and the room draws,
-> but the Quest and Pico packages crash on startup inside the engine's own
-> OpenXR - on a Pico 4 they do not survive half a second. What has been ruled
-> out, and what it needs next, is written down in
-> [docs/VR_STATUS.md](docs/VR_STATUS.md). The desktop build's VR path has never
-> been run against a real runtime either, so treat it as untested.
->
-> You can look at the whole thing without a headset: *Settings → VR → Look at
-> the VR room on this screen*.
+**PC VR works.** Played through WiVRn on a Radeon RX 580: the room, the screen,
+the cubes, the pointer and the sticks. **Standalone headsets do not yet** — the
+Quest and Pico packages still crash inside the engine's own OpenXR before a line
+of game code runs, and 0.4 does not ship them. What has been ruled out and what
+it needs next is in [docs/VR_STATUS.md](docs/VR_STATUS.md).
 
-There is no VR build of the desktop game and no switch to flip. It looks for an
-OpenXR runtime at startup: SteamVR running and a headset awake means it opens in
-VR, nothing there means it opens in a window. *Settings → VR* can say no, and
-picks how you hit the cubes.
+There is no separate VR build and no switch to flip. The desktop game looks for
+an OpenXR runtime at startup: one running means it opens in VR, nothing there
+means it opens in a window. *Settings → VR* can say no.
 
-**Laser pointer** puts the grid across the room and aims a beam at it; the
-trigger is a click, which is what click notes want. **Sabers** bring the grid to
-arm's length and put a blade in each hand. A cube counts the moment a blade
-sweeps through it, from any direction - the cubes have no side to cut them on,
-so swing the way that feels right. Grip + B recentres the room, and the menu
-button steps back the way Esc does.
+One thing happens behind your back, and it is worth knowing about. The game
+ships on the Compatibility renderer because that is what phones want, and that
+renderer draws both eyes at once through `GL_OVR_multiview2` — which Mesa
+offers to GLES contexts only, while Godot on Linux draws through desktop GL.
+The engine asks for multiview anyway, every 3D shader fails to compile with
+`gl_ViewID_OVR undeclared`, and the headset shows an empty room while head
+tracking works perfectly. It cannot be fixed with a setting, because the
+renderer is chosen before the engine knows a headset is there. So when a
+runtime is installed and the game is on the wrong renderer, it starts itself
+again on Vulkan and steps aside — giving the new copy a moment to prove it is
+alive first, because a machine with no working Vulkan has to end up with a flat
+game rather than with no game.
+
+**Sabers** are what a headset opens with. There is no grid: the cube is the
+target and you cut it where it is, with any part of the blade from any
+direction. The rank comes from timing rather than from where in a cell a cursor
+was — there is no cell to be off-centre in when you meet a cube in the air — and
+it says how far off you were in milliseconds. Long notes do not exist in saber
+play; a hold arrives as a burst of ordinary cubes in one spot. Ringed cubes
+cannot be cut at all: hold the trigger and the blade goes live, and a live blade
+passes through plain cubes and burns the ringed ones.
+
+**The laser pointer** is the other way to play, and the one a flat screen and a
+mouse are already doing. Both hands hold a pointer and only one of them works;
+which one is a setting, so the game can be played left-handed.
+
+The left stick walks and the right one turns, about your own head. The room is
+built under your measured eye height rather than at a height in metres. Melly
+stands in it, can be patted, and can be picked up by the grip — they go limp in
+your hand and fall to the floor when you let go. Grip + B recentres, and the
+menu button steps back the way Esc does.
 
 Everything else is the flat game: the same charts, the same judging, the same
-menus and editor, running on a screen hanging in front of you. Only the cubes
-come out of it into the room.
+menus and editor, on a screen hanging in front of you. Only the cubes come out
+of it into the room.
 
-Quest and Pico get their own packages. Building them needs the OpenXR loaders,
-which are not in this repository:
+Quest and Pico packages can still be built, and still crash. They need the
+OpenXR loaders, which are not in this repository:
 
 ```bash
 curl -LO https://github.com/GodotVR/godot_openxr_vendors/releases/download/5.1.0-stable/godotopenxrvendorsaddon.zip
 unzip -q godotopenxrvendorsaddon.zip -d /tmp/vendors
 cp -r /tmp/vendors/asset/addons/godotopenxrvendors addons/
 
-godot --headless --path . --install-android-build-template --export-release "Android" build/OpenRhythm.apk
+godot --headless --path . --install-android-build-template
 tools/build_headsets.sh
 ```
 
-Those two are gradle builds, so they need the Android SDK and a JDK the same way
-the phone package does. They also need the **Mobile** renderer: OpenXR on
-Android binds to the graphics API when it creates its session and wants Vulkan,
-and on the OpenGL ES binding the interface loads while the session never does -
-which from inside the headset looks like the app hanging on its loading screen.
-The engine picks a renderer before it knows an export's custom features, so that
-cannot be a per-preset setting; the script flips it for the length of those two
-builds and puts it back afterwards.
+Those are gradle builds, so they need the Android SDK and a JDK the same way the
+phone package does. They also need the **Mobile** renderer, for the same reason
+the desktop needs Vulkan — and since the engine picks a renderer before it knows
+an export's custom features, the script flips the setting for the length of
+those builds and checks that it was put back.
 
 </details>
 
@@ -245,7 +255,7 @@ without them that job simply skips.
 the archives:
 
 ```bash
-git tag v0.3.1 && git push origin v0.3.1
+git tag v0.4 && git push origin v0.4
 ```
 
 </details>
@@ -272,8 +282,7 @@ the engine will import and pack them anyway - that one file is the difference
 between a 37 MB download and a 96 MB one.
 
 That keeps someone else's recording out of the build, and out of every clone of
-this repo, while still being one file to hand a friend. The game shows a notice
-on first launch pointing players at the original releases.
+this repo, while still being one file to hand a friend.
 
 If you are an artist and want a track out of the game, say so in
 [Telegram](https://t.me/openrhythmforum) or
@@ -292,9 +301,15 @@ pull request with the song folder — **without the audio** unless you own it.
 Code is plain Godot 4 + GDScript, no plugins. There is a headless test harness:
 
 ```bash
-godot --headless --path . res://tools/CoreTest.tscn     # saves, judging, charts
+godot --headless --path . res://tools/CoreTest.tscn     # saves, judging, charts, coins, fonts
 godot --headless --path . res://tools/LayoutTest.tscn   # every screen, six aspect ratios
 ```
+
+Both are run before every commit that touches the game. CoreTest holds the
+things that are cheap to get wrong and expensive to notice: that no project
+setting has a comment folded into its name, that every language the game is
+translated into can be drawn by the fonts it ships, that the auto builder's
+pattern pools name shapes that exist, and that a wardrobe costs real play.
 
 See **[CONTRIBUTING.md](CONTRIBUTING.md)** for house style, the translation
 workflow and the chart generators.
@@ -306,6 +321,11 @@ workflow and the chart generators.
 <div align="center">
 
 Code under [MIT](LICENSE) · fonts under [SIL OFL 1.1](assets/fonts/FONTS.md) · music per track
+
+<sub>Four fonts ship, not two: Rajdhani and Orbitron are Latin, so Exo 2 carries
+Cyrillic and a cut-down Noto carries Chinese and the symbols. On a desktop the
+system lends what is missing; a browser has nothing to lend, and the web build
+used to print the Russian translation as boxes with hex codes in them.</sub>
 
 Made by **narezany**
 

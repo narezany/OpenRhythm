@@ -176,7 +176,7 @@ func _cleared_count(st: Dictionary) -> int:
 ## at the rate each of them is actually on. A song already cleared pays half,
 ## so the number on a finished chapter is the number for playing it again.
 func _worth(st: Dictionary) -> int:
-	var total := Coins.STORY_BONUS
+	var total := Coins.story_bonus((st.get("songs", []) as Array).size())
 	var songs := RhythmMap.load_songs()
 	for id in st.get("songs", []):
 		for song in songs:

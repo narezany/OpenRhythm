@@ -1030,6 +1030,15 @@ func _test_coins() -> void:
 	var easy := Coins.for_run(true, "SS", 0, 4, true)
 	var hard := Coins.for_run(true, "SS", 3, 4, true)
 	ok(hard > easy, "and a harder chart pays more (%d against %d)" % [hard, easy])
+	# a chapter pays for what is in it, not a flat sum: a flat one made the
+	# one-song tutorial the best value in the game
+	ok(Coins.story_bonus(3) > Coins.story_bonus(1),
+		"a longer chapter pays more than a short one (%d against %d)"
+		% [Coins.story_bonus(3), Coins.story_bonus(1)])
+	ok(Coins.story_bonus(1) < good * 3,
+		"and the tutorial is not the best-paying thing in the game (%d)"
+		% Coins.story_bonus(1))
+
 	# a wardrobe has to cost real play
 	var cheapest := 999999
 	for it in MellyShop.ITEMS:
