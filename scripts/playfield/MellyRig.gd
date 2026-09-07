@@ -147,7 +147,10 @@ func _process(delta: float) -> void:
 ## flat panel hanging behind everything would otherwise be patting them too.
 func _pat_flat(delta: float) -> void:
 	_pat_cd = maxf(0.0, _pat_cd - delta)
-	if G.vr_active or _cam == null or _hearts == null or size.y <= 1.0:
+	# not mid-conversation: a dialogue pose means Melly is talking to you, and
+	# reaching over to pat somebody who is halfway through a sentence is not
+	# the interaction anybody was after
+	if pose != "" or G.vr_active or _cam == null or _hearts == null or size.y <= 1.0:
 		return
 	var at := get_local_mouse_position()
 	var moved := at.distance_to(_pat_at) if _pat_seen else 0.0
@@ -468,10 +471,12 @@ func set_pose(name: String) -> void:
 func frame_bust() -> void:
 	if _cam == null:
 		return
-	_cam.fov = 34.0
-	# far enough back that the arms are in the picture: cropped at the
-	# shoulders they stop reading as arms and become floating slabs
-	_cam.look_at_from_position(Vector3(0.26, 4.42, 5.05), Vector3(0.0, 4.05, 0.0))
+	# Framed against a full screen now, which is a wider and taller window than
+	# the box this used to sit in: further back so the whole bust and both arms
+	# are inside it, and aimed high so Melly sits above the dialogue box rather
+	# than behind it.
+	_cam.fov = 30.0
+	_cam.look_at_from_position(Vector3(0.24, 4.55, 7.60), Vector3(0.0, 3.95, 0.0))
 
 
 ## Standing and speaking.

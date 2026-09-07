@@ -945,12 +945,27 @@ func rounded_points(rect: Rect2, r: float, seg := 5) -> PackedVector2Array:
 	for c in corners:
 		for i in seg + 1:
 			var a: float = c[1] + (c[2] - c[1]) * float(i) / float(seg)
-			pts.append(c[0] + Vector2(cos(a), sin(a)) * r)
+			var p: Vector2 = c[0] + Vector2(cos(a), sin(a)) * r
+			# A radius of exactly half the shorter side gives neighbouring
+			# corners the same centre, and their arcs then end and begin on the
+			# same point. draw_colored_polygon cannot triangulate a shape with
+			# repeats in it: it prints "triangulation failed" and draws nothing
+			# at all - which is how a full health bar came to look like an
+			# empty one while its outline carried on flashing.
+			if pts.is_empty() or pts[-1].distance_squared_to(p) > 0.0001:
+				pts.append(p)
+	if pts.size() > 2 and pts[0].distance_squared_to(pts[-1]) <= 0.0001:
+		pts.remove_at(pts.size() - 1)
 	return pts
 
 
 func draw_rounded_rect(cv: CanvasItem, rect: Rect2, r: float, color: Color) -> void:
-	cv.draw_colored_polygon(rounded_points(rect, r), color)
+	# nothing to draw is not an error worth a line in the log every frame
+	if rect.size.x < 0.5 or rect.size.y < 0.5:
+		return
+	var pts := rounded_points(rect, r)
+	if pts.size() >= 3:
+		cv.draw_colored_polygon(pts, color)
 
 
 func draw_rounded_outline(cv: CanvasItem, rect: Rect2, r: float, color: Color, width := 2.0) -> void:

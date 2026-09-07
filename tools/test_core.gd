@@ -43,6 +43,7 @@ func _ready() -> void:
 	_test_vr_room()
 	_test_game_mode()
 	_test_dialogue()
+	_test_rounded()
 	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -925,3 +926,27 @@ func _test_dialogue() -> void:
 				missing += f + " "
 	ok(missing == "", "and every face a pose asks for can be drawn%s"
 		% ("" if missing == "" else " (%s)" % missing))
+
+
+## A rounded rectangle has to come out as a polygon the renderer can actually
+## fill. The health bar asks for a stadium - a radius of exactly half the
+## height - which made neighbouring corners share a centre, put the same point
+## in the outline twice, and left draw_colored_polygon printing "triangulation
+## failed" and drawing nothing while the bar looked empty.
+func _test_rounded() -> void:
+	_say("== rounded rectangles ==")
+	var cases := [
+		["a stadium (radius exactly half the height)", Rect2(0, 0, 420, 11), 5.5],
+		["a circle (as wide as it is tall)", Rect2(0, 0, 24, 24), 12.0],
+		["a radius larger than the box", Rect2(0, 0, 30, 12), 40.0],
+		["an ordinary card", Rect2(0, 0, 560, 440), 26.0],
+	]
+	for c in cases:
+		var pts: PackedVector2Array = G.rounded_points(c[1], c[2])
+		var repeats := 0
+		for i in pts.size():
+			if pts[i].distance_squared_to(pts[(i + 1) % pts.size()]) <= 0.0001:
+				repeats += 1
+		ok(pts.size() >= 3 and repeats == 0,
+			"%s comes out fillable (%d points, %d repeated)"
+			% [str(c[0]), pts.size(), repeats])

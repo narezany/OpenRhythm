@@ -243,11 +243,14 @@ func _build_novel() -> void:
 	# Melly, close enough to read a face on. A conversation happens at talking
 	# distance; the full-length view is for the corner of a results screen.
 	_rig = MellyRig.new()
-	_rig.size = Vector2(560, 520)
-	_rig.position = Vector2(G.canvas_size().x / 2.0 - 280.0, 24)
+	# The rig is a viewport with a camera in it, and anything outside the
+	# viewport is simply not drawn - so a box sized to Melly clipped their arms
+	# off the moment a pose put the arms anywhere. It fills the screen instead
+	# and the camera does the framing, which is the job the camera is for.
 	if _rig is Control:
 		(_rig as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_novel_layer.add_child(_rig)
+	G.anchor_full(_rig)
 	_rig.frame_bust()
 
 	# a visual-novel style dialog box
@@ -320,11 +323,15 @@ func _process(delta: float) -> void:
 		_shown = minf(_shown + delta * 38.0, float(full.length()))
 		var cur := int(_shown)
 		_text_lbl.text = full.substr(0, cur)
-		# one note per couple of letters, in the voice of whoever is speaking
-		if cur - prev >= 2 and cur % 2 == 0:
-			var c := full.substr(maxi(0, cur - 1), 1)
-			if c.strip_edges() != "":
-				G.blip("you" if str(_line().get("who", "melly")) == "you" else "melly")
+		# One note per couple of letters, in the voice of whoever is speaking.
+		#
+		# Asked as "have we crossed an even letter", not as "did two letters
+		# arrive this frame": at thirty-eight letters a second and sixty frames
+		# a second, two letters almost never land in the same frame, so the old
+		# test was silent on any machine that was keeping up.
+		if cur > prev and (cur >> 1) != (prev >> 1) \
+				and full.substr(maxi(0, cur - 1), 1).strip_edges() != "":
+			G.blip("player" if str(_line().get("who", "melly")) == "you" else "melly")
 	else:
 		_typing = false
 		_text_lbl.text = full
