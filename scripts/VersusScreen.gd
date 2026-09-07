@@ -63,6 +63,7 @@ func _ready() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	G.anchor_margins(scroll, 150, 232, 150, 116)
+	DragScroll.attach(scroll)
 	_list_root = VBoxContainer.new()
 	_list_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_list_root.add_theme_constant_override("separation", 12)

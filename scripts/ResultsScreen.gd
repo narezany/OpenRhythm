@@ -57,9 +57,20 @@ func _ready() -> void:
 	panel.size = Vector2(560, 440)
 	add_child(panel)
 
+	# The panel holds however much the run turned out to be worth saying: mods,
+	# a versus verdict, a handful of achievements. On a short window, or after a
+	# run that unlocked three things at once, that used to run off the bottom of
+	# the screen with no way to reach it. It scrolls now, the way the modifier
+	# list does, and it can be pulled by grabbing anywhere in it.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
+	DragScroll.attach(scroll)
+
 	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vb.add_theme_constant_override("separation", 6)
-	panel.add_child(vb)
+	scroll.add_child(vb)
 
 	var title := G.label("%s  [%s]" % [str(data.get("title", "?")), str(data.get("diff", ""))], 30, G.C_TEXT)
 	vb.add_child(title)
@@ -223,12 +234,12 @@ func _ready() -> void:
 			Conductor.play_music(RhythmMap.audio_stream(s0),
 				float(s0.get("preview_start", 0.0)), float(s0.get("bpm", 120.0)), -14.0)
 
+	_fit_panel(panel)
 	# re-layout when the window changes
 	G.view_changed.connect(func():
 		var vis := G.visible_rect_design()
 		rig.position = Vector2(vis.end.x - rig.size.x, vis.end.y - rig.size.y)
-		panel.position = Vector2(vis.get_center().x - panel.size.x / 2.0 + 40.0,
-			vis.position.y + 96.0)
+		_fit_panel(panel)
 		buttons.position.y = vis.end.y - buttons.size.y - 30.0)
 
 
@@ -298,3 +309,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func go_back() -> void:
 	G.custom_test = {}
 	G.main.goto_menu()
+
+
+## Sit the panel in the window rather than at a fixed height, stopping short of
+## the buttons along the bottom. Anything that no longer fits is scrolled to
+## rather than lost off the edge.
+func _fit_panel(panel: PanelContainer) -> void:
+	var vis := G.visible_rect_design()
+	var top: float = vis.position.y + 96.0
+	var bottom: float = vis.end.y - 104.0
+	panel.size = Vector2(panel.size.x, maxf(200.0, bottom - top))
+	panel.position = Vector2(vis.get_center().x - panel.size.x / 2.0 + 40.0, top)

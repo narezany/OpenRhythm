@@ -56,6 +56,7 @@ func _ready() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	G.anchor_margins(scroll, 140, 104, 140, 106)
+	DragScroll.attach(scroll)
 
 	var vb := VBoxContainer.new()
 	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -241,6 +242,7 @@ func _build_mods_layer() -> void:
 	_mod_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_mod_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vb.add_child(_mod_scroll)
+	DragScroll.attach(_mod_scroll)
 	_mod_rows = VBoxContainer.new()
 	_mod_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_mod_rows.add_theme_constant_override("separation", 10)

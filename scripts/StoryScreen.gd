@@ -84,6 +84,7 @@ func _build_list() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_list_root.add_child(scroll)
 	G.anchor_margins(scroll, 290, 100, 290, 100)
+	DragScroll.attach(scroll)
 
 	var vb := VBoxContainer.new()
 	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
