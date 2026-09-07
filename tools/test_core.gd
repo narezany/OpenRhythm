@@ -47,6 +47,7 @@ func _ready() -> void:
 	_test_charter()
 	_test_coins()
 	_test_events()
+	_test_count_in()
 	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -1095,3 +1096,29 @@ func _test_events() -> void:
 		keys.append(str(f.key))
 	for want in ["value", "x", "y", "size", "color", "hold"]:
 		ok(want in keys, "a caption can set its %s" % want)
+
+
+## Nothing in a run may happen before the run starts.
+##
+## The count-in put three seconds between the screen appearing and the music
+## playing, and across that gap Conductor was still on the menu track. A loop
+## that trusted play_time() read the menu's position, decided every cube in the
+## chart had already landed and threw the whole map away as misses before the
+## count reached one.
+func _test_count_in() -> void:
+	_say("== the count-in ==")
+	var gs := GameScreen.new()
+	ok(not gs._started, "a fresh screen has not started")
+	gs.notes = [{"t": 1.0, "h": 0.0, "click": false, "hit": Vector2.ZERO,
+		"half": 52.0, "done": false, "progress": 0.0}]
+	gs._elapsed = 0.0
+	gs.idx = 0
+	for i in 8:
+		gs._process(0.25)
+	ok(gs.idx == 0, "and spawns nothing while it has not (%d cubes)" % gs.idx)
+	ok(is_equal_approx(gs._elapsed, 0.0),
+		"and its clock has not moved (%.2fs)" % gs._elapsed)
+	# The other half of the gate is not tested by running the loop: a screen
+	# outside a viewport has no camera to ask for a canvas transform, and
+	# proving that a bare object crashes is not proving anything about the fix.
+	gs.free()

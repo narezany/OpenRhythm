@@ -50,6 +50,8 @@ var _story_run := false
 var _miss_cost := 1.0 / MISS_BUDGET_HARD
 var _dead := false
 var health_bar: HealthDraw = null
+## False until the music is actually playing - see _process.
+var _started := false
 
 var trauma := 0.0
 var flash := 0.0
@@ -150,10 +152,15 @@ func _ready() -> void:
 	var stream := RhythmMap.audio_stream(song)
 	var seek := G.shot_seek
 	G.shot_seek = 0.0
+	# the menu track has to stop before the count, or three seconds of it play
+	# over the top of a screen that is plainly not the menu any more
+	Conductor.stop_music()
 	await _count_in()
-	if is_inside_tree() and not ended:
-		Conductor.play_music(stream, seek, float(song.get("bpm", 120.0)),
-			0.0, false, _play_rate)
+	if not is_inside_tree() or ended:
+		return
+	Conductor.play_music(stream, seek, float(song.get("bpm", 120.0)),
+		0.0, false, _play_rate)
+	_started = true
 
 
 ## Three, two, one.
@@ -529,7 +536,12 @@ func _slider_row(text: String, value: float, add_cb: Callable) -> HBoxContainer:
 
 # ---------------------------------------------------------------- loop
 func _process(delta: float) -> void:
-	if ended or paused:
+	# Nothing runs until the song does. The count-in leaves a gap between the
+	# screen existing and the music starting, and Conductor is still playing
+	# the menu track across it - so a loop that trusted play_time() read the
+	# menu's position, decided every cube in the chart had already landed, and
+	# threw the whole map away as misses before the count reached one.
+	if ended or paused or not _started:
 		return
 	var st := Conductor.play_time()
 	_elapsed += delta

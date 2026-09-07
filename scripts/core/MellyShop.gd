@@ -203,14 +203,23 @@ static func _cape() -> Node3D:
 	return root
 
 
-## Three stripes round the upper arm. The arm bone sits at the shoulder and the
-## limb hangs down from it, so the band goes a little way along its own -Y.
+## Three stripes round the upper arm.
+##
+## The bone is not in the middle of the limb it drives: measured off the mesh,
+## the left arm's vertices run from x 0.791 to 1.629 - centre 1.210 - while the
+## bone sits at 1.000. A band centred on the bone therefore hangs off the inside
+## edge of the arm, which is exactly what it was doing. The offset below is that
+## difference, and the radius is a little wider than the arm is thick so the
+## band wraps it rather than sinking into it.
+const ARM_OFFSET := 0.21
+const ARM_RADIUS := 0.47
+
 static func _armband() -> Node3D:
 	var root := Node3D.new()
 	var stripes := [Color("ae1c28"), Color("ffffff"), Color("21468b")]
 	for i in stripes.size():
-		var band := _cylinder(0.34, 0.11, stripes[i])
-		band.position = Vector3(0, -0.42 - 0.11 * float(i), 0)
+		var band := _cylinder(ARM_RADIUS, 0.12, stripes[i])
+		band.position = Vector3(ARM_OFFSET, -0.44 - 0.12 * float(i), 0)
 		root.add_child(band)
 	return root
 
