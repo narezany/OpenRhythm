@@ -42,6 +42,7 @@ func _ready() -> void:
 	_test_mouse_cursor()
 	_test_vr_room()
 	_test_game_mode()
+	_test_dialogue()
 	_test_fonts()
 	print("--- failures: %d" % fails)
 	get_tree().quit(1 if fails > 0 else 0)
@@ -878,3 +879,49 @@ func _test_game_mode() -> void:
 	ok(not RhythmMap.supports_mode({"modes": ["laser"]}, "saber"),
 		"but a song may say which modes it is written for")
 	G.game_mode = was
+
+
+## The story script, checked as data rather than read by eye. A line with a
+## pose nobody has built is a character who stands wrong for a whole sentence,
+## and a line with nobody saying it is a name box that keeps the last name.
+func _test_dialogue() -> void:
+	_say("== story dialogue ==")
+	var lines := 0
+	var players := 0
+	var bad_pose := ""
+	var bad_who := ""
+	for st in StoryScreen.STORIES:
+		for raw in st.get("dialog", []):
+			lines += 1
+			ok(raw is Dictionary, "every line says who is speaking")
+			var who := str((raw as Dictionary).get("who", ""))
+			if not (who in ["melly", "you"]):
+				bad_who = who
+			if who == "you":
+				players += 1
+			elif not MellyRig.POSES.has(str((raw as Dictionary).get("pose", "talk"))):
+				bad_pose = str((raw as Dictionary).get("pose", ""))
+			if str((raw as Dictionary).get("text", "")).strip_edges() == "":
+				bad_who = "(a line with no words)"
+	ok(bad_who == "", "and it is somebody who exists%s"
+		% ("" if bad_who == "" else " (%s)" % bad_who))
+	ok(bad_pose == "", "and stands in a pose that was built%s"
+		% ("" if bad_pose == "" else " (%s)" % bad_pose))
+	ok(players > 0, "the player answers back (%d of %d lines)" % [players, lines])
+	ok(MellyRig.POSES.has("listen"),
+		"and Melly has something to do while being talked at")
+	# the two voices have to be two voices, not the same beep twice
+	ok(G.VOICES.has("melly") and G.VOICES.has("player"),
+		"both speakers have a voice")
+	ok(G.VOICES["melly"]["shape"] != G.VOICES["player"]["shape"],
+		"and they are different sounds, not one pitched twice")
+	# every face a pose asks for has to be drawable
+	var missing := ""
+	for name in MellyRig.POSES:
+		for slot in ["open", "shut"]:
+			var f := str(MellyRig.POSES[name][slot])
+			if not (f in ["idle", "happy", "very", "sad"]) \
+					and MellyFaces.get_face(f) == null:
+				missing += f + " "
+	ok(missing == "", "and every face a pose asks for can be drawn%s"
+		% ("" if missing == "" else " (%s)" % missing))

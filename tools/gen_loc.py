@@ -300,6 +300,144 @@ add("Both hands hold a pointer, but only one of them works - this says which. Th
     "Beide handen houden een pointer vast, maar er werkt er maar een - hier staat welke. De ander is dood gewicht, en ziet er ook zo uit.",
     "Ambas manos llevan un puntero, pero solo uno funciona: aqui eliges cual. El otro es peso muerto, y se nota.")
 add("Dead", "Смерть", "阵亡", "Tot", "Dood", "Muerto")
+# ------------------------------------------------------------- story dialogue
+add("YOU", "ТЫ", "你", "DU", "JIJ", "TU")
+add("FAILED", "ПРОВАЛ", "失败", "GESCHEITERT", "MISLUKT", "FALLASTE")
+
+add("Oh — somebody actually opened this. Hi!",
+    "О — кто-то и правда это открыл. Привет!",
+    "哦——真的有人打开了这个。你好！",
+    "Oh - da hat wirklich jemand das hier geoffnet. Hi!",
+    "O - iemand heeft dit echt geopend. Hoi!",
+    "Oh, alguien ha abierto esto de verdad. Hola.")
+add("I'm not here to play a game. I'm here to train.",
+    "Я не играть пришёл. Я пришёл тренироваться.",
+    "我不是来玩游戏的。我是来练的。",
+    "Ich bin nicht zum Spielen hier. Ich bin zum Trainieren hier.",
+    "Ik kom niet om te spelen. Ik kom trainen.",
+    "No vengo a jugar. Vengo a entrenar.")
+add("Train. For what?", "Тренироваться. Для чего?", "练？练什么？",
+    "Trainieren. Wofur?", "Trainen. Waarvoor?", "Entrenar. Para que?")
+add("Laser tag. Regionals are in three months and I can't hit anything that moves.",
+    "Лазертаг. Через три месяца регионалка, а я не попадаю ни во что движущееся.",
+    "镭射对战。三个月后就是地区赛，而我打不中任何会动的东西。",
+    "Lasertag. In drei Monaten ist die Regionalmeisterschaft und ich treffe nichts, was sich bewegt.",
+    "Lasergamen. Over drie maanden is het regiotoernooi en ik raak niets dat beweegt.",
+    "Laser tag. El regional es en tres meses y no le doy a nada que se mueva.")
+add("...so you downloaded a rhythm game.",
+    "...и поэтому ты скачал ритм-игру.",
+    "……所以你下载了一个节奏游戏。",
+    "...also hast du dir ein Rhythmusspiel geladen.",
+    "...dus je hebt een ritmespel gedownload.",
+    "...asi que te has bajado un juego de ritmo.")
+add("A friend swore it fixes your aim. Cubes fly at you, you put the cursor on them, on the beat.",
+    "Друг клялся, что это чинит аим. Кубы летят на тебя, ты ставишь на них курсор — в долю.",
+    "有个朋友发誓说这能修好准头。方块朝你飞来，你把光标压上去，踩着节拍。",
+    "Ein Freund hat geschworen, das repariert das Zielen. Wurfel fliegen auf dich zu, du legst den Cursor drauf, im Takt.",
+    "Een vriend zwoer dat het je mikken repareert. Kubussen vliegen op je af, jij zet de cursor erop, op de beat.",
+    "Un amigo juro que arregla la punteria. Los cubos vuelan hacia ti y pones el cursor encima, a tiempo.")
+add("That is, annoyingly, exactly what this is.",
+    "И это, что обидно, ровно то, что тут происходит.",
+    "而这——真让人不爽——正是这里在做的事。",
+    "Und das ist, argerlicherweise, genau das hier.",
+    "En dat is, vervelend genoeg, precies wat dit is.",
+    "Y eso es, molestamente, exactamente lo que es esto.")
+add("Aim is two questions. Where, and when. Almost everybody only ever practises where.",
+    "Аим — это два вопроса. Куда и когда. Почти все тренируют только «куда».",
+    "瞄准是两个问题：往哪，和什么时候。几乎所有人只练前一个。",
+    "Zielen sind zwei Fragen. Wohin und wann. Fast alle uben nur das Wohin.",
+    "Mikken is twee vragen. Waar, en wanneer. Bijna iedereen oefent alleen het waar.",
+    "Apuntar son dos preguntas: donde y cuando. Casi todos practican solo el donde.")
+add("And the music asks the when.", "А «когда» спрашивает музыка.",
+    "而“什么时候”由音乐来问。", "Und das Wann fragt die Musik.",
+    "En het wanneer vraagt de muziek.", "Y el cuando lo pregunta la musica.")
+add("Now you're getting it! Come on — I'll walk you through the whole thing myself.",
+    "Вот теперь дошло! Пошли — я сам тебе всё покажу.",
+    "现在你懂了！走吧，我亲自带你走一遍。",
+    "Jetzt verstehst du es! Komm - ich zeig dir alles selbst.",
+    "Nu snap je het! Kom - ik loop het zelf met je door.",
+    "Ahora lo pillas. Vamos, te lo enseno yo todo.")
+
+add("So? First impressions.", "Ну? Первые впечатления.", "怎么样？第一印象。",
+    "Und? Erster Eindruck.", "En? Eerste indruk.", "Y bien? Primeras impresiones.")
+add("A tutorial isn't a fight. Nothing came at me fast enough to miss.",
+    "Туториал — это не бой. Ничего не летело так быстро, чтобы промазать.",
+    "教程不是对局。没有任何东西快到能让我打空。",
+    "Ein Tutorial ist kein Kampf. Nichts kam schnell genug, um daneben zu hauen.",
+    "Een tutorial is geen gevecht. Niets kwam snel genoeg om te missen.",
+    "Un tutorial no es un combate. Nada venia lo bastante rapido como para fallar.")
+add("Say that to me again in about four minutes.",
+    "Повтори мне это минуты через четыре.",
+    "四分钟后你再跟我说一遍。",
+    "Sag mir das in etwa vier Minuten nochmal.",
+    "Zeg dat over een minuut of vier nog eens tegen me.",
+    "Repiteme eso dentro de unos cuatro minutos.")
+add("Three tracks, back to back. This is where you find out what your hands do under pressure.",
+    "Три трека подряд. Вот тут и выяснится, что твои руки делают под давлением.",
+    "三首连着来。你会在这里发现自己的手在压力下会做什么。",
+    "Drei Tracks am Stuck. Hier findest du heraus, was deine Hande unter Druck machen.",
+    "Drie tracks achter elkaar. Hier merk je wat je handen doen onder druk.",
+    "Tres temas seguidos. Aqui descubres que hacen tus manos bajo presion.")
+add("And if I lose?", "А если я проиграю?", "那我要是输了呢？",
+    "Und wenn ich verliere?", "En als ik verlies?", "Y si pierdo?")
+add("Then the bar along the bottom runs out and we stop there. Missing costs you; landing pays it back.",
+    "Тогда полоска внизу кончится, и на этом всё. Промах отнимает, попадание возвращает.",
+    "那下面那条就会见底，我们就到此为止。失误扣，命中还。",
+    "Dann ist der Balken unten leer und wir horen da auf. Danebenhauen kostet, Treffen zahlt zuruck.",
+    "Dan raakt de balk onderaan leeg en stoppen we daar. Missen kost, raken betaalt terug.",
+    "Entonces la barra de abajo se vacia y ahi paramos. Fallar cuesta; acertar lo devuelve.")
+add("No lives? No continues?", "Ни жизней, ни продолжений?", "没有命？没有续关？",
+    "Keine Leben? Kein Weiterspielen?", "Geen levens? Geen continues?",
+    "Sin vidas? Sin continuar?")
+add("It's a match. You don't get to be bad for thirty seconds and still be in it.",
+    "Это матч. Нельзя тридцать секунд играть плохо и остаться в игре.",
+    "这是一场比赛。你没法烂上三十秒还留在场上。",
+    "Es ist ein Match. Du kannst nicht dreissig Sekunden schlecht sein und trotzdem drin bleiben.",
+    "Het is een wedstrijd. Je kunt niet dertig seconden slecht zijn en er nog in zitten.",
+    "Es un combate. No puedes ir mal treinta segundos y seguir dentro.")
+add("The last one's my favourite. Try to still be alive for it.",
+    "Последний — мой любимый. Постарайся до него дожить.",
+    "最后一首是我最喜欢的。争取活到那时候。",
+    "Der letzte ist mein Liebling. Versuch, bis dahin am Leben zu sein.",
+    "De laatste is mijn favoriet. Probeer daarvoor nog te leven.",
+    "El ultimo es mi favorito. Intenta llegar vivo.")
+
+add("You came back.", "Ты вернулся.", "你回来了。", "Du bist wiedergekommen.",
+    "Je bent teruggekomen.", "Has vuelto.")
+add("Regionals moved. Six weeks.", "Регионалку передвинули. Шесть недель.",
+    "地区赛提前了。六周。", "Die Regionals wurden vorverlegt. Sechs Wochen.",
+    "Het regiotoernooi is verzet. Zes weken.", "Han movido el regional. Seis semanas.")
+add("Six weeks...", "Шесть недель...", "六周……", "Sechs Wochen...",
+    "Zes weken...", "Seis semanas...")
+add("Say something useful.", "Скажи что-нибудь полезное.", "说点有用的。",
+    "Sag was Nutzliches.", "Zeg iets nuttigs.", "Di algo util.")
+add("Fine. Everything you have played so far was a metronome being polite to you.",
+    "Ладно. Всё, что ты играл до сих пор, было метрономом, который был к тебе вежлив.",
+    "行。你到目前为止玩的一切，都只是一个对你客气的节拍器。",
+    "Gut. Alles, was du bisher gespielt hast, war ein Metronom, das hoflich zu dir war.",
+    "Goed. Alles wat je tot nu toe speelde was een metronoom die beleefd tegen je deed.",
+    "Vale. Todo lo que has jugado hasta ahora era un metronomo siendo amable contigo.")
+add("This set is not polite. It gets ahead of you and it does not wait.",
+    "Этот сет — не вежливый. Он уходит вперёд и не ждёт.",
+    "这一组不客气。它会跑到你前面，而且不等你。",
+    "Dieses Set ist nicht hoflich. Es zieht dir davon und es wartet nicht.",
+    "Deze set is niet beleefd. Hij loopt op je voor en wacht niet.",
+    "Este set no es amable. Se te adelanta y no espera.")
+add("Good.", "Хорошо.", "好。", "Gut.", "Goed.", "Bien.")
+add("...good?", "...хорошо?", "……好？", "...gut?", "...goed?", "...bien?")
+add("Nobody on the other team is going to wait either.",
+    "В той команде меня тоже никто ждать не будет.",
+    "对面队伍里也没人会等我。",
+    "Im anderen Team wartet auch niemand auf mich.",
+    "Bij het andere team wacht ook niemand op me.",
+    "En el otro equipo tampoco me va a esperar nadie.")
+add("Okay. Okay! Now I actually want to watch this.",
+    "Так. Так! Вот теперь я правда хочу на это посмотреть.",
+    "好。好！现在我是真的想看看了。",
+    "Okay. Okay! Jetzt will ich das wirklich sehen.",
+    "Oke. Oke! Nu wil ik dit echt zien.",
+    "Vale. Vale! Ahora si que quiero ver esto.")
+
 # ---------------------------------------------------------------- game modes
 add("All modes", "Все режимы", "全部模式", "Alle Modi", "Alle modi", "Todos los modos")
 add("Every song in the library. In a headset this plays with sabers.",

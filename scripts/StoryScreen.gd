@@ -8,6 +8,9 @@ extends Control
 ## Each story is a playlist played back to back. A story unlocks when the one
 ## before it has been cleared.
 
+## A line is who says it, how they stand while they say it, and the words.
+## Melly's poses come from MellyRig.POSES; the player has no body on screen, so
+## theirs are ignored and Melly steps back into the dark instead.
 const STORIES := [
 	{
 		"key": "first_steps",
@@ -17,8 +20,23 @@ const STORIES := [
 		"pick_diff": false,
 		"needs": "",
 		"dialog": [
-			"Hey! You want to learn how to play Open Rhythm?",
-			"Then watch closely — I'll show you everything myself!",
+			{"who": "melly", "pose": "surprised",
+			 "text": "Oh — somebody actually opened this. Hi!"},
+			{"who": "you", "text": "I'm not here to play a game. I'm here to train."},
+			{"who": "melly", "pose": "ask", "text": "Train. For what?"},
+			{"who": "you",
+			 "text": "Laser tag. Regionals are in three months and I can't hit anything that moves."},
+			{"who": "melly", "pose": "surprised",
+			 "text": "...so you downloaded a rhythm game."},
+			{"who": "you",
+			 "text": "A friend swore it fixes your aim. Cubes fly at you, you put the cursor on them, on the beat."},
+			{"who": "melly", "pose": "smug",
+			 "text": "That is, annoyingly, exactly what this is."},
+			{"who": "melly", "pose": "explain",
+			 "text": "Aim is two questions. Where, and when. Almost everybody only ever practises where."},
+			{"who": "you", "text": "And the music asks the when."},
+			{"who": "melly", "pose": "cheer",
+			 "text": "Now you're getting it! Come on — I'll walk you through the whole thing myself."},
 		],
 	},
 	{
@@ -29,9 +47,21 @@ const STORIES := [
 		"pick_diff": true,
 		"needs": "tutorial",
 		"dialog": [
-			"Well, how's your first impression of the game?",
-			"Yeah, you can't really enjoy a tutorial... let's do it for real!",
-			"Three tracks, no stopping. The last one is my favourite.",
+			{"who": "melly", "pose": "talk", "text": "So? First impressions."},
+			{"who": "you",
+			 "text": "A tutorial isn't a fight. Nothing came at me fast enough to miss."},
+			{"who": "melly", "pose": "smug",
+			 "text": "Say that to me again in about four minutes."},
+			{"who": "melly", "pose": "explain",
+			 "text": "Three tracks, back to back. This is where you find out what your hands do under pressure."},
+			{"who": "you", "text": "And if I lose?"},
+			{"who": "melly", "pose": "worried",
+			 "text": "Then the bar along the bottom runs out and we stop there. Missing costs you; landing pays it back."},
+			{"who": "you", "text": "No lives? No continues?"},
+			{"who": "melly", "pose": "talk",
+			 "text": "It's a match. You don't get to be bad for thirty seconds and still be in it."},
+			{"who": "melly", "pose": "wink",
+			 "text": "The last one's my favourite. Try to still be alive for it."},
 		],
 	},
 	{
@@ -41,7 +71,21 @@ const STORIES := [
 		"songs": ["bass_rush", "crimson_step", "afterburner"],
 		"pick_diff": true,
 		"needs": "midnight_pulse",
-		"dialog": ["Shall we continue?"],
+		"dialog": [
+			{"who": "melly", "pose": "surprised", "text": "You came back."},
+			{"who": "you", "text": "Regionals moved. Six weeks."},
+			{"who": "melly", "pose": "worried", "text": "Six weeks..."},
+			{"who": "you", "text": "Say something useful."},
+			{"who": "melly", "pose": "explain",
+			 "text": "Fine. Everything you have played so far was a metronome being polite to you."},
+			{"who": "melly", "pose": "talk",
+			 "text": "This set is not polite. It gets ahead of you and it does not wait."},
+			{"who": "you", "text": "Good."},
+			{"who": "melly", "pose": "ask", "text": "...good?"},
+			{"who": "you", "text": "Nobody on the other team is going to wait either."},
+			{"who": "melly", "pose": "cheer",
+			 "text": "Okay. Okay! Now I actually want to watch this."},
+		],
 	},
 ]
 
@@ -196,13 +240,15 @@ func _build_novel() -> void:
 	_novel_layer.add_child(dim)
 	G.anchor_full(dim)
 
-	# Melly in the middle of the screen
+	# Melly, close enough to read a face on. A conversation happens at talking
+	# distance; the full-length view is for the corner of a results screen.
 	_rig = MellyRig.new()
-	_rig.position = Vector2(G.canvas_size().x / 2.0 - 230.0, 60)
-	_rig.size = Vector2(460, 470)
+	_rig.size = Vector2(560, 520)
+	_rig.position = Vector2(G.canvas_size().x / 2.0 - 280.0, 24)
 	if _rig is Control:
 		(_rig as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_novel_layer.add_child(_rig)
+	_rig.frame_bust()
 
 	# a visual-novel style dialog box
 	var box := PanelContainer.new()
@@ -216,6 +262,7 @@ func _build_novel() -> void:
 	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(vb)
 	_name_lbl = G.label("MELLY", 17, G.C_GOLD, true)
+	_name_lbl.auto_translate_mode = Control.AUTO_TRANSLATE_MODE_DISABLED
 	_name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vb.add_child(_name_lbl)
 	_text_lbl = G.label("", 22, G.C_TEXT)
@@ -234,10 +281,34 @@ func _build_novel() -> void:
 	G.anchor_corner(_hint_lbl, true, true, 130, 44, Vector2(40, 24))
 
 
+## Who is speaking, how they stand, and the sound their words make.
+##
+## While the player talks Melly steps back into the dark rather than standing
+## there mouthing along - there is no sprite for the player, and the light
+## going off them is what says the line is not theirs.
 func _start_line() -> void:
 	_shown = 0.0
 	_typing = true
 	_text_lbl.text = ""
+	var line := _line()
+	var mine: bool = str(line.get("who", "melly")) == "you"
+	_name_lbl.text = tr("YOU") if mine else tr("MELLY")
+	_name_lbl.add_theme_color_override("font_color",
+		G.C_PRIMARY if mine else G.C_GOLD)
+	if _rig != null and is_instance_valid(_rig):
+		_rig.set_pose("listen" if mine else str(line.get("pose", "talk")))
+		_rig.talking = not mine
+		var tw := create_tween()
+		tw.tween_property(_rig, "modulate",
+			Color(0.30, 0.26, 0.32, 1.0) if mine else Color.WHITE, 0.22)
+
+
+## The line being spoken, whatever shape it was written in.
+func _line() -> Dictionary:
+	if _li < 0 or _li >= _lines.size():
+		return {}
+	var raw = _lines[_li]
+	return raw if raw is Dictionary else {"who": "melly", "text": str(raw)}
 
 
 func _process(delta: float) -> void:
@@ -249,17 +320,22 @@ func _process(delta: float) -> void:
 		_shown = minf(_shown + delta * 38.0, float(full.length()))
 		var cur := int(_shown)
 		_text_lbl.text = full.substr(0, cur)
-		# a quiet high beep every two new characters
+		# one note per couple of letters, in the voice of whoever is speaking
 		if cur - prev >= 2 and cur % 2 == 0:
-			G.play_sfx("click", 2.4, -21.0)
+			var c := full.substr(maxi(0, cur - 1), 1)
+			if c.strip_edges() != "":
+				G.blip("you" if str(_line().get("who", "melly")) == "you" else "melly")
 	else:
 		_typing = false
 		_text_lbl.text = full
+		if _rig != null and is_instance_valid(_rig):
+			_rig.talking = false
 
 
 ## The current line, already translated.
 func _line_text() -> String:
-	return tr(str(_lines[_li])) if _li < _lines.size() else ""
+	var line := _line()
+	return tr(str(line.get("text", ""))) if not line.is_empty() else ""
 
 
 func _advance() -> void:
@@ -271,9 +347,11 @@ func _advance() -> void:
 		_text_lbl.text = full
 		_typing = false
 		return
+	if _rig != null and is_instance_valid(_rig):
+		_rig.talking = false
 	_li += 1
 	if _li < _lines.size():
-		G.play_sfx("click", 1.4, -10.0)
+		G.play_sfx("click", 1.4, -14.0)
 		_start_line()
 	else:
 		_finish_dialog()

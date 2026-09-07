@@ -21,6 +21,45 @@ const HEAD_TILT_MAX := 0.38
 const TORSO_LEAN_MAX := 0.22
 
 var mood := "idle"             # idle | happy | very | sad
+
+## Dialogue poses, which are a separate thing from moods.
+##
+## A mood is a reaction to the game - a hit, a miss, a win - and it comes with
+## the bouncing and the dancing that belong to those. A conversation wants none
+## of it: someone who breaks into a victory dance while explaining something is
+## not talking to you, they are performing. So the poses below are built for
+## standing and speaking, and each names the two faces it flips between while
+## the words are coming out.
+const POSES := {
+	"talk":      {"arms": 0.30, "gesture": 0.30, "lean": 0.0,  "head": 0.02,
+	              "open": "talk", "shut": "flat"},
+	"explain":   {"arms": 1.05, "gesture": 0.16, "lean": -0.04, "head": -0.03,
+	              "open": "talk", "shut": "happy"},
+	"ask":       {"arms": 0.16, "gesture": 0.10, "lean": 0.05, "head": 0.16,
+	              "open": "think", "shut": "think"},
+	"cheer":     {"arms": 2.35, "gesture": 0.55, "lean": -0.08, "head": -0.10,
+	              "open": "talk", "shut": "very"},
+	"smug":      {"arms": -0.10, "gesture": 0.06, "lean": -0.10, "head": -0.06,
+	              "open": "smug", "shut": "smug"},
+	"worried":   {"arms": -0.06, "gesture": 0.05, "lean": 0.14, "head": 0.24,
+	              "open": "talk", "shut": "sad"},
+	"surprised": {"arms": 1.55, "gesture": 0.10, "lean": -0.12, "head": -0.14,
+	              "open": "surprised", "shut": "surprised"},
+	"wink":      {"arms": 0.85, "gesture": 0.22, "lean": -0.02, "head": 0.08,
+	              "open": "talk", "shut": "wink"},
+	# held while somebody else is speaking: hands down, head tipped, mouth
+	# shut. Without it the face freezes on whatever was said last, which reads
+	# as Melly having stopped existing rather than as listening.
+	"listen":    {"arms": 0.06, "gesture": 0.04, "lean": 0.02, "head": 0.10,
+	              "open": "flat", "shut": "flat"},
+}
+
+## The pose being held, or "" when the moods are driving as usual.
+var pose := ""
+## True while words are appearing, which is what moves the mouth.
+var talking := false
+var _mouth_t := 0.0
+var _mouth_open := false
 ## Limp: nothing is driving them, every joint hangs, and the springs are the
 ## only thing left moving. Set while they are being carried around a VR room by
 ## the scruff of the neck. It is not a mood - the face stays as it was.
@@ -94,6 +133,8 @@ func _process(delta: float) -> void:
 		_mood_until_ms = 0
 	_kick_cd = maxf(0.0, _kick_cd - delta)
 	_pat_flat(delta)
+	if pose != "":
+		_mouth(delta)
 	_sim(delta)
 	_apply_pose()
 
@@ -378,7 +419,109 @@ func _spring(v: float, vel: float, target: float, stiff: float, damp: float, dt:
 	return [v, vel]
 
 
+## The mouth, while a line is being typed out. Two faces alternating is what
+## every game with a talking sprite does, and it is what makes the words look
+## like they come from the character rather than from a box.
+func _mouth(dt: float) -> void:
+	var p: Dictionary = POSES.get(pose, {})
+	if p.is_empty():
+		return
+	var want := false
+	if talking:
+		_mouth_t += dt
+		if _mouth_t >= 0.085:
+			_mouth_t = 0.0
+			_mouth_open = not _mouth_open
+		want = _mouth_open
+	else:
+		_mouth_t = 0.0
+		_mouth_open = false
+	_wear(str(p.get("open" if want else "shut", "flat")))
+
+
+## Put a face on, from the four that ship as textures or from the ones drawn
+## for talking. Cheap to call often: both sides cache.
+func _wear(kind: String) -> void:
+	if _face_mat == null:
+		return
+	var tex: Texture2D = _faces[kind] if _faces.has(kind) else MellyFaces.get_face(kind)
+	if _face_mat.albedo_texture != tex:
+		_face_mat.albedo_texture = tex
+
+
+## Hold a dialogue pose. Passing "" hands the body back to the moods.
+func set_pose(name: String) -> void:
+	pose = name if POSES.has(name) else ""
+	if pose == "":
+		return
+	_mouth_t = 0.0
+	_mouth_open = false
+	_wear(str(POSES[pose].get("shut", "flat")))
+	if _kick_cd <= 0.0:
+		_kick(pose)
+		_kick_cd = 0.18
+
+
+## Frame them from the chest up, the way a visual novel does. The full-length
+## view is for the corner of a results screen; a conversation happens at
+## talking distance, where a face is big enough to be read.
+func frame_bust() -> void:
+	if _cam == null:
+		return
+	_cam.fov = 34.0
+	# far enough back that the arms are in the picture: cropped at the
+	# shoulders they stop reading as arms and become floating slabs
+	_cam.look_at_from_position(Vector3(0.26, 4.42, 5.05), Vector3(0.0, 4.05, 0.0))
+
+
+## Standing and speaking.
+##
+## Everything here is small on purpose. A conversation is a person shifting
+## their weight, moving a hand to make a point and tipping their head when they
+## ask something - not the bouncing the moods do, which would read as Melly not
+## listening to themselves.
+func _sim_talking(dt: float) -> void:
+	var p: Dictionary = POSES[pose]
+	var ft := _t
+	var gesture := float(p.get("gesture", 0.2))
+	var breath := sin(ft * 1.9) * 0.5 + 0.5
+	var stir: float = 0.55 if talking else 0.18
+
+	var by := _spring(body_y, body_yv, breath * 0.014, 70.0, 8.0, dt)
+	body_y = by[0]; body_yv = by[1]
+	var ln := _spring(lean, lean_v, float(p.get("lean", 0.0)), 34.0, 7.0, dt)
+	lean = clampf(ln[0], -TORSO_LEAN_MAX, TORSO_LEAN_MAX); lean_v = ln[1]
+
+	# hands move while the words do, and settle while they do not
+	var base := float(p.get("arms", 0.3))
+	var swing := gesture * stir
+	var tl := base + sin(ft * 3.1) * swing
+	var tr := base + sin(ft * 2.7 + 1.9) * swing * 0.8
+	var al := _spring(arm_l, arm_lv, clampf(tl, -ARM_DOWN_MAX, ARM_UP_MAX), 40.0, 7.0, dt)
+	arm_l = al[0]; arm_lv = al[1]
+	var ar := _spring(arm_r, arm_rv, clampf(tr, -ARM_DOWN_MAX, ARM_UP_MAX), 40.0, 7.0, dt)
+	arm_r = ar[0]; arm_rv = ar[1]
+
+	# feet planted: this is somebody standing still and talking
+	var ll := _spring(leg_l, leg_lv, 0.0, 60.0, 8.0, dt)
+	leg_l = ll[0]; leg_lv = ll[1]
+	var lr := _spring(leg_r, leg_rv, 0.0, 60.0, 8.0, dt)
+	leg_r = lr[0]; leg_rv = lr[1]
+
+	var tp := float(p.get("head", 0.0)) + sin(ft * 1.3) * 0.018 \
+		+ (sin(ft * 7.0) * 0.012 if talking else 0.0)
+	var hp := _spring(head_pitch, head_pv, clampf(tp, -HEAD_TILT_MAX, HEAD_TILT_MAX),
+		34.0, 6.5, dt)
+	head_pitch = hp[0]; head_pv = hp[1]
+	var hr := _spring(head_roll, head_rv, sin(ft * 0.8) * 0.03, 30.0, 6.0, dt)
+	head_roll = hr[0]; head_rv = hr[1]
+	sway = sin(ft * 0.5) * 0.05
+
+
 func _sim(dt: float) -> void:
+	if pose != "":
+		_sim_talking(dt)
+		return
 	if limp:
 		_sim_limp(dt)
 		return

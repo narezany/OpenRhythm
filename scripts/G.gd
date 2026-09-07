@@ -542,6 +542,73 @@ func _load_sfx() -> void:
 			_sfx[n] = load(path)
 
 
+## The voices of the dialogue, made rather than recorded.
+##
+## Every character speaks in one short tone repeated per letter - the trick
+## every text-box game has used since Undertale made it a thing people notice.
+## Two voices means two timbres, not the same beep at two pitches: Melly gets a
+## soft triangle that reads as friendly, and the player gets a flatter, lower
+## square that does not.
+##
+## Built here in a few lines of arithmetic rather than shipped as audio files.
+## Fifty milliseconds of one note is not worth a WAV in the repository, and
+## this way the pitch can be nudged per letter so a sentence does not come out
+## as a machine-gun of the identical click.
+const VOICES := {
+	"melly":  {"hz": 690.0, "ms": 52.0, "shape": "tri", "vol": -19.0},
+	"player": {"hz": 322.0, "ms": 62.0, "shape": "square", "vol": -21.0},
+}
+
+var _voices := {}
+
+
+func blip(voice: String) -> void:
+	var v: Dictionary = VOICES.get(voice, VOICES["melly"])
+	if not _voices.has(voice):
+		_voices[voice] = _make_voice(float(v.hz), float(v.ms), str(v.shape))
+	var player: AudioStreamPlayer = null
+	for p in _sfx_pool:
+		if not p.playing:
+			player = p
+			break
+	if player == null:
+		return          # every voice busy: skipping one letter is not a bug
+	player.stream = _voices[voice]
+	# a little off each time, so a sentence is not the same click repeated
+	player.pitch_scale = randf_range(0.94, 1.07)
+	player.volume_db = float(v.vol)
+	player.play()
+
+
+func _make_voice(hz: float, ms: float, shape: String) -> AudioStreamWAV:
+	var rate := 22050
+	var n := int(rate * ms / 1000.0)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	for i in n:
+		var t := float(i) / float(rate)
+		var phase: float = fmod(t * hz, 1.0)
+		var wave := 0.0
+		match shape:
+			"square":
+				wave = 1.0 if phase < 0.5 else -1.0
+				# rounded off, or it is a buzz rather than a voice
+				wave *= 0.7 + 0.3 * sin(phase * TAU)
+			_:
+				wave = 4.0 * absf(phase - 0.5) - 1.0
+		# a quick attack and an exponential tail, which is what stops a tone
+		# from sounding like a door buzzer
+		var env: float = minf(1.0, float(i) / (rate * 0.004)) * pow(0.0008, t / (ms / 1000.0))
+		var v := int(clampf(wave * env, -1.0, 1.0) * 26000.0)
+		data.encode_s16(i * 2, v)
+	var snd := AudioStreamWAV.new()
+	snd.format = AudioStreamWAV.FORMAT_16_BITS
+	snd.mix_rate = rate
+	snd.stereo = false
+	snd.data = data
+	return snd
+
+
 func play_sfx(name: String, pitch := 1.0, vol_db := 0.0) -> void:
 	if not _sfx.has(name):
 		return
